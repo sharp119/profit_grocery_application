@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "288158977074",
+    "project_id": "profit-grocery",
+    "storage_bucket": "profit-grocery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:288158977074:android:67ded57f7cc5fbb7a0402b",
+        "android_client_info": {
+          "package_name": "com.profitgrocery.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFRv33apVHcqSOJh0gtJSjgB5tgmpiRjk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
