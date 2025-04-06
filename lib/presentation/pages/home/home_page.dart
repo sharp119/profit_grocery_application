@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -53,14 +54,16 @@ class _HomePageContentState extends State<_HomePageContent> {
   }
 
   void _onCategoryTap(Category category) {
-    // Navigate to category products screen
-    debugPrint('Tapped on category: ${category.name}');
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => CategoryProductsPage(category: category),
-    //   ),
-    // );
+    // Navigate to category products screen with dual panel view
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryProductsPage(
+          initialCategoryId: category.id,
+          title: category.name,
+        ),
+      ),
+    );
   }
 
   void _onProductTap(Product product) {
@@ -68,7 +71,9 @@ class _HomePageContentState extends State<_HomePageContent> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => ProductDetailsPage(productId: product.id),
+        builder: (context) => ProductDetailsPage(
+          productId: product.id,
+        ),
       ),
     );
   }
@@ -82,6 +87,16 @@ class _HomePageContentState extends State<_HomePageContent> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => const CartPage()),
+    );
+  }
+
+  void _navigateToAllBestsellers() {
+    // Navigate to first category's products
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const CategoryProductsPage(),
+      ),
     );
   }
 
@@ -159,7 +174,32 @@ class _HomePageContentState extends State<_HomePageContent> {
                     icons: _getCategoryIcons(),
                     selectedIndex: state.selectedTabIndex,
                     onTabSelected: (index) {
-                      context.read<HomeBloc>().add(SelectCategoryTab(index));
+                      if (index == 0) {
+                        // "All" tab - stay on home page
+                        context.read<HomeBloc>().add(SelectCategoryTab(index));
+                      } else {
+                        // Other tabs - navigate to category page
+                        final tabName = state.tabs[index];
+                        final matchingCategory = state.mainCategories.firstWhere(
+                          (cat) => cat.name.toLowerCase() == tabName.toLowerCase(),
+                          orElse: () => Category(
+                            id: 'tab_$index',
+                            name: tabName,
+                            image: '',
+                            type: AppConstants.regularCategoryType,
+                          ),
+                        );
+                        
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => CategoryProductsPage(
+                              initialCategoryId: matchingCategory.id,
+                              title: matchingCategory.name,
+                            ),
+                          ),
+                        );
+                      }
                     },
                     showNewBadge: true,
                     newTabIndex: 3, // Show "New" badge on Kids tab (index 3)
@@ -257,8 +297,15 @@ class _HomePageContentState extends State<_HomePageContent> {
             onTapCallbacks: List.generate(
               state.banners.length,
               (index) => () {
-                // Handle banner tap
+                // Handle banner tap based on promotion type
                 debugPrint('Tapped on banner $index');
+                
+                // If we had promo data, we could navigate based on type:
+                // if (state.bannerData[index].type == 'category') {
+                //   _onCategoryTap(state.bannerData[index].category);
+                // } else if (state.bannerData[index].type == 'product') {
+                //   _onProductTap(state.bannerData[index].product);
+                // }
               },
             ),
           ),
@@ -269,7 +316,8 @@ class _HomePageContentState extends State<_HomePageContent> {
               title: 'Featured this week',
               viewAllText: 'View All',
               onViewAllTap: () {
-                // Navigate to all featured promotions
+                // Navigate to all featured promotions using the dual-panel view
+                _navigateToAllBestsellers();
               },
             ),
             
@@ -304,12 +352,24 @@ class _HomePageContentState extends State<_HomePageContent> {
               backgroundColor: group.backgroundColor,
               itemBackgroundColor: group.itemBackgroundColor,
               onItemTap: (index) {
-                debugPrint('Tapped on ${group.items[index].label} in ${group.title}');
+                final category = group.items[index];
+                debugPrint('Tapped on ${category.label} in ${group.title}');
+                
+                // Navigate to category products using dual-panel view
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CategoryProductsPage(
+                      initialCategoryId: category.id,
+                      title: category.label,
+                    ),
+                  ),
+                );
               },
             )).toList(),
             
-          // Legacy Categories Sections (hidden)
-          if (false && state.mainCategories.isNotEmpty) ...[
+          // Legacy Categories Sections (using dual-panel navigation)
+          if (state.mainCategories.isNotEmpty) ...[
             DenseCategoryGrid.withHeader(
               title: 'Grocery & Kitchen',
               categories: state.mainCategories,
@@ -319,8 +379,8 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
           ],
           
-          // Shop by Category Section (Snacks & Drinks) - Hidden
-          if (false && state.snacksCategories.isNotEmpty) ...[
+          // Shop by Category Section
+          if (state.snacksCategories.isNotEmpty) ...[
             DenseCategoryGrid.withHeader(
               title: 'Snacks & Drinks',
               categories: state.snacksCategories,
@@ -330,8 +390,8 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
           ],
           
-          // Shop by Store Section - Hidden
-          if (false && state.storeCategories.isNotEmpty) ...[
+          // Shop by Store Section
+          if (state.storeCategories.isNotEmpty) ...[
             DenseCategoryGrid.withHeader(
               title: 'Shop by store',
               categories: state.storeCategories,
@@ -346,9 +406,7 @@ class _HomePageContentState extends State<_HomePageContent> {
             SectionHeader(
               title: 'Bestsellers',
               viewAllText: 'View All',
-              onViewAllTap: () {
-                // Navigate to all bestsellers
-              },
+              onViewAllTap: _navigateToAllBestsellers,
             ),
             
             ProductGrid(

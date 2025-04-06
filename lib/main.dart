@@ -14,10 +14,15 @@ import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
 import 'services/otp_service.dart';
 import 'domain/repositories/auth_repository.dart';
+import 'domain/repositories/category_repository.dart';
+import 'domain/repositories/product_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
+import 'data/repositories/category_repository_impl.dart';
+import 'data/repositories/product_repository_impl.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/auth/auth_state.dart';
+import 'presentation/blocs/category_products/category_products_bloc.dart';
 import 'presentation/pages/authentication/phone_entry_page.dart';
 import 'presentation/pages/authentication/otp_verification_page.dart';
 import 'presentation/pages/home/home_page.dart';
@@ -83,9 +88,30 @@ Future<void> setupDependencyInjection() async {
     ),
   );
   
+  // Register CategoryRepository and ProductRepository
+  sl.registerLazySingleton<CategoryRepository>(
+    () => CategoryRepositoryImpl(
+      firebaseDatabase: sl(),
+    ),
+  );
+  
+  sl.registerLazySingleton<ProductRepository>(
+    () => ProductRepositoryImpl(
+      firebaseDatabase: sl(),
+    ),
+  );
+  
   // BLoCs
   sl.registerFactory(
     () => AuthBloc(authRepository: sl())..add(const CheckAuthStatus()),
+  );
+  
+  // Register CategoryProductsBloc
+  sl.registerFactory(
+    () => CategoryProductsBloc(
+      categoryRepository: sl(),
+      productRepository: sl(),
+    ),
   );
 }
 
@@ -98,6 +124,10 @@ class MyApp extends StatelessWidget {
       providers: [
         BlocProvider<AuthBloc>(
           create: (context) => sl<AuthBloc>(),
+        ),
+        // Add CategoryProductsBloc provider
+        BlocProvider<CategoryProductsBloc>(
+          create: (context) => sl<CategoryProductsBloc>(),
         ),
       ],
       child: ScreenUtilInit(

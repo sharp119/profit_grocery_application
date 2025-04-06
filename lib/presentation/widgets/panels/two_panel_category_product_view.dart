@@ -45,18 +45,56 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   int _selectedCategoryIndex = 0;
   final Map<int, double> _categoryOffsets = {};
   late Category _selectedCategory;
+  bool _initialScrollDone = false;
   
   @override
   void initState() {
     super.initState();
     
-    // Start with the first category selected
-    if (widget.categories.isNotEmpty) {
-      _selectedCategory = widget.categories.first;
-    }
-    
     // Listen to scroll events to highlight the correct category
     _productScrollController.addListener(_onProductScroll);
+    
+    // Find selected category from widget if available
+    _initializeSelectedCategory();
+  }
+  
+  void _initializeSelectedCategory() {
+    if (widget.categories.isEmpty) return;
+    
+    // Find the selected category by looking at the BLoC state
+    // If a category is already selected from the BLoC, use that one
+    // This is important for deep linking and navigation
+    final selectedCategoryId = widget.categories.indexWhere(
+      (category) => widget.categoryProducts[category.id]?.isNotEmpty == true
+    );
+    
+    if (selectedCategoryId >= 0) {
+      _selectedCategoryIndex = selectedCategoryId;
+      _selectedCategory = widget.categories[selectedCategoryId];
+    } else {
+      // Otherwise, start with the first category
+      _selectedCategory = widget.categories.first;
+    }
+  }
+  
+  @override
+  void didUpdateWidget(TwoPanelCategoryProductView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    
+    // When the widget updates with different categories (like after loading data),
+    // we need to find the initially selected category again
+    if (oldWidget.categories != widget.categories) {
+      _initializeSelectedCategory();
+      
+      // If we haven't done our initial scroll and we have category offsets,
+      // scroll to the selected category
+      if (!_initialScrollDone && _categoryOffsets.isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToCategory(_selectedCategoryIndex);
+          _initialScrollDone = true;
+        });
+      }
+    }
   }
   
   @override
@@ -92,16 +130,26 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
         _selectedCategoryIndex = newSelectedIndex;
         _selectedCategory = widget.categories[newSelectedIndex];
       });
+      
+      // Notify parent about category change without scrolling again
+      // This ensures the app bar title and other UI elements update
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        widget.onCategoryTap(widget.categories[newSelectedIndex]);
+      });
     }
   }
   
   /// Scroll to a specific category when selected from the left panel
   void _scrollToCategory(int index) {
     if (_categoryOffsets.containsKey(index) && _productScrollController.hasClients) {
+      // Offset slightly to ensure the header is visible
+      final offset = (_categoryOffsets[index]! > 10) ? _categoryOffsets[index]! - 10 : 0.0;
+      
+      // Animate to the category position with a smoother animation
       _productScrollController.animateTo(
-        _categoryOffsets[index]!,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOut,
+        offset,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeOutCubic,
       );
     }
   }
@@ -157,24 +205,50 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                       ),
                       child: Column(
                         children: [
-                          // Category icon
-                          Container(
-                            width: 50.w,
-                            height: 50.w,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? AppTheme.accentColor.withOpacity(0.1)
-                                  : Colors.transparent,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isSelected
-                                    ? AppTheme.accentColor
-                                    : Colors.transparent,
-                                width: 1.5,
+                          // Category icon with improved visual indicator
+                          Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              // Enhanced selection background
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                width: 50.w,
+                                height: 50.w,
+                                decoration: BoxDecoration(
+                                  gradient: isSelected
+                                      ? LinearGradient(
+                                          colors: [
+                                            AppTheme.accentColor.withOpacity(0.2),
+                                            AppTheme.accentColor.withOpacity(0.05),
+                                          ],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        )
+                                      : null,
+                                  color: isSelected
+                                      ? null
+                                      : Colors.transparent,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? AppTheme.accentColor
+                                        : Colors.transparent,
+                                    width: 1.5,
+                                  ),
+                                  boxShadow: isSelected
+                                      ? [
+                                          BoxShadow(
+                                            color: AppTheme.accentColor.withOpacity(0.3),
+                                            blurRadius: 8,
+                                            spreadRadius: 1,
+                                          ),
+                                        ]
+                                      : null,
+                                ),
                               ),
-                            ),
-                            child: Center(
-                              child: SizedBox(
+                              
+                              // Icon within container
+                              SizedBox(
                                 width: 30.w,
                                 height: 30.w,
                                 child: Image.asset(
@@ -182,9 +256,19 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                   color: isSelected
                                       ? AppTheme.accentColor
                                       : Colors.white,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback for missing images
+                                    return Icon(
+                                      Icons.category,
+                                      color: isSelected
+                                          ? AppTheme.accentColor
+                                          : Colors.white,
+                                      size: 24.w,
+                                    );
+                                  },
                                 ),
                               ),
-                            ),
+                            ],
                           ),
                           
                           SizedBox(height: 8.h),
@@ -206,17 +290,26 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                             overflow: TextOverflow.ellipsis,
                           ),
                           
-                          // Selected indicator
-                          if (isSelected)
-                            Container(
-                              margin: EdgeInsets.only(top: 8.h),
-                              width: 30.w,
-                              height: 3.h,
-                              decoration: BoxDecoration(
-                                color: AppTheme.accentColor,
-                                borderRadius: BorderRadius.circular(1.5.r),
-                              ),
+                          // Enhanced selection indicator
+                          AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: EdgeInsets.only(top: 8.h),
+                            width: isSelected ? 30.w : 0,
+                            height: 3.h,
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentColor,
+                              borderRadius: BorderRadius.circular(1.5.r),
+                              boxShadow: isSelected
+                                  ? [
+                                      BoxShadow(
+                                        color: AppTheme.accentColor.withOpacity(0.5),
+                                        blurRadius: 4,
+                                        spreadRadius: 0,
+                                      ),
+                                    ]
+                                  : null,
                             ),
+                          ),
                         ],
                       ),
                     ),
@@ -240,13 +333,16 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                           
                           // Store the offset of this category section
                           WidgetsBinding.instance.addPostFrameCallback((_) {
-                            final renderBox = context.findRenderObject() as RenderBox?;
-                            if (renderBox != null) {
-                              _categoryOffsets[i] = renderBox.localToGlobal(Offset.zero).dy -
-                                  AppBar().preferredSize.height -
-                                  MediaQuery.of(context).padding.top;
-                            }
-                          });
+                          final renderBox = context.findRenderObject() as RenderBox?;
+                          if (renderBox != null && _productScrollController.hasClients) {
+                          // Calculate position relative to scroll position rather than global position
+                          // This is more accurate for determining scroll offsets
+                          _categoryOffsets[i] = renderBox.localToGlobal(Offset.zero).dy -
+                                AppBar().preferredSize.height -
+                                  MediaQuery.of(context).padding.top +
+          _productScrollController.offset;
+    }
+  });
                           
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

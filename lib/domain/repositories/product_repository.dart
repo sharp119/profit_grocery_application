@@ -4,42 +4,35 @@ import '../entities/product.dart';
 import '../../core/errors/failures.dart';
 
 abstract class ProductRepository {
-  /// Get all products with optional filtering and pagination
+  /// Get all products
   Future<Either<Failure, List<Product>>> getProducts({
-    int? limit,
-    int? offset,
-    String? categoryId,
-    String? subcategoryId,
-    bool? inStock,
-    bool? featured,
+    bool activeOnly = true,
   });
   
   /// Get a single product by ID
   Future<Either<Failure, Product>> getProductById(String productId);
   
-  /// Search products by name
-  Future<Either<Failure, List<Product>>> searchProducts(
-    String query, {
-    int? limit,
-    int? offset,
+  /// Get products by category ID
+  Future<Either<Failure, List<Product>>> getProductsByCategory(
+    String categoryId, {
+    bool activeOnly = true,
+  });
+  
+  /// Get products by subcategory ID
+  Future<Either<Failure, List<Product>>> getProductsBySubcategory(
+    String subcategoryId, {
+    bool activeOnly = true,
   });
   
   /// Get featured products
-  Future<Either<Failure, List<Product>>> getFeaturedProducts({
-    int? limit,
-  });
+  Future<Either<Failure, List<Product>>> getFeaturedProducts();
   
-  /// Get products by category
-  Future<Either<Failure, List<Product>>> getProductsByCategory(
-    String categoryId, {
-    int? limit,
-    int? offset,
-  });
+  /// Get best seller products
+  Future<Either<Failure, List<Product>>> getBestSellerProducts();
   
-  /// Get products by subcategory
-  Future<Either<Failure, List<Product>>> getProductsBySubcategory(
-    String subcategoryId, {
-    int? limit,
-    int? offset,
+  /// Search products by keyword
+  Future<Either<Failure, List<Product>>> searchProducts(
+    String keyword, {
+    bool activeOnly = true,
   });
 }

@@ -1,6 +1,9 @@
 import 'package:equatable/equatable.dart';
 
 class Product extends Equatable {
+  // Making these fields mutable to allow category assignment after loading
+  String categoryId;
+  String? categoryName;
   final String id;
   final String name;
   final String image;
@@ -8,8 +11,7 @@ class Product extends Equatable {
   final double price;
   final double? mrp; // Market Retail Price (original price before discount)
   final bool inStock;
-  final String categoryId;
-  final String? categoryName;
+  // These fields are now declared above as mutable properties
   final String? subcategoryId;
   final List<String> tags;
   final bool isFeatured;
@@ -20,7 +22,7 @@ class Product extends Equatable {
   final double? rating;
   final int? reviewCount;
 
-  const Product({
+  Product({
     required this.id,
     required this.name,
     required this.image,
@@ -51,6 +53,49 @@ class Product extends Equatable {
 
   // Check if the product has a discount
   bool get hasDiscount => discountPercentage != null && discountPercentage! > 0;
+
+  // Create a copy with updated fields
+  Product copyWith({
+    String? id,
+    String? name,
+    String? image,
+    String? description,
+    double? price,
+    double? mrp,
+    bool? inStock,
+    String? categoryId,
+    String? categoryName,
+    String? subcategoryId,
+    List<String>? tags,
+    bool? isFeatured,
+    bool? isActive,
+    String? weight,
+    String? brand,
+    String? sellerName,
+    double? rating,
+    int? reviewCount,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      mrp: mrp ?? this.mrp,
+      inStock: inStock ?? this.inStock,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      subcategoryId: subcategoryId ?? this.subcategoryId,
+      tags: tags ?? this.tags,
+      isFeatured: isFeatured ?? this.isFeatured,
+      isActive: isActive ?? this.isActive,
+      weight: weight ?? this.weight,
+      brand: brand ?? this.brand,
+      sellerName: sellerName ?? this.sellerName,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+    );
+  }
 
   @override
   List<Object?> get props => [

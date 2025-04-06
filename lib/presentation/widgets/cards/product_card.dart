@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/utils/category_color_mapper.dart';
 import '../../../domain/entities/product.dart';
 
 /// A reusable widget for displaying product cards
@@ -13,6 +14,7 @@ class ProductCard extends StatelessWidget {
   final double price;
   final double? mrp;
   final bool inStock;
+  final String? categoryId;
   final VoidCallback onTap;
   final Function(int) onQuantityChanged;
   final int quantity;
@@ -25,6 +27,7 @@ class ProductCard extends StatelessWidget {
     required this.price,
     this.mrp,
     required this.inStock,
+    this.categoryId,
     required this.onTap,
     required this.onQuantityChanged,
     this.quantity = 0,
@@ -44,6 +47,7 @@ class ProductCard extends StatelessWidget {
       price: product.price,
       mrp: product.mrp,
       inStock: product.inStock,
+      categoryId: product.categoryId,
       onTap: onTap,
       onQuantityChanged: onQuantityChanged,
       quantity: quantity,
@@ -60,6 +64,28 @@ class ProductCard extends StatelessWidget {
 
   // Check if the product has a discount
   bool get hasDiscount => discountPercentage != null && discountPercentage! > 0;
+
+  // Get the category color with better fallback
+  Color get categoryColor {
+    if (categoryId != null && categoryId!.isNotEmpty) {
+      return CategoryColorMapper().getColorForCategory(categoryId!);
+    }
+    // Use a gradient fallback if category ID is missing
+    return AppTheme.secondaryColor;
+  }
+  
+  // Get gradient based on category color
+  LinearGradient get categoryGradient {
+    final baseColor = categoryColor;
+    return LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        baseColor.withOpacity(0.2),
+        baseColor.withOpacity(0.05),
+      ],
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +130,7 @@ class ProductCard extends StatelessWidget {
                 // Product image and discount badge
                 Stack(
                   children: [
-                    // Product image
+                    // Product image with enhanced category color background
                     ClipRRect(
                       borderRadius: BorderRadius.only(
                         topLeft: Radius.circular(borderRadius),
@@ -114,11 +140,30 @@ class ProductCard extends StatelessWidget {
                         height: imageHeight,
                         width: double.infinity,
                         padding: EdgeInsets.all(padding),
-                        color: Colors.white.withOpacity(0.05),
+                        decoration: BoxDecoration(
+                          gradient: categoryGradient,
+                          border: Border(
+                            bottom: BorderSide(
+                              color: categoryColor.withOpacity(0.3),
+                              width: 1.0,
+                            ),
+                          ),
+                        ),
                         child: inStock
-                            ? Image.asset(
-                                image,
-                                fit: BoxFit.contain,
+                            ? Hero(
+                                tag: 'product_image_$id',
+                                child: Image.asset(
+                                  image,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Fallback for missing images
+                                    return Icon(
+                                      Icons.image_not_supported,
+                                      size: imageHeight * 0.5,
+                                      color: Colors.white.withOpacity(0.5),
+                                    );
+                                  },
+                                ),
                               )
                             : Stack(
                                 alignment: Alignment.center,
@@ -128,6 +173,14 @@ class ProductCard extends StatelessWidget {
                                     fit: BoxFit.contain,
                                     color: Colors.grey.withOpacity(0.5),
                                     colorBlendMode: BlendMode.saturation,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // Fallback for missing images
+                                      return Icon(
+                                        Icons.image_not_supported,
+                                        size: imageHeight * 0.5,
+                                        color: Colors.white.withOpacity(0.3),
+                                      );
+                                    },
                                   ),
                                   Container(
                                     padding: const EdgeInsets.symmetric(
@@ -137,6 +190,10 @@ class ProductCard extends StatelessWidget {
                                     decoration: BoxDecoration(
                                       color: Colors.black.withOpacity(0.7),
                                       borderRadius: BorderRadius.circular(4.0),
+                                      border: Border.all(
+                                        color: Colors.red.withOpacity(0.5),
+                                        width: 1.0,
+                                      ),
                                     ),
                                     child: const Text(
                                       'Out of Stock',

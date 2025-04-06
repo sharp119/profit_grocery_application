@@ -1,27 +1,20 @@
 import '../../domain/entities/category.dart';
 
 class CategoryModel extends Category {
-  const CategoryModel({
-    required String id,
-    required String name,
-    required String image,
-    String? description,
-    required String type,
-    String? tag,
-    bool isActive = true,
-    int displayOrder = 0,
-    List<String> subcategoryIds = const [],
-  }) : super(
-          id: id,
-          name: name,
-          image: image,
-          description: description,
-          type: type,
-          tag: tag,
-          isActive: isActive,
-          displayOrder: displayOrder,
-          subcategoryIds: subcategoryIds,
-        );
+  CategoryModel({
+    required super.id,
+    required super.name,
+    required super.image,
+    super.description,
+    required super.type,
+    super.tag,
+    super.isActive = true,
+    super.displayOrder = 0,
+    super.subcategoryIds = const [],
+    super.icon,
+    super.productCount,
+    super.productThumbnails,
+  });
 
   // Factory constructor to create a CategoryModel from JSON
   factory CategoryModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +30,11 @@ class CategoryModel extends Category {
       subcategoryIds: json['subcategoryIds'] != null
           ? List<String>.from(json['subcategoryIds'])
           : [],
+      icon: json['icon'],
+      productCount: json['productCount'],
+      productThumbnails: json['productThumbnails'] != null
+          ? List<String>.from(json['productThumbnails'])
+          : null,
     );
   }
 
@@ -52,51 +50,22 @@ class CategoryModel extends Category {
       'isActive': isActive,
       'displayOrder': displayOrder,
       'subcategoryIds': subcategoryIds,
+      'icon': icon,
+      'productCount': productCount,
+      'productThumbnails': productThumbnails,
     };
-  }
-
-  // Create a copy of the category with updated fields
-  CategoryModel copyWith({
-    String? id,
-    String? name,
-    String? image,
-    String? description,
-    String? type,
-    String? tag,
-    bool? isActive,
-    int? displayOrder,
-    List<String>? subcategoryIds,
-  }) {
-    return CategoryModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      image: image ?? this.image,
-      description: description ?? this.description,
-      type: type ?? this.type,
-      tag: tag ?? this.tag,
-      isActive: isActive ?? this.isActive,
-      displayOrder: displayOrder ?? this.displayOrder,
-      subcategoryIds: subcategoryIds ?? this.subcategoryIds,
-    );
   }
 }
 
 class SubcategoryModel extends Subcategory {
-  const SubcategoryModel({
-    required String id,
-    required String name,
-    required String image,
-    required String categoryId,
-    bool isActive = true,
-    int displayOrder = 0,
-  }) : super(
-          id: id,
-          name: name,
-          image: image,
-          categoryId: categoryId,
-          isActive: isActive,
-          displayOrder: displayOrder,
-        );
+  SubcategoryModel({
+    required super.id,
+    required super.name,
+    required super.image,
+    required super.categoryId,
+    super.isActive = true,
+    super.displayOrder = 0,
+  });
 
   // Factory constructor to create a SubcategoryModel from JSON
   factory SubcategoryModel.fromJson(Map<String, dynamic> json) {
@@ -120,24 +89,5 @@ class SubcategoryModel extends Subcategory {
       'isActive': isActive,
       'displayOrder': displayOrder,
     };
-  }
-
-  // Create a copy of the subcategory with updated fields
-  SubcategoryModel copyWith({
-    String? id,
-    String? name,
-    String? image,
-    String? categoryId,
-    bool? isActive,
-    int? displayOrder,
-  }) {
-    return SubcategoryModel(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      image: image ?? this.image,
-      categoryId: categoryId ?? this.categoryId,
-      isActive: isActive ?? this.isActive,
-      displayOrder: displayOrder ?? this.displayOrder,
-    );
   }
 }

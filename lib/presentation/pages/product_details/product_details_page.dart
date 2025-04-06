@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/utils/category_color_mapper.dart';
 import '../../../domain/entities/product.dart';
 import '../../blocs/product_details/product_details_bloc.dart';
 import '../../blocs/product_details/product_details_event.dart';
@@ -177,6 +178,21 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
     final discountPercentage = hasDiscount
         ? ((product.mrp! - product.price) / product.mrp! * 100).round()
         : 0;
+        
+    // Get category color for consistent UI
+    final categoryColor = product.categoryId != null
+        ? CategoryColorMapper().getColorForCategory(product.categoryId!)
+        : AppTheme.secondaryColor;
+        
+    // Create gradient based on category color
+    final categoryGradient = LinearGradient(
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      colors: [
+        categoryColor.withOpacity(0.2),
+        categoryColor.withOpacity(0.05),
+      ],
+    );
 
     return SingleChildScrollView(
       child: Column(
@@ -185,7 +201,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
           // Product images with page indicator
           Stack(
             children: [
-              // Image carousel
+              // Image carousel with category color background
               SizedBox(
                 height: 300.h,
                 child: PageView.builder(
@@ -198,11 +214,29 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                   },
                   itemBuilder: (context, index) {
                     return Container(
-                      color: Colors.white.withOpacity(0.05),
+                      decoration: BoxDecoration(
+                        gradient: categoryGradient,
+                        border: Border(
+                          bottom: BorderSide(
+                            color: categoryColor.withOpacity(0.3),
+                            width: 1.0,
+                          ),
+                        ),
+                      ),
                       padding: EdgeInsets.all(24.w),
-                      child: Image.asset(
-                        productImages[index],
-                        fit: BoxFit.contain,
+                      child: Hero(
+                        tag: index == 0 ? 'product_image_${product.id}' : 'product_image_extra_$index',
+                        child: Image.asset(
+                          productImages[index],
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Icon(
+                              Icons.image_not_supported,
+                              size: 80.w,
+                              color: Colors.white.withOpacity(0.5),
+                            );
+                          },
+                        ),
                       ),
                     );
                   },
