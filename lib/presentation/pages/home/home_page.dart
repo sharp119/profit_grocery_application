@@ -274,7 +274,7 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
             
             SizedBox(
-              height: 180.h,
+              height: 150.h, // Further reduced height
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: state.featuredPromotions.length,
@@ -282,10 +282,11 @@ class _HomePageContentState extends State<_HomePageContent> {
                 itemBuilder: (context, index) {
                   final promotion = state.featuredPromotions[index];
                   return Container(
-                    width: 180.w,
+                    width: 160.w, // Reduced width
                     margin: EdgeInsets.symmetric(horizontal: 8.w),
                     child: PromotionalCategoryCard(
                       category: promotion,
+                      height: 150.h, // Reduced height to prevent overflow
                       onTap: () => _onCategoryTap(promotion),
                     ),
                   );

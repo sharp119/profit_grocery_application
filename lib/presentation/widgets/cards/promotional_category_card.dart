@@ -51,11 +51,6 @@ class PromotionalCategoryCard extends StatelessWidget {
         height: height ?? 180.h,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16.r),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: gradientColors,
-          ),
         ),
         child: Stack(
           children: [
@@ -63,18 +58,41 @@ class PromotionalCategoryCard extends StatelessWidget {
             Positioned.fill(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16.r),
-                child: Image.asset(
-                  category.image,
-                  fit: BoxFit.cover,
-                  colorBlendMode: BlendMode.multiply,
-                  color: Colors.black.withOpacity(0.3),
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    // Gradient background
+                    Container(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(16.r),
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: gradientColors,
+                        ),
+                      ),
+                    ),
+                    // Product image (sized appropriately)
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 12.r),
+                      child: Image.asset(
+                        category.image,
+                        fit: BoxFit.contain,
+                        filterQuality: FilterQuality.high,
+                      ),
+                    ),
+                    // Dark overlay for better text readability
+                    Container(
+                      color: Colors.black.withOpacity(0.2),
+                    )
+                  ],
                 ),
               ),
             ),
             
             // Content overlay
             Padding(
-              padding: EdgeInsets.all(16.r),
+              padding: EdgeInsets.fromLTRB(12.r, 12.r, 12.r, 8.r), // Adjusted padding with less on bottom
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -106,7 +124,7 @@ class PromotionalCategoryCard extends StatelessWidget {
                     category.name,
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 22.sp,
+                      fontSize: 20.sp, // Reduced font size
                       fontWeight: FontWeight.bold,
                       shadows: [
                         Shadow(
@@ -116,45 +134,50 @@ class PromotionalCategoryCard extends StatelessWidget {
                         ),
                       ],
                     ),
+                    maxLines: 2, // Limit to 2 lines
+                    overflow: TextOverflow.ellipsis,
                   ),
                   
-                  SizedBox(height: 8.h),
+                  SizedBox(height: 4.h), // Reduced spacing
                   
-                  // Shop now button
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
-                          vertical: 6.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentColor,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'SHOP NOW',
-                              style: TextStyle(
-                                color: Colors.black,
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.bold,
+                  // Shop now button - Ensure it has enough bottom margin
+                  Padding(
+                    padding: EdgeInsets.only(bottom: 4.h), // Add bottom padding
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 10.w, // Slightly reduced
+                            vertical: 4.h, // Slightly reduced
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppTheme.accentColor,
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'SHOP NOW',
+                                style: TextStyle(
+                                  color: Colors.black,
+                                  fontSize: 10.sp, // Reduced font size
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: 4.w),
-                            Icon(
-                              Icons.arrow_forward,
-                              color: Colors.black,
-                              size: 12.sp,
-                            ),
-                          ],
+                              SizedBox(width: 2.w), // Reduced spacing
+                              Icon(
+                                Icons.arrow_forward,
+                                color: Colors.black,
+                                size: 10.sp, // Reduced icon size
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
                     ],
                   ),
+                  )
                 ],
               ),
             ),

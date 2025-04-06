@@ -24,24 +24,24 @@ class CategoryAssets {
     // Snacks & Drinks
     'chips_namkeen': '${basePath}9.png',
     'sweets_chocolates': '${basePath}10.png',
-    'drinks_juices': '${basePath}11.png',
-    'tea_coffee_milk': '${basePath}12.png',
-    'instant_food': '${basePath}13.png',
-    'sauces_spreads': '${basePath}14.png',
-    'paan_corner': '${basePath}15.png',
-    'ice_cream': '${basePath}16.png',
+    'drinks_juices': '${basePath}1.png',
+    'tea_coffee_milk': '${basePath}2.png',
+    'instant_food': '${basePath}3.png',
+    'sauces_spreads': '${basePath}4.png',
+    'paan_corner': '${basePath}5.png',
+    'ice_cream': '${basePath}6.png',
     
     // Beauty & Personal Care
-    'skin_care': '${basePath}17.png',
-    'hair_care': '${basePath}18.png',
-    'makeup': '${basePath}19.png',
-    'fragrances': '${basePath}20.png',
+    'skin_care': '${basePath}7.png',
+    'hair_care': '${basePath}8.png',
+    'makeup': '${basePath}9.png',
+    'fragrances': '${basePath}10.png',
     
     // Additional categories
-    'men_grooming': '${basePath}17.png', // Reusing existing image
-    'bath_body': '${basePath}18.png',     // Reusing existing image
-    'feminine_hygiene': '${basePath}19.png', // Reusing existing image
-    'personal_care': '${basePath}20.png', // Reusing existing image
+    'men_grooming': '${basePath}7.png', // Reusing existing image
+    'bath_body': '${basePath}8.png',     // Reusing existing image
+    'feminine_hygiene': '${basePath}9.png', // Reusing existing image
+    'personal_care': '${basePath}10.png', // Reusing existing image
     
     // Fruits & Vegetables
     'fresh_fruits': '${basePath}1.png',   // Reusing existing image
