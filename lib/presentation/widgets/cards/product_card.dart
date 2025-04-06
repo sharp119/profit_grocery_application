@@ -63,183 +63,218 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get screen dimensions to adapt sizing
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    // Calculate responsive dimensions based on the available screen size
+    final gridItemWidth = screenWidth / 2 - 20; // Account for grid spacing
+    final aspectRatio = 0.75; // Maintain a consistent aspect ratio
+    final calculatedHeight = gridItemWidth / aspectRatio;
+    
+    // Adapt dimensions proportionally to screen size
+    final imageHeight = (calculatedHeight * 0.45).clamp(90.0, 120.0);
+    final padding = (screenWidth / 50).clamp(6.0, 10.0);
+    final borderRadius = (screenWidth / 40).clamp(10.0, 16.0);
+    
+    // Font sizes proportional to screen width
+    final nameSize = (screenWidth / 35).clamp(10.0, 14.0);
+    final priceSize = (screenWidth / 30).clamp(12.0, 16.0);
+    final mrpSize = (screenWidth / 40).clamp(9.0, 12.0);
+    final buttonHeight = (screenWidth / 15).clamp(24.0, 32.0);
+    
     return GestureDetector(
       onTap: inStock ? onTap : null,
       child: Container(
+        // Ensure container has no fixed height that could cause overflow
         decoration: BoxDecoration(
           color: AppTheme.secondaryColor,
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
             color: AppTheme.accentColor.withOpacity(0.1),
             width: 1,
           ),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Product image and discount badge
-            Stack(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Important to prevent overflow
               children: [
-                // Product image
-                ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12.r),
-                    topRight: Radius.circular(12.r),
-                  ),
-                  child: Container(
-                    height: 120.h,
-                    width: double.infinity,
-                    padding: EdgeInsets.all(8.w),
-                    color: Colors.white.withOpacity(0.05),
-                    child: inStock
-                        ? Image.asset(
-                            image,
-                            fit: BoxFit.contain,
-                          )
-                        : Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Image.asset(
+                // Product image and discount badge
+                Stack(
+                  children: [
+                    // Product image
+                    ClipRRect(
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(borderRadius),
+                        topRight: Radius.circular(borderRadius),
+                      ),
+                      child: Container(
+                        height: imageHeight,
+                        width: double.infinity,
+                        padding: EdgeInsets.all(padding),
+                        color: Colors.white.withOpacity(0.05),
+                        child: inStock
+                            ? Image.asset(
                                 image,
                                 fit: BoxFit.contain,
-                                color: Colors.grey.withOpacity(0.5),
-                                colorBlendMode: BlendMode.saturation,
-                              ),
-                              Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w,
-                                  vertical: 4.h,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withOpacity(0.7),
-                                  borderRadius: BorderRadius.circular(4.r),
-                                ),
-                                child: Text(
-                                  'Out of Stock',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 12.sp,
-                                    fontWeight: FontWeight.bold,
+                              )
+                            : Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  Image.asset(
+                                    image,
+                                    fit: BoxFit.contain,
+                                    color: Colors.grey.withOpacity(0.5),
+                                    colorBlendMode: BlendMode.saturation,
                                   ),
-                                ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6.0,
+                                      vertical: 3.0,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.black.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(4.0),
+                                    ),
+                                    child: const Text(
+                                      'Out of Stock',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10.0,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                      ),
+                    ),
+                    
+                    // Discount badge
+                    if (hasDiscount)
+                      Positioned(
+                        top: 6.0,
+                        left: 6.0,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 4.0,
+                            vertical: 2.0,
                           ),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            borderRadius: BorderRadius.circular(4.0),
+                          ),
+                          child: Text(
+                            '${discountPercentage!.toInt()}% OFF',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 8.0,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+                
+                // Product details - using flexible layout
+                Padding(
+                  padding: EdgeInsets.all(padding),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Product name
+                      Text(
+                        name,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: nameSize,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      
+                      SizedBox(height: padding / 2),
+                      
+                      // Price section
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Current price
+                          Text(
+                            '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              color: AppTheme.accentColor,
+                              fontSize: priceSize,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          
+                          SizedBox(width: padding / 2),
+                          
+                          // Original price (MRP) if there is a discount
+                          if (hasDiscount)
+                            Flexible(
+                              child: Text(
+                                '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: mrpSize,
+                                  fontWeight: FontWeight.w500,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
                 
-                // Discount badge
-                if (hasDiscount)
-                  Positioned(
-                    top: 8.h,
-                    left: 8.w,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 6.w,
-                        vertical: 3.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.green,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        '${discountPercentage!.toInt()}% OFF',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 10.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ),
+                // Add to cart button or quantity selector
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding / 2),
+                  child: quantity > 0
+                      ? _buildQuantitySelector(buttonHeight)
+                      : _buildAddButton(buttonHeight),
+                ),
               ],
-            ),
-            
-            // Product details
-            Padding(
-              padding: EdgeInsets.all(8.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Product name
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  
-                  SizedBox(height: 4.h),
-                  
-                  // Price section
-                  Row(
-                    children: [
-                      // Current price
-                      Text(
-                        '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: AppTheme.accentColor,
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      
-                      SizedBox(width: 4.w),
-                      
-                      // Original price (MRP) if there is a discount
-                      if (hasDiscount)
-                        Text(
-                          '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12.sp,
-                            fontWeight: FontWeight.w500,
-                            decoration: TextDecoration.lineThrough,
-                          ),
-                        ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            
-            const Spacer(),
-            
-            // Add to cart button or quantity selector
-            Padding(
-              padding: EdgeInsets.all(8.w),
-              child: quantity > 0
-                  ? _buildQuantitySelector()
-                  : _buildAddButton(),
-            ),
-          ],
+            );
+          }
         ),
       ),
     );
   }
   
   // Add to cart button
-  Widget _buildAddButton() {
+  Widget _buildAddButton(double buttonHeight) {
+    final fontSize = (buttonHeight / 2.5).clamp(10.0, 14.0);
+    
     return SizedBox(
       width: double.infinity,
+      height: buttonHeight,
       child: ElevatedButton(
         onPressed: inStock ? () => onQuantityChanged(1) : null,
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.black,
           backgroundColor: inStock ? AppTheme.accentColor : Colors.grey,
-          padding: EdgeInsets.symmetric(vertical: 8.h),
+          padding: const EdgeInsets.symmetric(vertical: 0),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8.r),
+            borderRadius: BorderRadius.circular(6.0),
           ),
+          // Minimize internal padding
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(
           'ADD',
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize: fontSize,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -248,53 +283,68 @@ class ProductCard extends StatelessWidget {
   }
   
   // Quantity selector for products already in cart
-  Widget _buildQuantitySelector() {
+  Widget _buildQuantitySelector(double buttonHeight) {
+    final buttonMinWidth = (buttonHeight * 0.9).clamp(24.0, 32.0);
+    final fontSize = (buttonHeight / 2.3).clamp(12.0, 16.0);
+    final iconSize = (buttonHeight / 2.5).clamp(12.0, 16.0);
+    
     return Container(
+      height: buttonHeight,
       decoration: BoxDecoration(
         color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(6.0),
         border: Border.all(
           color: AppTheme.accentColor,
           width: 1,
         ),
       ),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.max,
         children: [
           // Decrease quantity
-          IconButton(
-            onPressed: inStock ? () => onQuantityChanged(quantity - 1) : null,
-            icon: Icon(
-              Icons.remove,
-              size: 16.sp,
-              color: inStock ? Colors.white : Colors.grey,
+          SizedBox(
+            width: buttonMinWidth,
+            child: InkWell(
+              onTap: inStock && quantity > 1 ? () => onQuantityChanged(quantity - 1) : null,
+              child: Center(
+                child: Icon(
+                  Icons.remove,
+                  size: iconSize,
+                  color: inStock && quantity > 1 ? Colors.white : Colors.grey,
+                ),
+              ),
             ),
-            padding: EdgeInsets.all(4.w),
-            constraints: const BoxConstraints(),
           ),
           
           // Current quantity
           Expanded(
-            child: Text(
-              quantity.toString(),
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
+            child: Center(
+              child: Text(
+                quantity.toString(),
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
             ),
           ),
           
           // Increase quantity
-          IconButton(
-            onPressed: inStock ? () => onQuantityChanged(quantity + 1) : null,
-            icon: Icon(
-              Icons.add,
-              size: 16.sp,
-              color: inStock ? Colors.white : Colors.grey,
+          SizedBox(
+            width: buttonMinWidth,
+            child: InkWell(
+              onTap: inStock ? () => onQuantityChanged(quantity + 1) : null,
+              child: Center(
+                child: Icon(
+                  Icons.add,
+                  size: iconSize,
+                  color: inStock ? Colors.white : Colors.grey,
+                ),
+              ),
             ),
-            padding: EdgeInsets.all(4.w),
-            constraints: const BoxConstraints(),
           ),
         ],
       ),

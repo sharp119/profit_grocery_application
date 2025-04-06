@@ -32,6 +32,15 @@ class BaseLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Get device screen size for responsive components
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    
+    // Calculate responsive sizes
+    final badgePadding = (screenWidth / 85).clamp(4.0, 6.0);
+    final badgeFontSize = (screenWidth / 40).clamp(10.0, 14.0);
+    final actionSpacing = (screenWidth / 50).clamp(4.0, 8.0);
+    
     // Generate app bar actions
     final appBarActions = <Widget>[...actions];
     
@@ -43,13 +52,13 @@ class BaseLayout extends StatelessWidget {
           badgeAnimation: const badges.BadgeAnimation.slide(),
           badgeStyle: badges.BadgeStyle(
             badgeColor: AppTheme.accentColor,
-            padding: EdgeInsets.all(5.w),
+            padding: EdgeInsets.all(badgePadding),
           ),
           badgeContent: Text(
             cartItemCount.toString(),
             style: TextStyle(
               color: Colors.black,
-              fontSize: 12.sp,
+              fontSize: badgeFontSize,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -65,7 +74,7 @@ class BaseLayout extends StatelessWidget {
         ),
       );
       
-      appBarActions.add(SizedBox(width: 8.w));
+      appBarActions.add(SizedBox(width: actionSpacing));
     }
 
     return Scaffold(
@@ -94,48 +103,77 @@ class BaseLayout extends StatelessWidget {
     Widget? bottomNavigationBar,
     required VoidCallback onCartTap,
   }) {
-    return BaseLayout(
-      title: title,
-      actions: actions,
-      body: body,
-      showBackButton: showBackButton,
-      showCartIcon: showCartIcon,
-      cartItemCount: cartItemCount,
-      bottomNavigationBar: bottomNavigationBar,
-      floatingActionButton: cartItemCount > 0
-          ? badges.Badge(
-              position: badges.BadgePosition.topEnd(top: -10, end: -10),
-              badgeAnimation: const badges.BadgeAnimation.slide(),
-              badgeStyle: badges.BadgeStyle(
-                badgeColor: AppTheme.accentColor,
-                padding: EdgeInsets.all(6.w),
-              ),
-              badgeContent: Text(
-                cartItemCount.toString(),
-                style: TextStyle(
-                  color: Colors.black,
-                  fontSize: 12.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              child: FloatingActionButton.extended(
-                onPressed: onCartTap,
-                label: Text(
-                  'View Cart',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16.sp,
+    return Builder(
+      builder: (context) {
+        // Get screen dimensions for responsive UI
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        
+        // Calculate responsive dimensions
+        final badgePadding = (screenWidth / 85).clamp(4.0, 6.0);
+        final badgeFontSize = (screenWidth / 40).clamp(10.0, 14.0);
+        final fabLabelSize = (screenWidth / 30).clamp(14.0, 16.0);
+        
+        return BaseLayout(
+          title: title,
+          actions: actions,
+          body: body,
+          showBackButton: showBackButton,
+          showCartIcon: showCartIcon,
+          cartItemCount: cartItemCount,
+          bottomNavigationBar: bottomNavigationBar,
+          floatingActionButton: cartItemCount > 0
+              ? badges.Badge(
+                  position: badges.BadgePosition.topEnd(top: -10, end: -10),
+                  badgeAnimation: const badges.BadgeAnimation.slide(),
+                  badgeStyle: badges.BadgeStyle(
+                    badgeColor: AppTheme.accentColor,
+                    padding: EdgeInsets.all(badgePadding),
                   ),
-                ),
-                icon: const Icon(
-                  Icons.shopping_cart,
-                  color: Colors.black,
-                ),
-                backgroundColor: AppTheme.accentColor,
-              ),
-            )
-          : null,
+                  badgeContent: Text(
+                    cartItemCount.toString(),
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: badgeFontSize,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // Use standard FAB on very small screens
+                      if (screenWidth < 320) {
+                        return FloatingActionButton(
+                          onPressed: onCartTap,
+                          backgroundColor: AppTheme.accentColor,
+                          child: const Icon(
+                            Icons.shopping_cart,
+                            color: Colors.black,
+                          ),
+                        );
+                      }
+                      // Use extended FAB on larger screens
+                      return FloatingActionButton.extended(
+                        onPressed: onCartTap,
+                        label: Text(
+                          'View Cart',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontWeight: FontWeight.bold,
+                            fontSize: fabLabelSize,
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.shopping_cart,
+                          color: Colors.black,
+                        ),
+                        backgroundColor: AppTheme.accentColor,
+                      );
+                    }
+                  ),
+                )
+              : null,
+        );
+      }
     );
   }
 }

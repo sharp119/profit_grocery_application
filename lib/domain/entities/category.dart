@@ -10,6 +10,9 @@ class Category extends Equatable {
   final bool isActive;
   final int displayOrder;
   final List<String> subcategoryIds;
+  final String? icon; // Added field for icon
+  final int? productCount; // Added field for product count
+  final List<String>? productThumbnails; // Added field for product thumbnails
 
   const Category({
     required this.id,
@@ -21,6 +24,9 @@ class Category extends Equatable {
     this.isActive = true,
     this.displayOrder = 0,
     this.subcategoryIds = const [],
+    this.icon,
+    this.productCount,
+    this.productThumbnails,
   });
 
   @override
@@ -34,6 +40,9 @@ class Category extends Equatable {
         isActive,
         displayOrder,
         subcategoryIds,
+        icon,
+        productCount,
+        productThumbnails,
       ];
 }
 

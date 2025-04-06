@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -11,10 +12,14 @@ import '../../blocs/home/home_event.dart';
 import '../../blocs/home/home_state.dart';
 import '../../widgets/banners/promotional_banner.dart';
 import '../../widgets/base_layout.dart';
-import '../../widgets/grids/category_grid.dart';
+import '../../widgets/buttons/back_to_top_button.dart';
+import '../../widgets/buttons/cart_fab.dart';
+import '../../widgets/grids/category_grid_4x2.dart';
+import '../../widgets/grids/dense_category_grid.dart';
 import '../../widgets/grids/product_grid.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/section_header.dart';
+import '../../widgets/tabs/horizontal_category_tabs.dart';
 import '../cart/cart_page.dart';
 import '../product_details/product_details_page.dart';
 
@@ -38,7 +43,14 @@ class _HomePageContent extends StatefulWidget {
 }
 
 class _HomePageContentState extends State<_HomePageContent> {
+  final _scrollController = ScrollController();
   final _refreshKey = GlobalKey<RefreshIndicatorState>();
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
 
   void _onCategoryTap(Category category) {
     // Navigate to category products screen
@@ -53,21 +65,17 @@ class _HomePageContentState extends State<_HomePageContent> {
 
   void _onProductTap(Product product) {
     // Navigate to product details screen
-    debugPrint('Tapped on product: ${product.name}');
-    // In a real app, we would navigate to the product details page
-    // For now, let's just show a snackbar
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Selected: ${product.name}'),
-        duration: const Duration(seconds: 1),
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProductDetailsPage(productId: product.id),
       ),
     );
   }
 
   void _onProductQuantityChanged(Product product, int quantity) {
     // Update cart
-    debugPrint('Changed quantity for ${product.name} to $quantity');
-    // In a real app, we would update the cart through a BLoC
+    context.read<HomeBloc>().add(UpdateCartQuantity(product, quantity));
   }
 
   void _navigateToCart() {
@@ -79,6 +87,26 @@ class _HomePageContentState extends State<_HomePageContent> {
 
   Future<void> _refreshData() async {
     context.read<HomeBloc>().add(const RefreshHomeData());
+  }
+
+  void _scrollToTop() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  List<IconData> _getCategoryIcons() {
+    return [
+      Icons.storefront_outlined, // All
+      Icons.devices_outlined,     // Electronics
+      Icons.face_outlined,        // Beauty
+      Icons.child_care_outlined,  // Kids
+      Icons.card_giftcard_outlined, // Gifting
+    ];
   }
 
   @override
@@ -98,34 +126,82 @@ class _HomePageContentState extends State<_HomePageContent> {
       builder: (context, state) {
         // Use the cart item count from the state
         final cartItemCount = state.cartItemCount;
+        final cartPreviewImage = state.cartPreviewImage;
+        final totalAmount = state.cartTotalAmount;
 
-        return BaseLayout.withCartFAB(
-          title: AppConstants.appName,
-          showBackButton: false,
-          cartItemCount: cartItemCount,
-          onCartTap: _navigateToCart,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: () {
-                // Navigate to search page
-              },
-            ),
-          ],
-          body: Column(
+        return Scaffold(
+          backgroundColor: AppTheme.backgroundColor,
+          appBar: AppBar(
+            title: Text(AppConstants.appName),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () {
+                  // Navigate to search page
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.notifications_outlined),
+                onPressed: () {
+                  // Navigate to notifications
+                },
+              ),
+              SizedBox(width: 8.w),
+            ],
+          ),
+          body: Stack(
             children: [
-              // Category tabs
-              _buildCategoryTabs(state),
+              Column(
+                children: [
+                  // Top Category Tabs
+                  HorizontalCategoryTabs(
+                    tabs: state.tabs,
+                    icons: _getCategoryIcons(),
+                    selectedIndex: state.selectedTabIndex,
+                    onTabSelected: (index) {
+                      context.read<HomeBloc>().add(SelectCategoryTab(index));
+                    },
+                    showNewBadge: true,
+                    newTabIndex: 3, // Show "New" badge on Kids tab (index 3)
+                  ),
+                  
+                  // Main content
+                  Expanded(
+                    child: RefreshIndicator(
+                      key: _refreshKey,
+                      onRefresh: _refreshData,
+                      color: AppTheme.accentColor,
+                      child: state.status == HomeStatus.initial || 
+                             (state.status == HomeStatus.loading && state.categories.isEmpty)
+                          ? _buildLoadingState()
+                          : _buildContent(state),
+                    ),
+                  ),
+                ],
+              ),
               
-              // Main content
-              Expanded(
-                child: RefreshIndicator(
-                  key: _refreshKey,
-                  onRefresh: _refreshData,
-                  color: AppTheme.accentColor,
-                  child: state.status == HomeStatus.initial || state.status == HomeStatus.loading && state.categories.isEmpty
-                      ? _buildLoadingState()
-                      : _buildContent(state),
+              // Back to top button
+              Positioned(
+                bottom: 80.h,
+                right: 16.w,
+                child: BackToTopButton.scrollAware(
+                  scrollController: _scrollController,
+                  onTap: _scrollToTop,
+                ),
+              ),
+              
+              // Cart FAB
+              Positioned(
+                bottom: 16.h,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: CartFAB(
+                    itemCount: cartItemCount,
+                    totalAmount: totalAmount,
+                    onTap: _navigateToCart,
+                    previewImagePath: cartPreviewImage,
+                  ),
                 ),
               ),
             ],
@@ -169,6 +245,7 @@ class _HomePageContentState extends State<_HomePageContent> {
 
   Widget _buildContent(HomeState state) {
     return SingleChildScrollView(
+      controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,59 +263,84 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
           ),
       
-          // Shop by Category section
-          SectionHeader(
-            title: 'Shop by Category',
-            viewAllText: 'View All',
-            onViewAllTap: () {
-              // Navigate to all categories
-            },
-          ),
-          
-          // Category grid
-          CategoryGrid(
-            categories: state.categories,
-            onCategoryTap: _onCategoryTap,
-            useStaggeredLayout: true,
-          ),
-          
-          // Featured Products section
-          if (state.featuredProducts.isNotEmpty) ...[
+          // Featured Products Section
+          if (state.featuredPromotions.isNotEmpty) ...[
             SectionHeader(
-              title: 'Featured Products',
+              title: 'Featured this week',
               viewAllText: 'View All',
               onViewAllTap: () {
-                // Navigate to all featured products
+                // Navigate to all featured promotions
               },
             ),
             
-            ProductGrid(
-              products: state.featuredProducts,
-              onProductTap: _onProductTap,
-              onQuantityChanged: _onProductQuantityChanged,
-              crossAxisCount: 2,
+            SizedBox(
+              height: 180.h,
+              child: ListView.builder(
+                scrollDirection: Axis.horizontal,
+                itemCount: state.featuredPromotions.length,
+                padding: EdgeInsets.symmetric(horizontal: 8.w),
+                itemBuilder: (context, index) {
+                  final promotion = state.featuredPromotions[index];
+                  return Container(
+                    width: 180.w,
+                    margin: EdgeInsets.symmetric(horizontal: 8.w),
+                    child: PromotionalCategoryCard(
+                      category: promotion,
+                      onTap: () => _onCategoryTap(promotion),
+                    ),
+                  );
+                },
+              ),
             ),
           ],
-          
-          // New Arrivals section
-          if (state.newArrivals.isNotEmpty) ...[
-            SectionHeader(
-              title: 'New Arrivals',
-              viewAllText: 'View All',
-              onViewAllTap: () {
-                // Navigate to all new arrivals
+      
+          // CategoryGrid4x2 Sections
+          if (state.categoryGroups.isNotEmpty) ...
+            state.categoryGroups.map((group) => CategoryGrid4x2(
+              title: group.title,
+              images: group.images,
+              labels: group.labels,
+              backgroundColor: group.backgroundColor,
+              itemBackgroundColor: group.itemBackgroundColor,
+              onItemTap: (index) {
+                debugPrint('Tapped on ${group.items[index].label} in ${group.title}');
               },
-            ),
+            )).toList(),
             
-            ProductGrid(
-              products: state.newArrivals,
-              onProductTap: _onProductTap,
-              onQuantityChanged: _onProductQuantityChanged,
+          // Legacy Categories Sections (hidden)
+          if (false && state.mainCategories.isNotEmpty) ...[
+            DenseCategoryGrid.withHeader(
+              title: 'Grocery & Kitchen',
+              categories: state.mainCategories,
+              onCategoryTap: _onCategoryTap,
               crossAxisCount: 2,
+              spacing: 16.0,
             ),
           ],
           
-          // Bestsellers section
+          // Shop by Category Section (Snacks & Drinks) - Hidden
+          if (false && state.snacksCategories.isNotEmpty) ...[
+            DenseCategoryGrid.withHeader(
+              title: 'Snacks & Drinks',
+              categories: state.snacksCategories,
+              onCategoryTap: _onCategoryTap,
+              crossAxisCount: 2,
+              spacing: 16.0,
+            ),
+          ],
+          
+          // Shop by Store Section - Hidden
+          if (false && state.storeCategories.isNotEmpty) ...[
+            DenseCategoryGrid.withHeader(
+              title: 'Shop by store',
+              categories: state.storeCategories,
+              onCategoryTap: _onCategoryTap,
+              crossAxisCount: 2,
+              spacing: 16.0,
+            ),
+          ],
+          
+          // Bestsellers Section
           if (state.bestSellers.isNotEmpty) ...[
             SectionHeader(
               title: 'Bestsellers',
@@ -252,57 +354,13 @@ class _HomePageContentState extends State<_HomePageContent> {
               products: state.bestSellers,
               onProductTap: _onProductTap,
               onQuantityChanged: _onProductQuantityChanged,
+              cartQuantities: state.cartQuantities,
               crossAxisCount: 2,
             ),
           ],
           
           SizedBox(height: 100.h), // Extra space for the floating action button
         ],
-      ),
-    );
-  }
-  
-  Widget _buildCategoryTabs(HomeState state) {
-    return SizedBox(
-      height: 50.h,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: state.tabs.length,
-        padding: EdgeInsets.symmetric(horizontal: 8.w),
-        itemBuilder: (context, index) {
-          final isSelected = state.selectedTabIndex == index;
-          
-          return GestureDetector(
-            onTap: () {
-              context.read<HomeBloc>().add(SelectCategoryTab(index));
-            },
-            child: Container(
-              margin: EdgeInsets.symmetric(
-                horizontal: 8.w,
-                vertical: 8.h,
-              ),
-              padding: EdgeInsets.symmetric(
-                horizontal: 16.w,
-                vertical: 8.h,
-              ),
-              decoration: BoxDecoration(
-                color: isSelected
-                    ? AppTheme.accentColor
-                    : AppTheme.secondaryColor,
-                borderRadius: BorderRadius.circular(20.r),
-              ),
-              child: Text(
-                state.tabs.isEmpty ? 'Loading...' : state.tabs[index],
-                style: TextStyle(
-                  color: isSelected
-                      ? Colors.black
-                      : Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

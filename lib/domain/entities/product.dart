@@ -9,10 +9,16 @@ class Product extends Equatable {
   final double? mrp; // Market Retail Price (original price before discount)
   final bool inStock;
   final String categoryId;
+  final String? categoryName;
   final String? subcategoryId;
   final List<String> tags;
   final bool isFeatured;
   final bool isActive;
+  final String? weight;
+  final String? brand;
+  final String? sellerName;
+  final double? rating;
+  final int? reviewCount;
 
   const Product({
     required this.id,
@@ -23,10 +29,16 @@ class Product extends Equatable {
     this.mrp,
     this.inStock = true,
     required this.categoryId,
+    this.categoryName,
     this.subcategoryId,
     this.tags = const [],
     this.isFeatured = false,
     this.isActive = true,
+    this.weight,
+    this.brand,
+    this.sellerName,
+    this.rating,
+    this.reviewCount,
   });
 
   // Get discount percentage if mrp is available
@@ -50,9 +62,15 @@ class Product extends Equatable {
         mrp,
         inStock,
         categoryId,
+        categoryName,
         subcategoryId,
         tags,
         isFeatured,
         isActive,
+        weight,
+        brand,
+        sellerName,
+        rating,
+        reviewCount,
       ];
 }

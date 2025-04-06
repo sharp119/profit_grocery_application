@@ -5,12 +5,16 @@ class CartModel extends Cart {
     required String userId,
     List<CartItemModel> items = const [],
     String? appliedCouponId,
+    String? appliedCouponCode,
     double discount = 0.0,
+    double deliveryFee = 0.0,
   }) : super(
           userId: userId,
           items: items,
           appliedCouponId: appliedCouponId,
+          appliedCouponCode: appliedCouponCode,
           discount: discount,
+          deliveryFee: deliveryFee,
         );
 
   // Factory constructor to create a CartModel from JSON
@@ -22,7 +26,9 @@ class CartModel extends Cart {
               json['items'].map((item) => CartItemModel.fromJson(item)))
           : [],
       appliedCouponId: json['appliedCouponId'],
+      appliedCouponCode: json['appliedCouponCode'],
       discount: json['discount']?.toDouble() ?? 0.0,
+      deliveryFee: json['deliveryFee']?.toDouble() ?? 0.0,
     );
   }
 
@@ -32,7 +38,9 @@ class CartModel extends Cart {
       'userId': userId,
       'items': items.map((item) => (item as CartItemModel).toJson()).toList(),
       'appliedCouponId': appliedCouponId,
+      'appliedCouponCode': appliedCouponCode,
       'discount': discount,
+      'deliveryFee': deliveryFee,
     };
   }
 
@@ -42,7 +50,9 @@ class CartModel extends Cart {
     String? userId,
     List<CartItem>? items,
     String? appliedCouponId,
+    String? appliedCouponCode,
     double? discount,
+    double? deliveryFee,
   }) {
     return CartModel(
       userId: userId ?? this.userId,
@@ -50,7 +60,9 @@ class CartModel extends Cart {
           ? List<CartItemModel>.from(items.map((e) => e as CartItemModel))
           : List<CartItemModel>.from(this.items.map((e) => e as CartItemModel)),
       appliedCouponId: appliedCouponId ?? this.appliedCouponId,
+      appliedCouponCode: appliedCouponCode ?? this.appliedCouponCode,
       discount: discount ?? this.discount,
+      deliveryFee: deliveryFee ?? this.deliveryFee,
     );
   }
 
@@ -68,13 +80,19 @@ class CartItemModel extends CartItem {
     required String name,
     required String image,
     required double price,
+    double? mrp,
     required int quantity,
+    String? categoryId,
+    String? categoryName,
   }) : super(
           productId: productId,
           name: name,
           image: image,
           price: price,
+          mrp: mrp,
           quantity: quantity,
+          categoryId: categoryId,
+          categoryName: categoryName,
         );
 
   // Factory constructor to create a CartItemModel from JSON
@@ -84,7 +102,10 @@ class CartItemModel extends CartItem {
       name: json['name'],
       image: json['image'],
       price: json['price'].toDouble(),
+      mrp: json['mrp']?.toDouble(),
       quantity: json['quantity'],
+      categoryId: json['categoryId'],
+      categoryName: json['categoryName'],
     );
   }
 
@@ -95,7 +116,10 @@ class CartItemModel extends CartItem {
       'name': name,
       'image': image,
       'price': price,
+      'mrp': mrp,
       'quantity': quantity,
+      'categoryId': categoryId,
+      'categoryName': categoryName,
     };
   }
 
@@ -106,14 +130,20 @@ class CartItemModel extends CartItem {
     String? name,
     String? image,
     double? price,
+    double? mrp,
     int? quantity,
+    String? categoryId,
+    String? categoryName,
   }) {
     return CartItemModel(
       productId: productId ?? this.productId,
       name: name ?? this.name,
       image: image ?? this.image,
       price: price ?? this.price,
+      mrp: mrp ?? this.mrp,
       quantity: quantity ?? this.quantity,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
     );
   }
 }

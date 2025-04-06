@@ -101,9 +101,11 @@ class MyApp extends StatelessWidget {
         ),
       ],
       child: ScreenUtilInit(
-        designSize: const Size(375, 812), // Design size based on iPhone X
+        // Use more flexible approach with adaptive design size
+        designSize: const Size(390, 844), // Based on iPhone 14/15
         minTextAdapt: true,
         splitScreenMode: true,
+        // Better adaptive builder
         builder: (context, child) {
           return MaterialApp(
             title: AppConstants.appName,

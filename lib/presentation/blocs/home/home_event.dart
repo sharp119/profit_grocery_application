@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../domain/entities/product.dart';
+
 abstract class HomeEvent extends Equatable {
   const HomeEvent();
 
@@ -22,4 +24,14 @@ class SelectCategoryTab extends HomeEvent {
 
   @override
   List<Object?> get props => [tabIndex];
+}
+
+class UpdateCartQuantity extends HomeEvent {
+  final Product product;
+  final int quantity;
+
+  const UpdateCartQuantity(this.product, this.quantity);
+
+  @override
+  List<Object?> get props => [product, quantity];
 }

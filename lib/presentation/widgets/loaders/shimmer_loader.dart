@@ -26,6 +26,26 @@ class ShimmerLoader extends StatelessWidget {
     );
   }
 
+  /// Create a custom container shimmer with specified dimensions
+  static Widget customContainer({
+    required double height,
+    required double width,
+    double? borderRadius,
+    EdgeInsetsGeometry? margin,
+  }) {
+    return ShimmerLoader(
+      child: Container(
+        height: height,
+        width: width,
+        margin: margin,
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+          borderRadius: BorderRadius.circular(borderRadius ?? 12.r),
+        ),
+      ),
+    );
+  }
+
   /// Create a category shimmer grid
   static Widget categoryGrid({
     int itemCount = 6,
