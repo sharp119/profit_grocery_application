@@ -72,15 +72,30 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
           .get();
       
       bool userExists = querySnapshot.docs.isNotEmpty;
+      String userOrigin = "Firestore";
       
       // If not found in Firestore, check RTDB as fallback
       if (!userExists) {
-        // Get Firebase reference to check if user exists in Realtime DB
-        final usersRef = FirebaseDatabase.instance.ref().child(AppConstants.usersCollection);
-        final query = usersRef.orderByChild('phoneNumber').equalTo(sanitizedPhone);
-        final snapshot = await query.get();
-        
-        userExists = snapshot.exists;
+        userOrigin = "Not found in either database";
+        try {
+          // Try to query RTDB - might fail if index not set up
+          final usersRef = FirebaseDatabase.instance.ref().child(AppConstants.usersCollection);
+          final query = usersRef.orderByChild('phoneNumber').equalTo(sanitizedPhone);
+          final snapshot = await query.get();
+          
+          userExists = snapshot.exists;
+          if (userExists) {
+            userOrigin = "RTDB";
+          }
+        } catch (rtdbError) {
+          // Log the specific RTDB error but continue with Firestore result
+          LoggingService.logError('PhoneEntryPage', 'RTDB query error: $rtdbError');
+          
+          // Check if it's an indexing error
+          if (rtdbError.toString().contains('index-not-defined')) {
+            LoggingService.logFirestore('PhoneEntryPage: RTDB index not defined error - you need to add ".indexOn": ["phoneNumber"] to your database rules');
+          }
+        }
       }
       
       setState(() {
@@ -92,7 +107,6 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
       });
       
       // Log the results of our user check
-      final userOrigin = querySnapshot.docs.isNotEmpty ? "Firestore" : (userExists ? "RTDB" : "Not found");
       LoggingService.logFirestore(
         'PhoneEntryPage: User exists check for ${sanitizedPhone.substring(sanitizedPhone.length - 4, sanitizedPhone.length)}: ' +
         '$userExists (source: $userOrigin)'
@@ -137,10 +151,21 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
     } catch (e) {
       LoggingService.logError('PhoneEntryPage', 'Error checking user existence: $e');
       
+      // Format a more user-friendly error message
+      String errorMessage = 'Error checking user status';
+      
+      // Extract meaningful part of the error
+      if (e.toString().contains('index-not-defined')) {
+        errorMessage = 'Database indexing issue: Please update Firebase rules';
+        LoggingService.logFirestore('PhoneEntryPage: Firebase database indexing error detected');
+      } else {
+        errorMessage = 'Error checking user status: ${e.toString().split(":").first}';
+      }
+      
       // Show the error to the user
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error checking user status: ${e.toString().split(":").first}. Continuing with registration.'),
+          content: Text('$errorMessage. Continuing with registration.'),
           backgroundColor: Colors.orange,
           duration: Duration(seconds: 3),
         ),

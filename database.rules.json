@@ -1,0 +1,13 @@
+{
+  "rules": {
+    "users": {
+      ".indexOn": ["phoneNumber"],
+      "$userId": {
+        ".read": "auth.uid === $userId",
+        ".write": "auth.uid === $userId || !data.exists()"
+      }
+    },
+    ".read": "auth != null",
+    ".write": "auth != null"
+  }
+}
