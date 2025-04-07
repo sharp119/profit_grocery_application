@@ -114,6 +114,25 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     );
   }
 
+  // Navigate to registration page
+  void _navigateToRegistration() {
+    LoggingService.logFirestore('OtpVerificationPage: Navigating to registration page');
+    // Small delay to make sure navigation feels smooth
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserRegistrationPage(
+              phoneNumber: widget.phoneNumber,
+            ),
+          ),
+          (route) => false, // Clear navigation stack
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     // Define the default and focused pin themes
@@ -201,20 +220,51 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   }
                 });
               } else {
-                // For new users, navigate to user registration page
-                LoggingService.logFirestore('OtpVerificationPage: New user - navigating to registration');
-                // Small delay to make sure navigation feels smooth
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (mounted) {
-                    Navigator.pushAndRemoveUntil(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => UserRegistrationPage(
+                // For new users, check if we have pre-registration data
+                LoggingService.logFirestore('OtpVerificationPage: New user - checking for pre-registration data');
+                
+                // Check for pre-filled registration data in SharedPreferences
+                SharedPreferences.getInstance().then((prefs) {
+                  final hasPreRegData = prefs.containsKey('temp_user_name');
+                  
+                  if (hasPreRegData) {
+                    LoggingService.logFirestore('OtpVerificationPage: Found pre-registration data, creating profile');
+                    
+                    // Extract pre-registration data
+                    final name = prefs.getString('temp_user_name') ?? '';
+                    final email = prefs.getString('temp_user_email') ?? '';
+                    final marketingOptIn = prefs.getBool('temp_user_marketing_opt_in') ?? false;
+                    
+                    // Auto-create user profile with pre-registration data
+                    if (name.isNotEmpty) {
+                      context.read<UserBloc>().add(
+                        CreateUserProfileEvent(
                           phoneNumber: widget.phoneNumber,
+                          name: name,
+                          email: email.isEmpty ? null : email,
+                          isOptedInForMarketing: marketingOptIn,
                         ),
-                      ),
-                      (route) => false, // Clear navigation stack
-                    );
+                      );
+                      
+                      // Wait for profile creation and then navigate to home
+                      Future.delayed(const Duration(milliseconds: 500), () {
+                        if (mounted) {
+                          Navigator.pushAndRemoveUntil(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const HomePage(),
+                            ),
+                            (route) => false, // Clear navigation stack
+                          );
+                        }
+                      });
+                    } else {
+                      // If name is empty, still navigate to registration
+                      _navigateToRegistration();
+                    }
+                  } else {
+                    // No pre-registration data, navigate to registration
+                    _navigateToRegistration();
                   }
                 });
               }

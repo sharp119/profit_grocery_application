@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:profit_grocery_application/presentation/pages/authentication/user_registration_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -63,31 +65,63 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
       final query = usersRef.orderByChild('phoneNumber').equalTo(sanitizedPhone);
       final snapshot = await query.get();
       
+      final userExists = snapshot.exists;
+      
       setState(() {
-        _isExistingUser = snapshot.exists;
-        _flowStatusMessage = snapshot.exists 
+        _isExistingUser = userExists;
+        _flowStatusMessage = userExists 
             ? 'Welcome back! Sending verification code...' 
-            : 'Welcome to ProfitGrocery! Sending verification code...';
+            : 'Welcome to ProfitGrocery! We\'ll set up your account.';
         _isCheckingUserStatus = false;
       });
+      
+      // Store the user existence status for use in other pages
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_existing_user', userExists);
       
       LoggingService.logFirestore(
         'PhoneEntryPage: User exists check for ${sanitizedPhone.substring(6)}XXXX: $_isExistingUser'
       );
+      
+      // Different flow based on whether user exists or not
+      if (userExists) {
+        // If user exists, send OTP for verification
+        LoggingService.logFirestore('PhoneEntryPage: Existing user - sending OTP');
+        context.read<AuthBloc>().add(SendOtpEvent(sanitizedPhone));
+      } else {
+        // If new user, navigate to registration page first
+        LoggingService.logFirestore('PhoneEntryPage: New user - navigating to registration');
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => UserRegistrationPage(
+              phoneNumber: sanitizedPhone,
+              isPreRegistration: true, // Flag to indicate this is before OTP verification
+            ),
+          ),
+        );
+      }
     } catch (e) {
       LoggingService.logError('PhoneEntryPage', 'Error checking user existence: $e');
       // Default to new user if we can't check
       setState(() {
         _isExistingUser = false;
         _isCheckingUserStatus = false;
-        _flowStatusMessage = '';
+        _flowStatusMessage = 'Welcome to ProfitGrocery! We\'ll set up your account.';
       });
+      
+      // If we can't determine user status, assume new user and navigate to registration
+      LoggingService.logFirestore('PhoneEntryPage: Error checking user - defaulting to registration flow');
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => UserRegistrationPage(
+            phoneNumber: sanitizedPhone,
+            isPreRegistration: true, // Flag to indicate this is before OTP verification
+          ),
+        ),
+      );
     }
-    
-    LoggingService.logFirestore('PhoneEntryPage: Submitting phone number: ${sanitizedPhone.substring(6)}XXXX');
-    
-    // Submit the phone number to the AuthBloc
-    context.read<AuthBloc>().add(SendOtpEvent(sanitizedPhone));
   }
 
   @override

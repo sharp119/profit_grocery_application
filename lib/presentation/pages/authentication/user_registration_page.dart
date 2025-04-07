@@ -10,18 +10,22 @@ import '../../../core/errors/global_error_handler.dart';
 import '../../../services/logging_service.dart';
 import '../../../services/session_manager.dart';
 import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/user/user_bloc.dart';
 import '../../blocs/user/user_event.dart';
 import '../../blocs/user/user_state.dart';
 import '../home/home_page.dart';
+import 'otp_verification_page.dart';
 
 class UserRegistrationPage extends StatefulWidget {
   final String phoneNumber;
+  final bool isPreRegistration;
 
   const UserRegistrationPage({
     super.key, 
     required this.phoneNumber,
+    this.isPreRegistration = false,
   });
 
   @override
@@ -42,6 +46,42 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     
     // Hide any "User not found" error message
     GlobalErrorHandler.hideNewUserWelcome();
+    
+    // If this is post-verification registration, try to load pre-filled data
+    if (!widget.isPreRegistration) {
+      _loadTemporaryUserData();
+    }
+  }
+  
+  Future<void> _loadTemporaryUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final tempName = prefs.getString('temp_user_name');
+      final tempEmail = prefs.getString('temp_user_email');
+      final tempMarketingOptIn = prefs.getBool('temp_user_marketing_opt_in');
+      
+      if (tempName != null && tempName.isNotEmpty) {
+        setState(() {
+          _nameController.text = tempName;
+        });
+      }
+      
+      if (tempEmail != null && tempEmail.isNotEmpty) {
+        setState(() {
+          _emailController.text = tempEmail;
+        });
+      }
+      
+      if (tempMarketingOptIn != null) {
+        setState(() {
+          _isOptedInForMarketing = tempMarketingOptIn;
+        });
+      }
+      
+      LoggingService.logFirestore('UserRegistrationPage: Loaded temporary user data from SharedPreferences');
+    } catch (e) {
+      LoggingService.logError('UserRegistrationPage', 'Error loading temporary user data: $e');
+    }
   }
 
   @override
@@ -56,21 +96,42 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   Future<void> _submitProfile() async {
     if (!_formKey.currentState!.validate()) return;
     
-    // Check if user is authenticated
-    final authState = context.read<AuthBloc>().state;
-    final userId = authState.userId;
-    
-    LoggingService.logFirestore('UserRegistrationPage: Creating user profile for ${widget.phoneNumber}, Auth status: ${authState.status}, User ID: ${userId ?? "unknown"}');
-    
-    // Create user profile with entered data
-    context.read<UserBloc>().add(
-      CreateUserProfileEvent(
-        phoneNumber: widget.phoneNumber,
-        name: _nameController.text,
-        email: _emailController.text.isEmpty ? null : _emailController.text,
-        isOptedInForMarketing: _isOptedInForMarketing,
-      ),
-    );
+    if (widget.isPreRegistration) {
+      // This is pre-OTP-verification registration
+      // Store user information in SharedPreferences temporarily
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('temp_user_name', _nameController.text);
+      await prefs.setString('temp_user_email', _emailController.text.isEmpty ? '' : _emailController.text);
+      await prefs.setBool('temp_user_marketing_opt_in', _isOptedInForMarketing);
+      
+      LoggingService.logFirestore('UserRegistrationPage: Stored pre-verification registration data for ${widget.phoneNumber}');
+      
+      // Now proceed to OTP verification
+      LoggingService.logFirestore('UserRegistrationPage: Proceeding to OTP verification for ${widget.phoneNumber}');
+      context.read<AuthBloc>().add(SendOtpEvent(widget.phoneNumber));
+      
+      // Show loading indicator
+      setState(() {
+        _isCreatingSession = true;
+      });
+    } else {
+      // This is post-OTP-verification registration
+      // Check if user is authenticated
+      final authState = context.read<AuthBloc>().state;
+      final userId = authState.userId;
+      
+      LoggingService.logFirestore('UserRegistrationPage: Creating user profile for ${widget.phoneNumber}, Auth status: ${authState.status}, User ID: ${userId ?? "unknown"}');
+      
+      // Create user profile with entered data
+      context.read<UserBloc>().add(
+        CreateUserProfileEvent(
+          phoneNumber: widget.phoneNumber,
+          name: _nameController.text,
+          email: _emailController.text.isEmpty ? null : _emailController.text,
+          isOptedInForMarketing: _isOptedInForMarketing,
+        ),
+      );
+    }
   }
 
   Future<void> _skipProfileCreation() async {
@@ -170,334 +231,424 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
       }
     });
   }
+  
+  // Build the registration form UI
+  Widget _buildRegistrationForm() {
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: EdgeInsets.all(AppConstants.defaultPadding.w),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: 24.h),
+                
+                // Welcome message
+                Text(
+                  'Welcome to ${AppConstants.appName}!',
+                  style: TextStyle(
+                    color: AppTheme.accentColor,
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                SizedBox(height: 16.h),
+                
+                Text(
+                  widget.isPreRegistration
+                      ? 'Please fill in your details to create your account.'
+                      : 'Please complete your profile to continue. Your phone number has been verified.',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16.sp,
+                  ),
+                ),
+                
+                SizedBox(height: 40.h),
+                
+                // Phone number (non-editable)
+                TextFormField(
+                  initialValue: '+91 ${widget.phoneNumber}',
+                  readOnly: true,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: Colors.white70,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    prefixIcon: Icon(Icons.phone),
+                  ),
+                ),
+                
+                SizedBox(height: 24.h),
+                
+                // Name field
+                TextFormField(
+                  controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
+                  style: TextStyle(fontSize: 16.sp),
+                  decoration: const InputDecoration(
+                    labelText: 'Full Name',
+                    prefixIcon: Icon(Icons.person),
+                    hintText: 'Enter your full name',
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your name';
+                    }
+                    return null;
+                  },
+                ),
+                
+                SizedBox(height: 24.h),
+                
+                // Email field (optional)
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  style: TextStyle(fontSize: 16.sp),
+                  decoration: const InputDecoration(
+                    labelText: 'Email (Optional)',
+                    prefixIcon: Icon(Icons.email),
+                    hintText: 'Enter your email address',
+                  ),
+                  validator: (value) {
+                    if (value != null && value.isNotEmpty) {
+                      final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
+                      if (!emailRegExp.hasMatch(value)) {
+                        return 'Please enter a valid email address';
+                      }
+                    }
+                    return null;
+                  },
+                ),
+                
+                SizedBox(height: 32.h),
+                
+                // Marketing opt-in
+                Container(
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondaryColor.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: AppTheme.secondaryColor,
+                      width: 1.w,
+                    ),
+                  ),
+                  child: SwitchListTile(
+                    value: _isOptedInForMarketing,
+                    onChanged: (value) {
+                      setState(() {
+                        _isOptedInForMarketing = value;
+                      });
+                    },
+                    title: Text(
+                      'Receive offers and updates',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    subtitle: Text(
+                      'Get notified about exclusive deals and discounts',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                    activeColor: AppTheme.accentColor,
+                    activeTrackColor: AppTheme.accentColor.withOpacity(0.4),
+                    inactiveTrackColor: Colors.grey.withOpacity(0.5),
+                    contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 40.h),
+                
+                // Submit button
+                widget.isPreRegistration
+                    ? BlocBuilder<AuthBloc, AuthState>(
+                        builder: (context, state) {
+                          final isLoading = state.status == AuthStatus.loading || _isCreatingSession;
+                          
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 56.h,
+                            child: ElevatedButton(
+                              onPressed: isLoading ? null : _submitProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentColor,
+                                foregroundColor: AppTheme.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                elevation: 3,
+                              ),
+                              child: isLoading
+                                  ? SizedBox(
+                                      width: 24.w,
+                                      height: 24.w,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3.w,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Verify Phone Number',
+                                      style: TextStyle(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          );
+                        },
+                      )
+                    : BlocBuilder<UserBloc, UserState>(
+                        builder: (context, state) {
+                          final isLoading = state.status == UserStatus.loading;
+                          
+                          return SizedBox(
+                            width: double.infinity,
+                            height: 56.h,
+                            child: ElevatedButton(
+                              onPressed: isLoading ? null : _submitProfile,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentColor,
+                                foregroundColor: AppTheme.primaryColor,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12.r),
+                                ),
+                                elevation: 3,
+                              ),
+                              child: isLoading
+                                  ? SizedBox(
+                                      width: 24.w,
+                                      height: 24.w,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 3.w,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                                      ),
+                                    )
+                                  : Text(
+                                      'Continue to Shop',
+                                      style: TextStyle(
+                                        fontSize: 18.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                            ),
+                          );
+                        },
+                      ),
+                
+                SizedBox(height: 24.h),
+                
+                // Skip button - only show for post-verification registration
+                if (!widget.isPreRegistration)
+                  BlocBuilder<UserBloc, UserState>(
+                    builder: (context, state) {
+                      final isLoading = state.status == UserStatus.loading || _isCreatingSession;
+                      
+                      return SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: isLoading ? null : _skipProfileCreation,
+                          style: TextButton.styleFrom(
+                            padding: EdgeInsets.symmetric(vertical: 12.h),
+                          ),
+                          child: isLoading && _isCreatingSession
+                              ? Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    SizedBox(
+                                      width: 16.w,
+                                      height: 16.w,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2.w,
+                                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                                      ),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      'Creating basic profile...',
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        color: AppTheme.accentColor.withOpacity(0.8),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Text(
+                                  'Skip for now',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    color: AppTheme.accentColor.withOpacity(0.8),
+                                  ),
+                                ),
+                        ),
+                      );
+                    },
+                  ),
+                
+                SizedBox(height: 16.h),
+                
+                // Terms and conditions
+                Center(
+                  child: Text(
+                    'By continuing, you agree to our',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 8.h),
+                
+                Center(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      TextButton(
+                        onPressed: () {
+                          // Navigate to Terms & Conditions
+                        },
+                        child: Text(
+                          'Terms & Conditions',
+                          style: TextStyle(
+                            color: AppTheme.accentColor,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        'and',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          // Navigate to Privacy Policy
+                        },
+                        child: Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            color: AppTheme.accentColor,
+                            fontSize: 14.sp,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: 16.h),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Complete Your Profile'),
-        automaticallyImplyLeading: false,
+        title: Text(widget.isPreRegistration ? 'Sign Up' : 'Complete Your Profile'),
+        automaticallyImplyLeading: widget.isPreRegistration, // Show back button only for pre-registration
       ),
-      body: BlocListener<UserBloc, UserState>(
-        listener: (context, state) {
-          LoggingService.logFirestore('UserRegistrationPage listener - UserState: ${state.status}');
-          
-          if (state.status == UserStatus.created) {
-            LoggingService.logFirestore('UserRegistrationPage: Profile created successfully for user: ${state.user?.id}');
-            
-            // Profile created successfully, navigate to home
-            _navigateToHome();
-            
-          } else if (state.status == UserStatus.error) {
-            LoggingService.logFirestore('UserRegistrationPage: Error creating profile - ${state.errorMessage}');
-            
-            // Show error message
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.errorMessage ?? 'Failed to create profile'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 5),
-                action: SnackBarAction(
-                  label: 'Try Again',
-                  onPressed: () {
-                    // Reset the form and let the user try again
-                    _formKey.currentState?.reset();
-                  },
-                ),
-              ),
-            );
-            
-          } else if (state.status == UserStatus.loading) {
-            // Show loading indicator (already handled by BlocBuilder)
-            LoggingService.logFirestore('UserRegistrationPage: Loading state - creating profile');
-          }
-        },
-        child: SafeArea(
-          child: SingleChildScrollView(
-            child: Padding(
-              padding: EdgeInsets.all(AppConstants.defaultPadding.w),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: 24.h),
-                    
-                    // Welcome message
-                    Text(
-                      'Welcome to ${AppConstants.appName}!',
-                      style: TextStyle(
-                        color: AppTheme.accentColor,
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
+      body: widget.isPreRegistration 
+        ? BlocListener<AuthBloc, AuthState>(
+            listener: (context, state) {
+              LoggingService.logFirestore('UserRegistrationPage pre-verification listener - AuthState: ${state.status}');
+              
+              if (state.status == AuthStatus.otpSent && state.requestId != null && state.phoneNumber != null) {
+                LoggingService.logFirestore('UserRegistrationPage: OTP sent, navigating to verification page');
+                
+                setState(() {
+                  _isCreatingSession = false;
+                });
+                
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => OtpVerificationPage(
+                      phoneNumber: state.phoneNumber!,
+                      requestId: state.requestId!,
                     ),
-                    
-                    SizedBox(height: 16.h),
-                    
-                    Text(
-                      'Please complete your profile to continue. Your phone number has been verified.',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-                    
-                    SizedBox(height: 40.h),
-                    
-                    // Phone number (non-editable)
-                    TextFormField(
-                      initialValue: '+91 ${widget.phoneNumber}',
-                      readOnly: true,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: Colors.white70,
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Phone Number',
-                        prefixIcon: Icon(Icons.phone),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 24.h),
-                    
-                    // Name field
-                    TextFormField(
-                      controller: _nameController,
-                      textCapitalization: TextCapitalization.words,
-                      style: TextStyle(fontSize: 16.sp),
-                      decoration: const InputDecoration(
-                        labelText: 'Full Name',
-                        prefixIcon: Icon(Icons.person),
-                        hintText: 'Enter your full name',
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your name';
-                        }
-                        return null;
+                  ),
+                );
+              } else if (state.status == AuthStatus.error) {
+                setState(() {
+                  _isCreatingSession = false;
+                });
+                
+                // Show error message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.errorMessage ?? 'Failed to send OTP'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: _buildRegistrationForm(),
+          )
+        : BlocListener<UserBloc, UserState>(
+            listener: (context, state) {
+              LoggingService.logFirestore('UserRegistrationPage listener - UserState: ${state.status}');
+              
+              if (state.status == UserStatus.created) {
+                LoggingService.logFirestore('UserRegistrationPage: Profile created successfully for user: ${state.user?.id}');
+                
+                // Clear temporary data from SharedPreferences
+                SharedPreferences.getInstance().then((prefs) {
+                  prefs.remove('temp_user_name');
+                  prefs.remove('temp_user_email');
+                  prefs.remove('temp_user_marketing_opt_in');
+                });
+                
+                // Profile created successfully, navigate to home
+                _navigateToHome();
+                
+              } else if (state.status == UserStatus.error) {
+                LoggingService.logFirestore('UserRegistrationPage: Error creating profile - ${state.errorMessage}');
+                
+                // Show error message
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(state.errorMessage ?? 'Failed to create profile'),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 5),
+                    action: SnackBarAction(
+                      label: 'Try Again',
+                      onPressed: () {
+                        // Reset the form and let the user try again
+                        _formKey.currentState?.reset();
                       },
                     ),
-                    
-                    SizedBox(height: 24.h),
-                    
-                    // Email field (optional)
-                    TextFormField(
-                      controller: _emailController,
-                      keyboardType: TextInputType.emailAddress,
-                      style: TextStyle(fontSize: 16.sp),
-                      decoration: const InputDecoration(
-                        labelText: 'Email (Optional)',
-                        prefixIcon: Icon(Icons.email),
-                        hintText: 'Enter your email address',
-                      ),
-                      validator: (value) {
-                        if (value != null && value.isNotEmpty) {
-                          final emailRegExp = RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$');
-                          if (!emailRegExp.hasMatch(value)) {
-                            return 'Please enter a valid email address';
-                          }
-                        }
-                        return null;
-                      },
-                    ),
-                    
-                    SizedBox(height: 32.h),
-                    
-                    // Marketing opt-in
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppTheme.secondaryColor.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: AppTheme.secondaryColor,
-                          width: 1.w,
-                        ),
-                      ),
-                      child: SwitchListTile(
-                        value: _isOptedInForMarketing,
-                        onChanged: (value) {
-                          setState(() {
-                            _isOptedInForMarketing = value;
-                          });
-                        },
-                        title: Text(
-                          'Receive offers and updates',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        subtitle: Text(
-                          'Get notified about exclusive deals and discounts',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: 14.sp,
-                          ),
-                        ),
-                        activeColor: AppTheme.accentColor,
-                        activeTrackColor: AppTheme.accentColor.withOpacity(0.4),
-                        inactiveTrackColor: Colors.grey.withOpacity(0.5),
-                        contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12.r),
-                        ),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 40.h),
-                    
-                    // Submit button
-                    BlocBuilder<UserBloc, UserState>(
-                      builder: (context, state) {
-                        final isLoading = state.status == UserStatus.loading;
-                        
-                        return SizedBox(
-                          width: double.infinity,
-                          height: 56.h,
-                          child: ElevatedButton(
-                            onPressed: isLoading ? null : _submitProfile,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppTheme.accentColor,
-                              foregroundColor: AppTheme.primaryColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12.r),
-                              ),
-                              elevation: 3,
-                            ),
-                            child: isLoading
-                                ? SizedBox(
-                                    width: 24.w,
-                                    height: 24.w,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 3.w,
-                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
-                                    ),
-                                  )
-                                : Text(
-                                    'Continue to Shop',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                          ),
-                        );
-                      },
-                    ),
-                    
-                    SizedBox(height: 24.h),
-                    
-                    // Skip button
-                    BlocBuilder<UserBloc, UserState>(
-                      builder: (context, state) {
-                        final isLoading = state.status == UserStatus.loading || _isCreatingSession;
-                        
-                        return SizedBox(
-                          width: double.infinity,
-                          child: TextButton(
-                            onPressed: isLoading ? null : _skipProfileCreation,
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(vertical: 12.h),
-                            ),
-                            child: isLoading && _isCreatingSession
-                                ? Row(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      SizedBox(
-                                        width: 16.w,
-                                        height: 16.w,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.w,
-                                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
-                                        ),
-                                      ),
-                                      SizedBox(width: 8.w),
-                                      Text(
-                                        'Creating basic profile...',
-                                        style: TextStyle(
-                                          fontSize: 16.sp,
-                                          color: AppTheme.accentColor.withOpacity(0.8),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                : Text(
-                                    'Skip for now',
-                                    style: TextStyle(
-                                      fontSize: 16.sp,
-                                      color: AppTheme.accentColor.withOpacity(0.8),
-                                    ),
-                                  ),
-                          ),
-                        );
-                      },
-                    ),
-                    
-                    SizedBox(height: 16.h),
-                    
-                    // Terms and conditions - moved from login page to registration page
-                    Center(
-                      child: Text(
-                        'By continuing, you agree to our',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 8.h),
-                    
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              // Navigate to Terms & Conditions
-                            },
-                            child: Text(
-                              'Terms & Conditions',
-                              style: TextStyle(
-                                color: AppTheme.accentColor,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'and',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              // Navigate to Privacy Policy
-                            },
-                            child: Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                color: AppTheme.accentColor,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    
-                    SizedBox(height: 16.h),
-                  ],
-                ),
-              ),
-            ),
+                  ),
+                );
+                
+              } else if (state.status == UserStatus.loading) {
+                // Show loading indicator (already handled by BlocBuilder)
+                LoggingService.logFirestore('UserRegistrationPage: Loading state - creating profile');
+              }
+            },
+            child: _buildRegistrationForm(),
           ),
-        ),
-      ),
     );
   }
 }
