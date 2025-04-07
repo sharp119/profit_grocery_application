@@ -10,10 +10,13 @@ import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
+import 'firebase_options.dart';
+
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
+import 'services/user_service.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/user_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
@@ -35,7 +38,9 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
   // Firebase initialization
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   
   // Setup Firebase Remote Config
   await setupRemoteConfig();
@@ -89,6 +94,14 @@ Future<void> setupDependencyInjection() async {
   );
   sl.registerLazySingleton(() => sessionManager);
   
+  // Initialize UserService as a singleton with proper dependencies
+  final userService = UserService();
+  await userService.init(
+    sharedPreferences: sharedPreferences,
+    firebaseDatabase: FirebaseDatabase.instance,
+  );
+  sl.registerLazySingleton(() => userService);
+  
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
@@ -124,7 +137,7 @@ class MyApp extends StatelessWidget {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(
-          create: (context) => sl<AuthBloc>(),
+          create: (context) => sl<AuthBloc>()..add(const CheckAuthStatus()),
         ),
         BlocProvider<UserBloc>(
           create: (context) => sl<UserBloc>(),

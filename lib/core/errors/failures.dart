@@ -30,6 +30,32 @@ class AuthFailure extends Failure {
   const AuthFailure({required String message}) : super(message: message);
 }
 
+// More specific authentication failures
+class OtpInvalidFailure extends AuthFailure {
+  const OtpInvalidFailure({String message = 'Invalid OTP code. Please check and try again.'}) 
+      : super(message: message);
+}
+
+class OtpExpiredFailure extends AuthFailure {
+  const OtpExpiredFailure({String message = 'OTP code has expired. Please request a new one.'}) 
+      : super(message: message);
+}
+
+class PhoneNumberInvalidFailure extends AuthFailure {
+  const PhoneNumberInvalidFailure({String message = 'Invalid phone number format. Please enter a valid 10-digit number.'}) 
+      : super(message: message);
+}
+
+class TooManyRequestsFailure extends AuthFailure {
+  const TooManyRequestsFailure({String message = 'Too many attempts. Please try again later.'}) 
+      : super(message: message);
+}
+
+class SessionExpiredFailure extends AuthFailure {
+  const SessionExpiredFailure({String message = 'Your session has expired. Please login again.'}) 
+      : super(message: message);
+}
+
 // User not found failures
 class UserNotFoundFailure extends Failure {
   const UserNotFoundFailure({String message = 'User not found.'}) 

@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
+import '../../../domain/entities/user.dart';
+import '../../../services/user_service.dart';
+import '../../blocs/auth/auth_bloc.dart';
+import '../../blocs/auth/auth_event.dart';
 import '../../blocs/home/home_bloc.dart';
 import '../../blocs/home/home_event.dart';
 import '../../blocs/home/home_state.dart';
@@ -46,6 +51,28 @@ class _HomePageContent extends StatefulWidget {
 class _HomePageContentState extends State<_HomePageContent> {
   final _scrollController = ScrollController();
   final _refreshKey = GlobalKey<RefreshIndicatorState>();
+  
+  // User data
+  User? _currentUser;
+  late UserService _userService;
+  late final Stream<User?> _userStream;
+  
+  @override
+  void initState() {
+    super.initState();
+    _userService = GetIt.instance<UserService>();
+    _currentUser = _userService.getCurrentUser();
+    _userStream = _userService.userStream;
+    
+    // Listen to user changes
+    _userStream.listen((user) {
+      if (mounted) {
+        setState(() {
+          _currentUser = user;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -102,6 +129,148 @@ class _HomePageContentState extends State<_HomePageContent> {
     }
   }
 
+  // Show profile options menu
+  void _showUserProfileOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.secondaryColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(20.r),
+          topRight: Radius.circular(20.r),
+        ),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: EdgeInsets.all(16.r),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Row(
+                  children: [
+                    CircleAvatar(
+                      backgroundColor: AppTheme.accentColor.withOpacity(0.2),
+                      radius: 30.r,
+                      child: Icon(
+                        Icons.person,
+                        size: 30.r,
+                        color: AppTheme.accentColor,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _currentUser?.name ?? 'User',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            _currentUser?.phoneNumber ?? '',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: Colors.white70,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                SizedBox(height: 24.h),
+                
+                // Options
+                ListTile(
+                  leading: Icon(Icons.person_outline, color: AppTheme.accentColor),
+                  title: Text('My Profile', style: TextStyle(color: Colors.white)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to profile page
+                  },
+                ),
+                
+                ListTile(
+                  leading: Icon(Icons.shopping_bag_outlined, color: AppTheme.accentColor),
+                  title: Text('My Orders', style: TextStyle(color: Colors.white)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to orders page
+                  },
+                ),
+                
+                ListTile(
+                  leading: Icon(Icons.location_on_outlined, color: AppTheme.accentColor),
+                  title: Text('My Addresses', style: TextStyle(color: Colors.white)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    // Navigate to addresses page
+                  },
+                ),
+                
+                ListTile(
+                  leading: Icon(Icons.logout, color: Colors.redAccent),
+                  title: Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                  onTap: () {
+                    Navigator.pop(context);
+                    _confirmLogout(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+  
+  // Confirm logout dialog
+  void _confirmLogout(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.secondaryColor,
+        title: Text('Logout', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Are you sure you want to logout?',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              // Perform logout
+              context.read<AuthBloc>().add(const LogoutEvent());
+              // Navigate to login page
+              Navigator.pushNamedAndRemoveUntil(
+                context,
+                AppConstants.loginRoute,
+                (route) => false,
+              );
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+              foregroundColor: Colors.white,
+            ),
+            child: Text('Logout'),
+          ),
+        ],
+      ),
+    );
+  }
+
   List<IconData> _getCategoryIcons() {
     return [
       Icons.storefront_outlined, // All
@@ -135,7 +304,21 @@ class _HomePageContentState extends State<_HomePageContent> {
         return Scaffold(
           backgroundColor: AppTheme.backgroundColor,
           appBar: AppBar(
-            title: Text(AppConstants.appName),
+            title: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(AppConstants.appName),
+                if (_currentUser?.name != null)
+                  Text(
+                    'Hello, ${_currentUser!.name}',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.normal,
+                      color: AppTheme.accentColor,
+                    ),
+                  ),
+              ],
+            ),
             actions: [
               IconButton(
                 icon: const Icon(Icons.search),
@@ -147,6 +330,13 @@ class _HomePageContentState extends State<_HomePageContent> {
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () {
                   // Navigate to notifications
+                },
+              ),
+              IconButton(
+                icon: const Icon(Icons.account_circle_outlined),
+                onPressed: () {
+                  // Show user profile options
+                  _showUserProfileOptions(context);
                 },
               ),
               SizedBox(width: 8.w),

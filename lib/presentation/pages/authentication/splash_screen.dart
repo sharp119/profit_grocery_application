@@ -83,6 +83,24 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const PhoneEntryPage()),
           );
+        } else if (state.status == AuthStatus.error) {
+          // Authentication check failed, show error and go to login page
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Authentication check failed'),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+          
+          // Delay navigation slightly to show the error
+          Future.delayed(const Duration(milliseconds: 1500), () {
+            if (mounted) {
+              Navigator.of(context).pushReplacement(
+                MaterialPageRoute(builder: (context) => const PhoneEntryPage()),
+              );
+            }
+          });
         }
       },
       child: Scaffold(

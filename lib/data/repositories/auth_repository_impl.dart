@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../core/constants/app_constants.dart';
@@ -8,6 +9,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../services/logging_service.dart';
 import '../../services/otp_service.dart';
 import '../../services/session_manager.dart';
+import '../../services/user_service.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final OTPService _otpService;
@@ -35,28 +37,39 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       // Validate phone number
       if (phoneNumber.isEmpty || phoneNumber.length != 10) {
-        return Left(ValidationFailure(
-            message: 'Please enter a valid 10-digit phone number'));
+        LoggingService.logError('AuthRepositoryImpl', 'Invalid phone number format: $phoneNumber');
+        return Left(PhoneNumberInvalidFailure());
       }
 
       // Check if user exists by phone number
       final userExists = await _checkUserExistsByPhone(phoneNumber);
       LoggingService.logFirestore('AuthRepositoryImpl: User exists check for ${_maskPhone(phoneNumber)}: $userExists');
 
-      // Send OTP to the provided phone number
-      final requestId = await _otpService.sendOTP(phoneNumber);
-      
-      // Store the phone number temporarily for the verification step
-      await _sharedPreferences.setString(_phoneNumberKey, phoneNumber);
-      
-      // Also store whether this is a login or registration flow
-      await _sharedPreferences.setBool('is_existing_user', userExists);
-      
-      return Right(requestId);
+      try {
+        // Send OTP to the provided phone number
+        final requestId = await _otpService.sendOTP(phoneNumber);
+        
+        // Store the phone number temporarily for the verification step
+        await _sharedPreferences.setString(_phoneNumberKey, phoneNumber);
+        
+        // Also store whether this is a login or registration flow
+        await _sharedPreferences.setBool('is_existing_user', userExists);
+        
+        return Right(requestId);
+      } catch (e) {
+        LoggingService.logError('AuthRepositoryImpl', 'Error from OTP service: ${e.toString()}');
+        
+        // Handle specific error cases
+        final errorMsg = e.toString().toLowerCase();
+        if (errorMsg.contains('too many request') || errorMsg.contains('rate limit')) {
+          return Left(TooManyRequestsFailure());
+        } else {
+          return Left(ServerFailure(message: 'Failed to send OTP: ${e.toString()}'));
+        }
+      }
     } catch (e) {
       LoggingService.logError('AuthRepositoryImpl: Failed to send OTP', e.toString());
-      return Left(ServerFailure(
-          message: 'Failed to send OTP: ${e.toString()}'));
+      return Left(ServerFailure(message: 'Failed to send OTP: ${e.toString()}'));
     }
   }
 
@@ -74,10 +87,24 @@ class AuthRepositoryImpl implements AuthRepository {
       }
 
       // Verify OTP
-      final accessToken = await _otpService.verifyOTP(requestId, otp);
-
-      // Store access token in SharedPreferences
-      await _sharedPreferences.setString(_tokenKey, accessToken);
+      try {
+        final accessToken = await _otpService.verifyOTP(requestId, otp);
+        
+        // Store access token in SharedPreferences
+        await _sharedPreferences.setString(_tokenKey, accessToken);
+      } catch (e) {
+        LoggingService.logError('AuthRepositoryImpl', 'OTP verification error: ${e.toString()}');
+        
+        // Handle specific OTP verification failures
+        final errorMsg = e.toString().toLowerCase();
+        if (errorMsg.contains('invalid') || errorMsg.contains('incorrect')) {
+          return Left(OtpInvalidFailure());
+        } else if (errorMsg.contains('expired') || errorMsg.contains('timeout')) {
+          return Left(OtpExpiredFailure());
+        } else {
+          return Left(AuthFailure(message: 'Failed to verify OTP: ${e.toString()}'));
+        }
+      }
       
       try {
         // Check if this is a login or registration
@@ -91,7 +118,7 @@ class AuthRepositoryImpl implements AuthRepository {
           
           if (userIdResult == null) {
             LoggingService.logError('AuthRepositoryImpl', 'User exists but ID could not be retrieved');
-            return Left(AuthFailure(message: 'User exists but ID could not be retrieved'));
+            return Left(UserNotFoundFailure(message: 'User exists but ID could not be retrieved'));
           }
           
           userId = userIdResult;
@@ -116,19 +143,37 @@ class AuthRepositoryImpl implements AuthRepository {
         LoggingService.logFirestore(
           'AuthRepositoryImpl: Created session for user $userId, expires: ${session.getFormattedCreationTime()}'
         );
+        
+        // Get access token
+        final accessToken = _sharedPreferences.getString(_tokenKey);
+        if (accessToken == null) {
+          return Left(AuthFailure(message: 'Access token not found after OTP verification'));
+        }
+        
+        // Initialize UserService with user data
+        final userService = GetIt.instance<UserService>();
+        await userService.loadUserData(userId);
+        
+        // Get the values from shared preferences to use in the log
+        final currentUserId = _sharedPreferences.getString(_userIdKey) ?? 'unknown';
+        final isUserExisting = _sharedPreferences.getBool('is_existing_user') ?? false;
+        
+        LoggingService.logFirestore('AuthRepositoryImpl: Authentication successful. UserID: $currentUserId, isExistingUser: $isUserExisting');
+
+        return Right(accessToken);
       } catch (e) {
         LoggingService.logError('AuthRepositoryImpl', 'Error during session creation: ${e.toString()}');
         // We still want to return success even if session creation has issues
         // since the authentication itself succeeded
+        
+        // Get access token
+        final accessToken = _sharedPreferences.getString(_tokenKey);
+        if (accessToken == null) {
+          return Left(AuthFailure(message: 'Access token not found after OTP verification'));
+        }
+        
+        return Right(accessToken);
       }
-
-      // Get the values from shared preferences to use in the log
-      final currentUserId = _sharedPreferences.getString(_userIdKey) ?? 'unknown';
-      final isUserExisting = _sharedPreferences.getBool('is_existing_user') ?? false;
-      
-      LoggingService.logFirestore('AuthRepositoryImpl: Authentication successful. UserID: $currentUserId, isExistingUser: $isUserExisting');
-
-      return Right(accessToken);
     } catch (e) {
       LoggingService.logError('AuthRepositoryImpl: Failed to verify OTP', e.toString());
       return Left(AuthFailure(
@@ -142,6 +187,7 @@ class AuthRepositoryImpl implements AuthRepository {
     final userId = _sharedPreferences.getString(_userIdKey);
     
     if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
+      LoggingService.logFirestore('AuthRepositoryImpl: Not logged in - missing token or userId');
       return false;
     }
 
@@ -155,10 +201,23 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       final isValid = await _otpService.verifyAccessToken(token);
       if (!isValid) {
+        LoggingService.logFirestore('AuthRepositoryImpl: Invalid token - logging out');
         // If token is invalid, log out the user
         await logout();
         return false;
       }
+      
+      // Make sure user data is loaded in UserService
+      try {
+        final userService = GetIt.instance<UserService>();
+        if (!userService.isLoggedIn()) {
+          await userService.loadUserData(userId);
+        }
+      } catch (e) {
+        LoggingService.logError('AuthRepositoryImpl', 'Error loading user data: $e');
+        // Continue even if user data loading fails
+      }
+      
       return true;
     } catch (e) {
       LoggingService.logError('AuthRepositoryImpl: Token validation error', e.toString());
@@ -186,11 +245,22 @@ class AuthRepositoryImpl implements AuthRepository {
       }
     }
     
+    // Clear user data from UserService
+    try {
+      final userService = GetIt.instance<UserService>();
+      userService.clearCurrentUser();
+      LoggingService.logFirestore('AuthRepositoryImpl: Cleared user data from UserService');
+    } catch (e) {
+      LoggingService.logError('AuthRepositoryImpl: Error clearing UserService data', e.toString());
+    }
+    
     // Clear authentication data
     await _sharedPreferences.remove(_tokenKey);
     await _sharedPreferences.remove(_userIdKey);
     await _sharedPreferences.remove(AppConstants.userTokenKey);
     // We'll keep the phone number for convenience
+    
+    LoggingService.logFirestore('AuthRepositoryImpl: Logout completed successfully');
   }
 
   @override
