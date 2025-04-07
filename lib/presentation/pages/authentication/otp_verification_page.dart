@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pinput/pinput.dart';
+import 'package:profit_grocery_application/presentation/blocs/user/user_state.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -246,16 +249,50 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                         ),
                       );
                       
-                      // Wait for profile creation and then navigate to home
-                      Future.delayed(const Duration(milliseconds: 500), () {
-                        if (mounted) {
-                          Navigator.pushAndRemoveUntil(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const HomePage(),
-                            ),
-                            (route) => false, // Clear navigation stack
-                          );
+                      // Listen for user profile creation completion before navigating to home
+                      final userBloc = context.read<UserBloc>();
+                      
+                      // First declare the subscription variable without initializing
+                      StreamSubscription<UserState>? subscription;
+                      
+                      // Then initialize it with a properly defined variable
+                      subscription = userBloc.stream.listen((userState) {
+                        if (userState.status == UserStatus.created || userState.status == UserStatus.loaded) {
+                          // Profile created successfully, now navigate
+                          LoggingService.logFirestore('OtpVerificationPage: User profile created, navigating to home with user: ${userState.user?.name}');
+                          
+                          // Cancel subscription to avoid memory leaks
+                          subscription?.cancel();
+                          
+                          if (mounted) {
+                            Navigator.pushAndRemoveUntil(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => BlocProvider(
+                                  create: (context) => GetIt.instance<UserBloc>()
+                                    ..add(LoadUserProfileEvent(userId)),
+                                  child: const HomePage(),
+                                ),
+                              ),
+                              (route) => false, // Clear navigation stack
+                            );
+                          }
+                        } else if (userState.status == UserStatus.error) {
+                          // Error creating profile, cancel subscription
+                          subscription?.cancel();
+                          
+                          // Show error message
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(userState.errorMessage ?? 'Failed to create profile'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                            
+                            // Navigate to registration anyway
+                            _navigateToRegistration();
+                          }
                         }
                       });
                     } else {

@@ -36,8 +36,23 @@ class UserBloc extends Bloc<UserEvent, UserState> {
           if (!emit.isDone) emit(state.copyWithError(failure.message));
         },
         (user) async {
-          LoggingService.logFirestore('UserBloc: User profile created successfully');
-          if (!emit.isDone) emit(state.copyWithCreated(user));
+          LoggingService.logFirestore('UserBloc: User profile created successfully for ${user.name}');
+          
+          // After creating the user profile, explicitly load it as well
+          // This ensures the data is available in both the repository and local services
+          if (!emit.isDone) {
+            // First emit the created state
+            emit(state.copyWithCreated(user));
+            
+            // Then try to reload the user data to ensure it's fully available
+            try {
+              await _userRepository.getUserById(user.id);
+              LoggingService.logFirestore('UserBloc: Refreshed user data after creation');
+            } catch (e) {
+              // Ignore any errors here, as we already have the user data from creation
+              LoggingService.logError('UserBloc', 'Error refreshing user after creation: $e');
+            }
+          }
         },
       );
     } catch (e) {

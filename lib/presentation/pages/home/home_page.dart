@@ -78,6 +78,22 @@ class _HomePageContentState extends State<_HomePageContent> {
       }
     });
     
+    // Listen to UserBloc state changes
+    try {
+      // Try to get the current UserBloc and listen to its state
+      final userBloc = context.read<UserBloc>();
+      userBloc.stream.listen((state) {
+        if (state.user != null && mounted) {
+          setState(() {
+            _currentUser = state.user;
+            LoggingService.logFirestore('HomePage: User data updated from UserBloc: ${state.user?.name}');
+          });
+        }
+      });
+    } catch (e) {
+      LoggingService.logError('HomePage', 'UserBloc not available: $e');
+    }
+    
     // Add a short delay to allow the UI to build, then check if user data is loaded
     Future.delayed(Duration.zero, () {
       if (_currentUser == null || _currentUser?.name == null) {
@@ -85,6 +101,9 @@ class _HomePageContentState extends State<_HomePageContent> {
         // Try to reload user data if not already loaded
         final userId = _userService.getCurrentUserId();
         if (userId != null) {
+          // First try to load directly from service
+          _userService.loadUserData(userId);
+          
           // Also trigger through UserBloc if available
           try {
             context.read<UserBloc>().add(LoadUserProfileEvent(userId));
