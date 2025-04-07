@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/core/errors/global_error_handler.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';

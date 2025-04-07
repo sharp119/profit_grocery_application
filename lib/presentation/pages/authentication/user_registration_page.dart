@@ -44,8 +44,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   void initState() {
     super.initState();
     
-    // Hide any "User not found" error message
-    GlobalErrorHandler.hideNewUserWelcome();
+    // No longer need to hide error messages - we removed the error display
     
     // If this is post-verification registration, try to load pre-filled data
     if (!widget.isPreRegistration) {
