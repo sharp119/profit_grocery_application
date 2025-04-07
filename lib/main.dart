@@ -13,6 +13,7 @@ import 'package:dartz/dartz.dart';
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
 import 'services/otp_service.dart';
+import 'services/session_manager.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/user_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
@@ -79,12 +80,17 @@ Future<void> setupDependencyInjection() async {
   
   // Services
   sl.registerLazySingleton(() => OTPService());
+  sl.registerLazySingleton(() => SessionManager()..init(
+    sharedPreferences: sl<SharedPreferences>(),
+    firebaseDatabase: sl<FirebaseDatabase>(),
+  ));
   
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(
       otpService: sl(),
       sharedPreferences: sl(),
+      firebaseDatabase: sl(),
     ),
   );
   
