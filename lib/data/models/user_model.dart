@@ -43,9 +43,26 @@ class UserModel extends User {
       'phoneNumber': phoneNumber,
       'name': name,
       'email': email,
-      'addresses': addresses
-          .map((addr) => (addr as AddressModel).toJson())
-          .toList(),
+      'addresses': addresses.isEmpty 
+          ? [] 
+          : addresses.map((addr) {
+              if (addr is AddressModel) {
+                return addr.toJson();
+              } else {
+                // Create a valid JSON representation for any Address
+                return {
+                  'id': addr.id,
+                  'name': addr.name,
+                  'addressLine': addr.addressLine,
+                  'city': addr.city,
+                  'state': addr.state,
+                  'pincode': addr.pincode,
+                  'landmark': addr.landmark,
+                  'isDefault': addr.isDefault,
+                  'addressType': addr.addressType,
+                };
+              }
+            }).toList(),
       'createdAt': createdAt.toIso8601String(),
       'lastLogin': lastLogin.toIso8601String(),
       'isOptedInForMarketing': isOptedInForMarketing,

@@ -100,13 +100,22 @@ class UserRepositoryImpl implements UserRepository {
         isOptedInForMarketing: isOptedInForMarketing,
       );
       
-      // Save to Firebase Realtime Database
-      final usersRef = _firebaseDatabase.ref().child(AppConstants.usersCollection);
-      await usersRef.child(userId).set(userModel.toJson());
-      
-      LoggingService.logFirestore('UserRepository: User created with ID: $userId');
-      
-      return Right(userModel);
+      try {
+        // Prepare the data for Firebase
+        final userData = userModel.toJson();
+        LoggingService.logFirestore('UserRepository: About to save user data to Firebase: $userId');
+        
+        // Save to Firebase Realtime Database with error handling
+        final usersRef = _firebaseDatabase.ref().child(AppConstants.usersCollection);
+        await usersRef.child(userId).set(userData);
+        
+        LoggingService.logFirestore('UserRepository: User created with ID: $userId');
+        
+        return Right(userModel);
+      } catch (e) {
+        LoggingService.logError('UserRepository: Firebase error saving user', e.toString());
+        return Left(ServerFailure(message: 'Failed to save user to database: ${e.toString()}'));
+      }
     } catch (e) {
       LoggingService.logError('UserRepository: Failed to create user with ID', e.toString());
       return Left(ServerFailure(message: 'Failed to create user: ${e.toString()}'));

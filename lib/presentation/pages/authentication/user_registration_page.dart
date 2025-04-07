@@ -78,10 +78,15 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   void _navigateToHome() {
     LoggingService.logFirestore('UserRegistrationPage: Navigating to home page');
     
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (context) => const HomePage()),
-      (route) => false,
-    );
+    // Delay navigation slightly to allow UI to complete any animations
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const HomePage()),
+          (route) => false, // Remove all previous routes
+        );
+      }
+    });
   }
 
   @override
@@ -97,10 +102,11 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
           LoggingService.logFirestore('UserRegistrationPage listener - UserState: ${state.status}');
           
           if (state.status == UserStatus.created) {
-            LoggingService.logFirestore('UserRegistrationPage: Profile created successfully');
+            LoggingService.logFirestore('UserRegistrationPage: Profile created successfully for user: ${state.user?.id}');
             
             // Profile created successfully, navigate to home
             _navigateToHome();
+            
           } else if (state.status == UserStatus.error) {
             LoggingService.logFirestore('UserRegistrationPage: Error creating profile - ${state.errorMessage}');
             
@@ -109,8 +115,20 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
               SnackBar(
                 content: Text(state.errorMessage ?? 'Failed to create profile'),
                 backgroundColor: Colors.red,
+                duration: const Duration(seconds: 5),
+                action: SnackBarAction(
+                  label: 'Try Again',
+                  onPressed: () {
+                    // Reset the form and let the user try again
+                    _formKey.currentState?.reset();
+                  },
+                ),
               ),
             );
+            
+          } else if (state.status == UserStatus.loading) {
+            // Show loading indicator (already handled by BlocBuilder)
+            LoggingService.logFirestore('UserRegistrationPage: Loading state - creating profile');
           }
         },
         child: SafeArea(
