@@ -63,28 +63,51 @@ class ProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // If no products, show a clear message
+    if (products.isEmpty) {
+      return Padding(
+        padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
+        child: Center(
+          child: Text(
+            'No products available in this category',
+            style: TextStyle(
+              color: Colors.white.withOpacity(0.7),
+              fontSize: 14.sp,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+    
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: 16.w,
         mainAxisSpacing: 16.h,
-        childAspectRatio: 0.64, // Match the ProductCard's new aspect ratio
+        childAspectRatio: 0.64, // Match the ProductCard's aspect ratio
       ),
       shrinkWrap: shrinkWrap,
       // Don't load all items at once, use caching
       cacheExtent: 500, // Increase the cache extent for smoother scrolling
       physics: physics ?? const NeverScrollableScrollPhysics(),
       padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
-      // Limit the number of items displayed to between 8 and 15
+      // Display all products for this subcategory
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
         final quantity = cartQuantities[product.id] ?? 0;
         
-        // Get the background color based on category ID
+        // Get the background color based on subcategory ID
         Color? backgroundColor;
-        if (subCategoryColors != null && product.categoryId != null) {
-          backgroundColor = subCategoryColors?[product.categoryId];
+        
+        // Try subcategoryId first, then fall back to categoryId if needed
+        if (subCategoryColors != null) {
+          if (product.subcategoryId != null && subCategoryColors!.containsKey(product.subcategoryId)) {
+            backgroundColor = subCategoryColors![product.subcategoryId];
+          } else if (product.categoryId != null && subCategoryColors!.containsKey(product.categoryId)) {
+            backgroundColor = subCategoryColors![product.categoryId];
+          }
         }
         
         return ProductCard.fromEntity(

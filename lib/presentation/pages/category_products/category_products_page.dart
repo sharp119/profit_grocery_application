@@ -53,16 +53,22 @@ class CategoryProductsPage extends StatelessWidget {
   Widget _buildAppBarTitle() {
     return BlocBuilder<CategoryProductsBloc, CategoryProductsState>(
       builder: (context, state) {
-        String title = categoryId != null ? 'Browse Products' : 'All Categories';
+        String title = categoryId != null ? 'All Categories' : 'Browse Products';
         
-        // If we have a loaded state, try to get the category group name
-        if (state is CategoryProductsLoaded && state.categories.isNotEmpty) {
-          // Use the first category's parent name (they all have the same parent)
-          final parentCategoryName = state.categories.first.type == 'subcategory' 
-              ? state.categories.first.name.split(' ').first // Get the first word as category name
-              : 'Products';
-              
-          title = parentCategoryName;
+        // Map category ID to display title if provided
+        if (categoryId != null) {
+          final Map<String, String> categoryTitles = {
+            'grocery_kitchen': 'Grocery & Kitchen',
+            'snacks_drinks': 'Snacks & Drinks',
+            'beauty_personal_care': 'Beauty & Personal Care',
+            'fruits_vegetables': 'Fruits & Vegetables',
+            'dairy_bread': 'Dairy, Bread & Eggs',
+            'bakeries_biscuits': 'Bakery & Biscuits',
+          };
+          
+          title = categoryTitles[categoryId] ?? 'All Categories';
+        } else {
+          title = 'All Categories';
         }
         
         return Row(
@@ -264,16 +270,16 @@ class CategoryProductsPage extends StatelessWidget {
               context.read<CategoryProductsBloc>().add(SelectCategory(category));
             },
             onProductTap: (product) {
-            // Navigate to product details
-            Navigator.push(
-            context,
-            MaterialPageRoute(
-            builder: (context) => ProductDetailsPage(
-            productId: product.id,
-            categoryId: product.categoryId, // Use product's categoryId to preserve color
-            ),
-            ),
-            );
+              // Navigate to product details
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProductDetailsPage(
+                    productId: product.id,
+                    categoryId: product.categoryId, // Use product's categoryId to preserve color
+                  ),
+                ),
+              );
             },
             onQuantityChanged: (product, quantity) {
               context.read<CategoryProductsBloc>().add(

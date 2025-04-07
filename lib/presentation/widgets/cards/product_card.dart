@@ -207,10 +207,10 @@ class ProductCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Product name - modified to show either the full name or just "Product N"
+                          // Product name - display just the number for product_N
                           Text(
-                            name.contains("Product") 
-                                ? name.split("Product").last.trim() // Just show "N" if pattern is "Something Product N"
+                            name.startsWith("product_") 
+                                ? "#${name.split("_").last}" // Just show number with # prefix
                                 : name,
                             style: TextStyle(
                               color: Colors.white,
@@ -229,7 +229,7 @@ class ProductCard extends StatelessWidget {
                             children: [
                               // Current price
                               Text(
-                                '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
+                                '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
                                 style: TextStyle(
                                   color: AppTheme.accentColor,
                                   fontSize: priceSize,
@@ -243,7 +243,7 @@ class ProductCard extends StatelessWidget {
                               if (hasDiscount)
                                 Flexible(
                                   child: Text(
-                                    '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
+                                    '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
                                     style: TextStyle(
                                       color: Colors.grey,
                                       fontSize: mrpSize,

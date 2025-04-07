@@ -9,7 +9,6 @@ import '../buttons/cart_fab.dart';
 import '../grids/product_grid.dart';
 
 /// A two-panel layout with categories on the left and products on the right
-/// Supports synchronized scrolling between category selection and product display
 class TwoPanelCategoryProductView extends StatefulWidget {
   final List<Category> categories;
   final Map<String, List<Product>> categoryProducts;
@@ -44,6 +43,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
 
 class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductView> {
   final ScrollController _productScrollController = ScrollController();
+  final ScrollController _categoryScrollController = ScrollController();
   int _selectedCategoryIndex = 0;
   final Map<int, double> _categoryOffsets = {};
   late Category _selectedCategory;
@@ -65,6 +65,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   void dispose() {
     _productScrollController.removeListener(_onProductScroll);
     _productScrollController.dispose();
+    _categoryScrollController.dispose();
     super.dispose();
   }
   
@@ -137,10 +138,11 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left panel: Category navigation (subcategories)
+            // Left panel: Category navigation
             SizedBox(
               width: 100.w,
               child: ListView.builder(
+                controller: _categoryScrollController,
                 itemCount: widget.categories.length,
                 padding: EdgeInsets.symmetric(vertical: 16.h),
                 itemBuilder: (context, index) {
@@ -148,7 +150,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                   final isSelected = index == _selectedCategoryIndex;
                   
                   // Get background color for the subcategory
-                  final Color? backgroundColor = widget.subcategoryColors?[category.id];
+                  final Color backgroundColor = widget.subcategoryColors?[category.id] ?? Colors.transparent;
                   
                   return GestureDetector(
                     onTap: () => _handleCategoryTap(index, category),
@@ -162,14 +164,14 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                       ),
                       child: Column(
                         children: [
-                          // Category icon with subcategory background color
+                          // Category icon
                           Container(
                             width: 50.w,
                             height: 50.w,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? backgroundColor?.withOpacity(0.8) ?? AppTheme.accentColor.withOpacity(0.1)
-                                  : backgroundColor?.withOpacity(0.4) ?? Colors.transparent,
+                                  ? backgroundColor.withOpacity(0.8)
+                                  : backgroundColor.withOpacity(0.4),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isSelected
@@ -188,7 +190,6 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                       ? Colors.black.withOpacity(0.7)
                                       : Colors.white,
                                   errorBuilder: (context, error, stackTrace) {
-                                    // Show a generic icon if the image fails to load
                                     return Icon(
                                       Icons.category,
                                       color: isSelected
@@ -204,7 +205,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                           
                           SizedBox(height: 8.h),
                           
-                          // Category name (shorter for better UI)
+                          // Category name
                           Text(
                             category.name,
                             style: TextStyle(
@@ -240,12 +241,12 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
               ),
             ),
             
-            // Right panel: Product grid by category
+            // Right panel: Products for selected category
             Expanded(
               child: CustomScrollView(
                 controller: _productScrollController,
                 slivers: [
-                  // For each category, show a header and its products
+                  // Display each category's products
                   for (int i = 0; i < widget.categories.length; i++)
                     SliverToBoxAdapter(
                       child: Builder(
@@ -279,50 +280,32 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                 ),
                               ),
                               
-                              // Product grid for this subcategory with consistent styling
-                              if (products.isNotEmpty)
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Subcategory description/header
-                                    Padding(
-                                      padding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 8.h),
-                                      child: Text(
-                                        '${products.length} products available',
-                                        style: TextStyle(
-                                          color: Colors.white.withOpacity(0.7),
-                                          fontSize: 12.sp,
-                                        ),
-                                      ),
-                                    ),
-                                    
-                                    // Product grid with subcategory-specific background color
-                                    ProductGrid(
-                                      products: products,
-                                      onProductTap: widget.onProductTap,
-                                      onQuantityChanged: widget.onQuantityChanged,
-                                      cartQuantities: widget.cartQuantities,
-                                      crossAxisCount: 2,
-                                      shrinkWrap: true,
-                                      physics: const NeverScrollableScrollPhysics(),
-                                      padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                      subCategoryColors: widget.subcategoryColors,
-                                    ),
-                                  ],
-                                )
-                              else
-                                Padding(
-                                  padding: EdgeInsets.all(16.w),
-                                  child: Center(
-                                    child: Text(
-                                      'No products available in this category',
-                                      style: TextStyle(
-                                        color: Colors.white.withOpacity(0.7),
-                                        fontSize: 14.sp,
-                                      ),
-                                    ),
+                              // Product count
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                child: Text(
+                                  '${products.length} products available',
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.7),
+                                    fontSize: 12.sp,
                                   ),
                                 ),
+                              ),
+                              
+                              SizedBox(height: 8.h),
+                              
+                              // Products grid
+                              ProductGrid(
+                                products: products,
+                                onProductTap: widget.onProductTap,
+                                onQuantityChanged: widget.onQuantityChanged,
+                                cartQuantities: widget.cartQuantities,
+                                crossAxisCount: 2,
+                                shrinkWrap: true,
+                                physics: const NeverScrollableScrollPhysics(),
+                                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                subCategoryColors: widget.subcategoryColors,
+                              ),
                               
                               SizedBox(height: 16.h),
                             ],
