@@ -28,6 +28,9 @@ abstract class IUserService {
   /// Listen to user data changes
   StreamSubscription<User?> listenToUserChanges(void Function(User?) onUserChanged);
   
+  /// Load user data from the database
+  Future<void> loadUserData(String userId);
+  
   /// Dispose the service
   void dispose();
 }

@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/presentation/blocs/user/user_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
+import 'package:profit_grocery_application/services/logging_service.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -34,6 +37,7 @@ class HomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Keep existing UserBloc from navigation and add HomeBloc
     return BlocProvider(
       create: (context) => HomeBloc()..add(const LoadHomeData()),
       child: const _HomePageContent(),
@@ -64,12 +68,32 @@ class _HomePageContentState extends State<_HomePageContent> {
     _currentUser = _userService.getCurrentUser();
     _userStream = _userService.userStream;
     
-    // Listen to user changes
+    // Listen to user changes from UserService
     _userStream.listen((user) {
       if (mounted) {
         setState(() {
           _currentUser = user;
+          LoggingService.logFirestore('HomePage: User data updated: ${user?.name ?? "null"}');
         });
+      }
+    });
+    
+    // Add a short delay to allow the UI to build, then check if user data is loaded
+    Future.delayed(Duration.zero, () {
+      if (_currentUser == null || _currentUser?.name == null) {
+        LoggingService.logFirestore('HomePage: User data not loaded, attempting to reload');
+        // Try to reload user data if not already loaded
+        final userId = _userService.getCurrentUserId();
+        if (userId != null) {
+          // Also trigger through UserBloc if available
+          try {
+            context.read<UserBloc>().add(LoadUserProfileEvent(userId));
+          } catch (e) {
+            LoggingService.logError('HomePage', 'Error triggering UserBloc: $e');
+          }
+        }
+      } else {
+        LoggingService.logFirestore('HomePage: User data already loaded: ${_currentUser?.name}');
       }
     });
   }

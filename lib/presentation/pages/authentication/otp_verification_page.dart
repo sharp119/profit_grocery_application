@@ -10,6 +10,9 @@ import '../../../services/logging_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../../blocs/user/user_bloc.dart';
+import '../../blocs/user/user_event.dart';
+import 'package:get_it/get_it.dart';
 import '../home/home_page.dart';
 import 'user_registration_page.dart';
 
@@ -160,28 +163,61 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           LoggingService.logFirestore('OtpVerificationPage listener - AuthState: ${state.status}');
           
           if (state.status == AuthStatus.authenticated) {
+            final userId = state.userId;
             LoggingService.logFirestore(
-              'OtpVerificationPage: User authenticated with ID: ${state.userId ?? "unknown"}, '
+              'OtpVerificationPage: User authenticated with ID: ${userId ?? "unknown"}, '
               'isExistingUser: $_isExistingUser'
             );
             
-            if (_isExistingUser) {
-              // For existing users, go directly to home page
-              LoggingService.logFirestore('OtpVerificationPage: Existing user - navigating to home page');
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (context) => const HomePage()),
-                (route) => false, // Remove all previous routes
-              );
-            } else {
-              // For new users, navigate to user registration page
-              LoggingService.logFirestore('OtpVerificationPage: New user - navigating to registration');
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserRegistrationPage(
-                    phoneNumber: widget.phoneNumber,
+            // Make sure we have a userId before proceeding
+            if (userId != null) {
+              // Explicitly load user profile before navigation
+              // This ensures the UI will have user data immediately
+              LoggingService.logFirestore('OtpVerificationPage: Explicitly loading user data for UI update');
+              context.read<UserBloc>().add(LoadUserProfileEvent(userId));
+              
+              if (_isExistingUser) {
+                // For existing users, go directly to home page
+                LoggingService.logFirestore('OtpVerificationPage: Existing user - navigating to home page');
+                
+                // Add a small delay to allow user data to be processed
+                // This ensures the UI will have user data when HomePage is built
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) {
+                          // Create a fresh UserBloc with pre-loaded data
+                          return BlocProvider(
+                            create: (context) => GetIt.instance<UserBloc>()
+                              ..add(LoadUserProfileEvent(userId)),
+                            child: const HomePage(),
+                          );
+                        }
+                      ),
+                      (route) => false, // Remove all previous routes
+                    );
+                  }
+                });
+              } else {
+                // For new users, navigate to user registration page
+                LoggingService.logFirestore('OtpVerificationPage: New user - navigating to registration');
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => UserRegistrationPage(
+                      phoneNumber: widget.phoneNumber,
+                    ),
                   ),
+                );
+              }
+            } else {
+              // Show error if userId is null
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Authentication error: User ID is missing'),
+                  backgroundColor: Colors.red,
                 ),
               );
             }

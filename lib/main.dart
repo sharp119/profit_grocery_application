@@ -178,6 +178,15 @@ Future<void> setupDependencyInjection() async {
   // Register interface
   sl.registerLazySingleton<IUserService>(() => userService);
   
+  // Create and register a separate UserService instance for backward compatibility
+  // This fixes the "GetIt: Object/factory with type UserService is not registered" error
+  final rtdbUserService = UserService();
+  await rtdbUserService.init(
+    firebaseDatabase: FirebaseDatabase.instance,
+    sharedPreferences: sharedPreferences,
+  );
+  sl.registerLazySingleton<UserService>(() => rtdbUserService);
+  
   // BLoCs
   sl.registerFactory(
     () => AuthBloc(authRepository: sl<AuthRepository>()),

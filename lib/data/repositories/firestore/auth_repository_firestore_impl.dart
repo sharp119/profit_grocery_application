@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dartz/dartz.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/services/user_service_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -168,7 +169,7 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
         }
         
         // Initialize UserService with user data
-        final userService = GetIt.instance<UserService>();
+        final userService = GetIt.instance<IUserService>();
         await userService.loadUserData(userId);
         
         // Get the values from shared preferences to use in the log
@@ -254,7 +255,7 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
     
     // Make sure user data is loaded in UserService
     try {
-      final userService = GetIt.instance<UserService>();
+      final userService = GetIt.instance<IUserService>();
       if (!userService.isLoggedIn()) {
         await userService.loadUserData(userId);
         LoggingService.logFirestore('AuthRepositoryImpl: User data loaded successfully');
@@ -300,7 +301,7 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
     
     // Clear user data from UserService
     try {
-      final userService = GetIt.instance<UserService>();
+      final userService = GetIt.instance<IUserService>();
       userService.clearCurrentUser();
       LoggingService.logFirestore('AuthRepositoryImpl: Cleared user data from UserService');
     } catch (e) {
