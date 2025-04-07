@@ -80,10 +80,14 @@ Future<void> setupDependencyInjection() async {
   
   // Services
   sl.registerLazySingleton(() => OTPService());
-  sl.registerLazySingleton(() => SessionManager()..init(
-    sharedPreferences: sl<SharedPreferences>(),
-    firebaseDatabase: sl<FirebaseDatabase>(),
-  ));
+  
+  // Initialize SessionManager as a singleton with proper dependencies
+  final sessionManager = SessionManager();
+  await sessionManager.init(
+    sharedPreferences: sharedPreferences,
+    firebaseDatabase: FirebaseDatabase.instance,
+  );
+  sl.registerLazySingleton(() => sessionManager);
   
   // Repositories
   sl.registerLazySingleton<AuthRepository>(
@@ -98,6 +102,7 @@ Future<void> setupDependencyInjection() async {
     () => UserRepositoryImpl(
       firebaseDatabase: sl(),
       sharedPreferences: sl(),
+      sessionManager: sl(),
     ),
   );
   

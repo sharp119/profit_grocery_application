@@ -7,17 +7,21 @@ import '../../core/errors/failures.dart';
 import '../../domain/entities/user.dart';
 import '../../domain/repositories/user_repository.dart';
 import '../../services/logging_service.dart';
+import '../../services/session_manager.dart';
 import '../models/user_model.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final FirebaseDatabase _firebaseDatabase;
   final SharedPreferences _sharedPreferences;
+  final SessionManager _sessionManager;
 
   UserRepositoryImpl({
     required FirebaseDatabase firebaseDatabase,
     required SharedPreferences sharedPreferences,
+    SessionManager? sessionManager,
   })  : _firebaseDatabase = firebaseDatabase,
-        _sharedPreferences = sharedPreferences;
+        _sharedPreferences = sharedPreferences,
+        _sessionManager = sessionManager ?? SessionManager();
 
   @override
   Future<Either<Failure, User>> createUser({
@@ -27,6 +31,21 @@ class UserRepositoryImpl implements UserRepository {
     required bool isOptedInForMarketing,
   }) async {
     try {
+      // Check if user already exists first
+      final userExistsResult = await checkUserExists(phoneNumber);
+      
+      // If there was an error checking user existence, continue anyway
+      // But if user exists, return an error
+      final bool userExists = userExistsResult.fold(
+        (failure) => false, // Assume user doesn't exist if we couldn't check
+        (exists) => exists,
+      );
+      
+      if (userExists) {
+        LoggingService.logFirestore('UserRepository: User with phone $phoneNumber already exists');
+        return Left(ValidationFailure(message: 'User with this phone number already exists'));
+      }
+
       // Get current user ID from SharedPreferences
       final userId = _sharedPreferences.getString(AppConstants.userTokenKey);
       
@@ -38,7 +57,7 @@ class UserRepositoryImpl implements UserRepository {
           // Generate a new ID as fallback
           final newUserId = DateTime.now().millisecondsSinceEpoch.toString();
           await _sharedPreferences.setString(AppConstants.userTokenKey, newUserId);
-          print('UserRepositoryImpl: Generated new user ID: $newUserId');
+          LoggingService.logFirestore('UserRepository: Generated new user ID: $newUserId');
           
           // Create user with this ID
           return await _createUserWithId(
@@ -51,7 +70,7 @@ class UserRepositoryImpl implements UserRepository {
         } else {
           // Use alternative ID
           await _sharedPreferences.setString(AppConstants.userTokenKey, alternativeUserId);
-          print('UserRepositoryImpl: Using alternative user ID: $alternativeUserId');
+          LoggingService.logFirestore('UserRepository: Using alternative user ID: $alternativeUserId');
           
           return await _createUserWithId(
             userId: alternativeUserId,
@@ -63,7 +82,7 @@ class UserRepositoryImpl implements UserRepository {
         }
       }
       
-      print('UserRepositoryImpl: Using existing user ID: $userId');
+      LoggingService.logFirestore('UserRepository: Using existing user ID: $userId');
       return await _createUserWithId(
         userId: userId,
         phoneNumber: phoneNumber,
@@ -74,6 +93,52 @@ class UserRepositoryImpl implements UserRepository {
     } catch (e) {
       LoggingService.logError('UserRepository: Failed to create user', e.toString());
       return Left(ServerFailure(message: 'Failed to create user: ${e.toString()}'));
+    }
+  }
+  
+  @override
+  Future<Either<Failure, Tuple2<User, String>>> createUserAndLogin({
+    required String phoneNumber,
+    String? name,
+    String? email,
+    required bool isOptedInForMarketing,
+  }) async {
+    try {
+      // First create the user
+      final userResult = await createUser(
+        phoneNumber: phoneNumber,
+        name: name,
+        email: email,
+        isOptedInForMarketing: isOptedInForMarketing,
+      );
+      
+      return await userResult.fold(
+        (failure) async => Left(failure),
+        (user) async {
+          try {
+            // Create a session for the user (auto-login)
+            final session = await _sessionManager.createSession(user.id);
+            final authToken = session.token;
+            
+            // Store the token in SharedPreferences with consistent keys
+            await _sharedPreferences.setString('auth_token', authToken);
+            
+            // Update user's last login time
+            await updateLastLogin(user.id);
+            
+            LoggingService.logFirestore('UserRepository: User created and auto-logged in: ${user.id}');
+            
+            return Right(Tuple2(user, authToken));
+          } catch (e) {
+            LoggingService.logError('UserRepository: Failed to auto-login after registration', e.toString());
+            // Still return the user but with an empty token
+            return Right(Tuple2(user, ''));
+          }
+        },
+      );
+    } catch (e) {
+      LoggingService.logError('UserRepository: Failed to create user and auto-login', e.toString());
+      return Left(ServerFailure(message: 'Failed to create user and auto-login: ${e.toString()}'));
     }
   }
   
@@ -109,6 +174,9 @@ class UserRepositoryImpl implements UserRepository {
         final usersRef = _firebaseDatabase.ref().child(AppConstants.usersCollection);
         await usersRef.child(userId).set(userData);
         
+        // Also store basic info in SharedPreferences for quick access
+        await _storeUserBasicInfo(userModel);
+        
         LoggingService.logFirestore('UserRepository: User created with ID: $userId');
         
         return Right(userModel);
@@ -119,6 +187,40 @@ class UserRepositoryImpl implements UserRepository {
     } catch (e) {
       LoggingService.logError('UserRepository: Failed to create user with ID', e.toString());
       return Left(ServerFailure(message: 'Failed to create user: ${e.toString()}'));
+    }
+  }
+  
+  /// Store basic user info in SharedPreferences for quick access
+  Future<void> _storeUserBasicInfo(User user) async {
+    try {
+      // Store the bare minimum needed for quick access
+      await _sharedPreferences.setString(AppConstants.userTokenKey, user.id);
+      await _sharedPreferences.setString(AppConstants.userPhoneKey, user.phoneNumber);
+      
+      // Store optional data if available
+      if (user.name != null) {
+        await _sharedPreferences.setString('user_name', user.name!);
+      }
+      
+      if (user.email != null) {
+        await _sharedPreferences.setString('user_email', user.email!);
+      }
+      
+      // Store basic user preferences
+      if (user is UserModel) {
+        await _sharedPreferences.setBool('user_marketing_opt_in', user.isOptedInForMarketing);
+      }
+      
+      // Store login time for auto-login expiry
+      await _sharedPreferences.setString('user_last_login', DateTime.now().toIso8601String());
+      
+      // Mark that user is complete and registered
+      await _sharedPreferences.setBool('user_registration_complete', true);
+      
+      LoggingService.logFirestore('UserRepository: Stored basic user info in SharedPreferences');
+    } catch (e) {
+      // Just log the error but don't throw - this is a non-critical operation
+      LoggingService.logError('UserRepository: Failed to store user info in SharedPreferences', e.toString());
     }
   }
 
@@ -160,10 +262,28 @@ class UserRepositoryImpl implements UserRepository {
       final userData = (snapshot.value as Map).values.first as Map<dynamic, dynamic>;
       final userModel = UserModel.fromJson(Map<String, dynamic>.from(userData));
       
+      // Store some basic user info in SharedPreferences for quick access
+      await _storeUserBasicInfo(userModel);
+      
       return Right(userModel);
     } catch (e) {
       LoggingService.logError('UserRepository: Failed to get user by phone', e.toString());
       return Left(ServerFailure(message: 'Failed to get user: ${e.toString()}'));
+    }
+  }
+  
+  @override
+  Future<Either<Failure, bool>> checkUserExists(String phoneNumber) async {
+    try {
+      // Check if user exists in Firebase by phone number
+      final usersRef = _firebaseDatabase.ref().child(AppConstants.usersCollection);
+      final query = usersRef.orderByChild('phoneNumber').equalTo(phoneNumber);
+      final snapshot = await query.get();
+      
+      return Right(snapshot.exists);
+    } catch (e) {
+      LoggingService.logError('UserRepository: Failed to check if user exists', e.toString());
+      return Left(ServerFailure(message: 'Failed to check if user exists: ${e.toString()}'));
     }
   }
 
@@ -207,6 +327,9 @@ class UserRepositoryImpl implements UserRepository {
           
           await usersRef.child(userId).update(updates);
           
+          // Also update in SharedPreferences for quick access
+          await _storeUserBasicInfo(updatedUser);
+          
           LoggingService.logFirestore('UserRepository: User updated with ID: $userId');
           
           return Right(updatedUser);
@@ -215,6 +338,49 @@ class UserRepositoryImpl implements UserRepository {
     } catch (e) {
       LoggingService.logError('UserRepository: Failed to update user', e.toString());
       return Left(ServerFailure(message: 'Failed to update user: ${e.toString()}'));
+    }
+  }
+  
+  @override
+  Future<Either<Failure, User>> updateLastLogin(String userId) async {
+    try {
+      // Get the current user data
+      final userResult = await getUserById(userId);
+      
+      return await userResult.fold(
+        (failure) async => Left(failure),
+        (user) async {
+          // Update last login time
+          final now = DateTime.now();
+          
+          // Update in Firebase Realtime Database
+          final usersRef = _firebaseDatabase.ref().child(AppConstants.usersCollection);
+          await usersRef.child(userId).update({
+            'lastLogin': now.toIso8601String(),
+          });
+          
+          // Create updated user model
+          final updatedUser = user is UserModel
+              ? (user as UserModel).copyWith(lastLogin: now)
+              : UserModel(
+                  id: user.id,
+                  phoneNumber: user.phoneNumber,
+                  name: user.name,
+                  email: user.email,
+                  addresses: user.addresses,
+                  createdAt: user.createdAt,
+                  lastLogin: now,
+                  isOptedInForMarketing: user is UserModel ? (user as UserModel).isOptedInForMarketing : true,
+                );
+          
+          LoggingService.logFirestore('UserRepository: Updated last login for user ID: $userId');
+          
+          return Right(updatedUser);
+        },
+      );
+    } catch (e) {
+      LoggingService.logError('UserRepository: Failed to update last login', e.toString());
+      return Left(ServerFailure(message: 'Failed to update last login: ${e.toString()}'));
     }
   }
 

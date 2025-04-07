@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:pinput/pinput.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -33,11 +34,23 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   int _remainingTime = 60; // 60 seconds countdown
   bool _isAutoVerifying = false;
 
+  bool _isExistingUser = false;
+  
   @override
   void initState() {
     super.initState();
     _startResendTimer();
+    _checkUserStatus();
     LoggingService.logFirestore('OtpVerificationPage: Initialized with requestId: ${widget.requestId}');
+  }
+  
+  Future<void> _checkUserStatus() async {
+    // Read the isExistingUser flag from SharedPreferences
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isExistingUser = prefs.getBool('is_existing_user') ?? false;
+    });
+    LoggingService.logFirestore('OtpVerificationPage: User status check - isExistingUser: $_isExistingUser');
   }
 
   @override
@@ -147,17 +160,31 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
           LoggingService.logFirestore('OtpVerificationPage listener - AuthState: ${state.status}');
           
           if (state.status == AuthStatus.authenticated) {
-            LoggingService.logFirestore('OtpVerificationPage: User authenticated with ID: ${state.userId ?? "unknown"}, navigating to registration');
-            
-            // Navigate to user registration page (for new users)
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => UserRegistrationPage(
-                  phoneNumber: widget.phoneNumber,
-                ),
-              ),
+            LoggingService.logFirestore(
+              'OtpVerificationPage: User authenticated with ID: ${state.userId ?? "unknown"}, '
+              'isExistingUser: $_isExistingUser'
             );
+            
+            if (_isExistingUser) {
+              // For existing users, go directly to home page
+              LoggingService.logFirestore('OtpVerificationPage: Existing user - navigating to home page');
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(builder: (context) => const HomePage()),
+                (route) => false, // Remove all previous routes
+              );
+            } else {
+              // For new users, navigate to user registration page
+              LoggingService.logFirestore('OtpVerificationPage: New user - navigating to registration');
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => UserRegistrationPage(
+                    phoneNumber: widget.phoneNumber,
+                  ),
+                ),
+              );
+            }
           } else if (state.status == AuthStatus.otpSent) {
             // Show toast/snackbar for OTP resent
             ScaffoldMessenger.of(context).showSnackBar(
@@ -240,29 +267,60 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     
                     // OTP input field
                     Center(
-                      child: Pinput(
-                        controller: _otpController,
-                        length: 4, // 4-digit OTP
-                        defaultPinTheme: defaultPinTheme,
-                        focusedPinTheme: focusedPinTheme,
-                        submittedPinTheme: submittedPinTheme,
-                        pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
-                        showCursor: true,
-                        onCompleted: (pin) {
-                          // Auto-verify when all digits are entered
-                          if (!_isAutoVerifying) {
-                            _verifyOtp();
-                          }
-                        },
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter the OTP';
-                          }
-                          if (value.length != 4) {
-                            return 'Please enter a valid 4-digit OTP';
-                          }
-                          return null;
-                        },
+                      child: Column(
+                        children: [
+                          Pinput(
+                            controller: _otpController,
+                            length: 4, // 4-digit OTP
+                            defaultPinTheme: defaultPinTheme,
+                            focusedPinTheme: focusedPinTheme,
+                            submittedPinTheme: submittedPinTheme,
+                            pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
+                            showCursor: true,
+                            onCompleted: (pin) {
+                              // Auto-verify when all digits are entered
+                              if (!_isAutoVerifying) {
+                                _verifyOtp();
+                              }
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter the OTP';
+                              }
+                              if (value.length != 4) {
+                                return 'Please enter a valid 4-digit OTP';
+                              }
+                              return null;
+                            },
+                          ),
+                          
+                          // OTP auto-verification message
+                          if (_isAutoVerifying)
+                            Padding(
+                              padding: EdgeInsets.only(top: 16.h),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  SizedBox(
+                                    width: 16.w,
+                                    height: 16.w,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.w,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                                    ),
+                                  ),
+                                  SizedBox(width: 8.w),
+                                  Text(
+                                    'Verifying your code...',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 14.sp,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                        ],
                       ),
                     ),
                     

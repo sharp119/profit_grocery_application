@@ -11,7 +11,7 @@ class PhoneCheckResult {
   });
 }
 
-/// Represents an active user session
+/// Represents an active user session with enhanced security and tracking
 class UserSession {
   final String userId;
   final String token;
@@ -19,6 +19,9 @@ class UserSession {
   final DateTime expiresAt;
   final DateTime lastActive;
   final Map<String, dynamic> deviceInfo;
+  final String? ipAddress;
+  final String? userAgent;
+  final String? sessionType;
 
   UserSession({
     required this.userId,
@@ -27,11 +30,28 @@ class UserSession {
     required this.expiresAt,
     required this.lastActive,
     required this.deviceInfo,
+    this.ipAddress,
+    this.userAgent,
+    this.sessionType = 'mobile',
   });
 
   /// Check if the session is currently active
   bool isActive() {
     return DateTime.now().isBefore(expiresAt);
+  }
+  
+  /// Get the remaining time in minutes
+  int getRemainingTimeInMinutes() {
+    final now = DateTime.now();
+    if (now.isAfter(expiresAt)) return 0;
+    
+    final difference = expiresAt.difference(now);
+    return difference.inMinutes;
+  }
+  
+  /// Get formatted creation time
+  String getFormattedCreationTime() {
+    return '${createdAt.day}/${createdAt.month}/${createdAt.year} ${createdAt.hour}:${createdAt.minute}';
   }
 
   /// Convert to a JSON map
@@ -43,6 +63,9 @@ class UserSession {
       'expiresAt': expiresAt.toIso8601String(),
       'lastActive': lastActive.toIso8601String(),
       'deviceInfo': deviceInfo,
+      'ipAddress': ipAddress,
+      'userAgent': userAgent,
+      'sessionType': sessionType,
     };
   }
 
@@ -54,7 +77,10 @@ class UserSession {
       createdAt: DateTime.parse(json['createdAt']),
       expiresAt: DateTime.parse(json['expiresAt']),
       lastActive: DateTime.parse(json['lastActive']),
-      deviceInfo: json['deviceInfo'],
+      deviceInfo: json['deviceInfo'] ?? {},
+      ipAddress: json['ipAddress'],
+      userAgent: json['userAgent'],
+      sessionType: json['sessionType'] ?? 'mobile',
     );
   }
 
@@ -66,6 +92,9 @@ class UserSession {
     DateTime? expiresAt,
     DateTime? lastActive,
     Map<String, dynamic>? deviceInfo,
+    String? ipAddress,
+    String? userAgent,
+    String? sessionType,
   }) {
     return UserSession(
       userId: userId ?? this.userId,
@@ -74,6 +103,9 @@ class UserSession {
       expiresAt: expiresAt ?? this.expiresAt,
       lastActive: lastActive ?? this.lastActive,
       deviceInfo: deviceInfo ?? this.deviceInfo,
+      ipAddress: ipAddress ?? this.ipAddress,
+      userAgent: userAgent ?? this.userAgent,
+      sessionType: sessionType ?? this.sessionType,
     );
   }
 }

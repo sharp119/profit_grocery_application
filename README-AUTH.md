@@ -19,15 +19,19 @@ The authentication system implements a secure, phone-based OTP verification flow
    - Enhanced with user existence checking
    - Separate flows for new and existing users
    - Integration with SessionManager
+   - Robust error handling and fallback mechanisms
 
 2. **SessionManager**
-   - Secure token generation and validation
-   - Session tracking in both SharedPreferences and Firebase
+   - Cryptographically secure token generation using SHA-256
+   - Dual-storage session tracking (SharedPreferences + Firebase)
    - Session timeout and automatic invalidation
+   - Offline session validation capability
+   - Cross-device session awareness
 
 3. **OTPService**
    - Integration with MSG91 for OTP delivery and verification
    - Token verification capabilities
+   - Phone number masking for secure logging
 
 ### Authentication Flow
 
@@ -44,10 +48,13 @@ The authentication system implements a secure, phone-based OTP verification flow
    - User ID is retrieved (for existing users) or created (for new users)
 
 3. **Session Management**
-   - Each login creates a new secure session
+   - Each login creates a new secure session with cryptographic tokens
    - Sessions have configurable timeout (default: 60 minutes)
-   - Sessions are tracked both locally and in Firebase
-   - Multiple device logins are supported
+   - Sessions are tracked both locally and in Firebase Realtime Database
+   - Multiple device logins are supported with cross-device awareness
+   - Fallback to local validation when offline
+   - Automatic session cleanup for expired sessions
+   - Comprehensive session security with entropy analysis
 
 ## Firebase Schema
 

@@ -79,39 +79,54 @@ class AuthRepositoryImpl implements AuthRepository {
       // Store access token in SharedPreferences
       await _sharedPreferences.setString(_tokenKey, accessToken);
       
-      // Check if this is a login or registration
-      final isExistingUser = _sharedPreferences.getBool('is_existing_user') ?? false;
-      
-      String userId;
-      
-      if (isExistingUser) {
-        // If user exists, get their user ID from the database
-        final userIdResult = await _getUserIdByPhone(phoneNumber);
+      try {
+        // Check if this is a login or registration
+        final isExistingUser = _sharedPreferences.getBool('is_existing_user') ?? false;
         
-        if (userIdResult == null) {
-          return Left(AuthFailure(message: 'User exists but ID could not be retrieved'));
+        String userId;
+        
+        if (isExistingUser) {
+          // If user exists, get their user ID from the database
+          final userIdResult = await _getUserIdByPhone(phoneNumber);
+          
+          if (userIdResult == null) {
+            LoggingService.logError('AuthRepositoryImpl', 'User exists but ID could not be retrieved');
+            return Left(AuthFailure(message: 'User exists but ID could not be retrieved'));
+          }
+          
+          userId = userIdResult;
+          LoggingService.logFirestore('AuthRepositoryImpl: Retrieved existing user ID: $userId');
+        } else {
+          // For new users, generate a new ID
+          userId = DateTime.now().millisecondsSinceEpoch.toString();
+          LoggingService.logFirestore('AuthRepositoryImpl: Generated new user ID: $userId');
         }
         
-        userId = userIdResult;
-        LoggingService.logFirestore('AuthRepositoryImpl: Retrieved existing user ID: $userId');
-      } else {
-        // For new users, generate a new ID
-        userId = DateTime.now().millisecondsSinceEpoch.toString();
-        LoggingService.logFirestore('AuthRepositoryImpl: Generated new user ID: $userId');
+        // Save to SharedPreferences
+        await _sharedPreferences.setString(_userIdKey, userId);
+        await _sharedPreferences.setString(AppConstants.userTokenKey, userId);
+        
+        // Store phone number for future reference
+        await _sharedPreferences.setString(_phoneNumberKey, phoneNumber);
+        await _sharedPreferences.setString(AppConstants.userPhoneKey, phoneNumber);
+
+        // Create and track session using SessionManager
+        final session = await _sessionManager.createSession(userId);
+        
+        LoggingService.logFirestore(
+          'AuthRepositoryImpl: Created session for user $userId, expires: ${session.getFormattedCreationTime()}'
+        );
+      } catch (e) {
+        LoggingService.logError('AuthRepositoryImpl', 'Error during session creation: ${e.toString()}');
+        // We still want to return success even if session creation has issues
+        // since the authentication itself succeeded
       }
-      
-      // Save to SharedPreferences
-      await _sharedPreferences.setString(_userIdKey, userId);
-      await _sharedPreferences.setString(AppConstants.userTokenKey, userId);
-      
-      // Store phone number for future reference
-      await _sharedPreferences.setString(_phoneNumberKey, phoneNumber);
-      await _sharedPreferences.setString(AppConstants.userPhoneKey, phoneNumber);
 
-      // Create and track session using SessionManager
-      await _sessionManager.createSession(userId);
-
-      LoggingService.logFirestore('AuthRepositoryImpl: Authentication successful. UserID: $userId, isExistingUser: $isExistingUser');
+      // Get the values from shared preferences to use in the log
+      final currentUserId = _sharedPreferences.getString(_userIdKey) ?? 'unknown';
+      final isUserExisting = _sharedPreferences.getBool('is_existing_user') ?? false;
+      
+      LoggingService.logFirestore('AuthRepositoryImpl: Authentication successful. UserID: $currentUserId, isExistingUser: $isUserExisting');
 
       return Right(accessToken);
     } catch (e) {

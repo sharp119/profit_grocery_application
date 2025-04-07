@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -28,7 +29,12 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
     super.dispose();
   }
 
-  void _submitPhoneNumber() {
+  // Track user flow state
+  bool _isCheckingUserStatus = false;
+  bool? _isExistingUser;
+  String _flowStatusMessage = '';
+
+  void _submitPhoneNumber() async {
     if (!_formKey.currentState!.validate()) return;
     
     // Sanitize the phone number (remove any spaces or symbols)
@@ -43,6 +49,39 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
         ),
       );
       return;
+    }
+    
+    // Set UI to checking state
+    setState(() {
+      _isCheckingUserStatus = true;
+      _flowStatusMessage = 'Checking phone number...';
+    });
+    
+    try {
+      // Get Firebase reference to check if user exists
+      final usersRef = FirebaseDatabase.instance.ref().child(AppConstants.usersCollection);
+      final query = usersRef.orderByChild('phoneNumber').equalTo(sanitizedPhone);
+      final snapshot = await query.get();
+      
+      setState(() {
+        _isExistingUser = snapshot.exists;
+        _flowStatusMessage = snapshot.exists 
+            ? 'Welcome back! Sending verification code...' 
+            : 'Welcome to ProfitGrocery! Sending verification code...';
+        _isCheckingUserStatus = false;
+      });
+      
+      LoggingService.logFirestore(
+        'PhoneEntryPage: User exists check for ${sanitizedPhone.substring(6)}XXXX: $_isExistingUser'
+      );
+    } catch (e) {
+      LoggingService.logError('PhoneEntryPage', 'Error checking user existence: $e');
+      // Default to new user if we can't check
+      setState(() {
+        _isExistingUser = false;
+        _isCheckingUserStatus = false;
+        _flowStatusMessage = '';
+      });
     }
     
     LoggingService.logFirestore('PhoneEntryPage: Submitting phone number: ${sanitizedPhone.substring(6)}XXXX');
@@ -219,10 +258,57 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
                     
                     SizedBox(height: 24.h),
                     
+                    // Flow status message
+                    if (_flowStatusMessage.isNotEmpty)
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 16.h),
+                        child: Container(
+                          padding: EdgeInsets.all(12.r),
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondaryColor.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: _isExistingUser == true 
+                                ? Colors.green.withOpacity(0.5)
+                                : _isExistingUser == false
+                                  ? AppTheme.accentColor.withOpacity(0.5)
+                                  : Colors.grey.withOpacity(0.5),
+                              width: 1.w,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _isExistingUser == true 
+                                  ? Icons.person
+                                  : _isExistingUser == false
+                                    ? Icons.person_add
+                                    : Icons.info_outline,
+                                color: _isExistingUser == true 
+                                  ? Colors.green
+                                  : _isExistingUser == false
+                                    ? AppTheme.accentColor
+                                    : Colors.grey,
+                              ),
+                              SizedBox(width: 12.w),
+                              Expanded(
+                                child: Text(
+                                  _flowStatusMessage,
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14.sp,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    
                     // Submit button
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
-                        final isLoading = state.status == AuthStatus.loading;
+                        final isLoading = state.status == AuthStatus.loading || _isCheckingUserStatus;
                         
                         return SizedBox(
                           width: double.infinity,

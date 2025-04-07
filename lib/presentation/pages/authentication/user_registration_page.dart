@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../services/logging_service.dart';
+import '../../../services/session_manager.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../../blocs/user/user_bloc.dart';
@@ -39,7 +41,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     super.dispose();
   }
 
-  void _submitProfile() {
+  bool _isCreatingSession = false;
+  
+  Future<void> _submitProfile() async {
     if (!_formKey.currentState!.validate()) return;
     
     // Check if user is authenticated
@@ -59,12 +63,24 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     );
   }
 
-  void _skipProfileCreation() {
+  Future<void> _skipProfileCreation() async {
+    setState(() {
+      _isCreatingSession = true;
+    });
+    
     // Check if user is authenticated
     final authState = context.read<AuthBloc>().state;
     final userId = authState.userId;
     
     LoggingService.logFirestore('UserRegistrationPage: Skipping profile creation for ${widget.phoneNumber}, Auth status: ${authState.status}, User ID: ${userId ?? "unknown"}');
+    
+    // Show toast to indicate creating basic profile
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Creating basic profile...'),
+        duration: Duration(seconds: 1),
+      ),
+    );
     
     // Create minimal user profile with just phone number
     context.read<UserBloc>().add(
@@ -75,11 +91,27 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     );
   }
 
-  void _navigateToHome() {
+  Future<void> _navigateToHome() async {
     LoggingService.logFirestore('UserRegistrationPage: Navigating to home page');
     
+    try {
+      // Get the userId
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
+      
+      if (userId != null) {
+        // Create a session for auto-login
+        final sessionManager = SessionManager();
+        await sessionManager.createSession(userId);
+        LoggingService.logFirestore('UserRegistrationPage: Created login session for user $userId');
+      }
+    } catch (e) {
+      LoggingService.logError('UserRegistrationPage', 'Error creating session: $e');
+      // Continue with navigation even if session creation fails
+    }
+    
     // Delay navigation slightly to allow UI to complete any animations
-    Future.delayed(const Duration(milliseconds: 300), () {
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const HomePage()),
@@ -311,7 +343,7 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                     // Skip button
                     BlocBuilder<UserBloc, UserState>(
                       builder: (context, state) {
-                        final isLoading = state.status == UserStatus.loading;
+                        final isLoading = state.status == UserStatus.loading || _isCreatingSession;
                         
                         return SizedBox(
                           width: double.infinity,
@@ -320,13 +352,35 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                             style: TextButton.styleFrom(
                               padding: EdgeInsets.symmetric(vertical: 12.h),
                             ),
-                            child: Text(
-                              'Skip for now',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                color: AppTheme.accentColor.withOpacity(0.8),
-                              ),
-                            ),
+                            child: isLoading && _isCreatingSession
+                                ? Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      SizedBox(
+                                        width: 16.w,
+                                        height: 16.w,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.w,
+                                          valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                                        ),
+                                      ),
+                                      SizedBox(width: 8.w),
+                                      Text(
+                                        'Creating basic profile...',
+                                        style: TextStyle(
+                                          fontSize: 16.sp,
+                                          color: AppTheme.accentColor.withOpacity(0.8),
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : Text(
+                                    'Skip for now',
+                                    style: TextStyle(
+                                      fontSize: 16.sp,
+                                      color: AppTheme.accentColor.withOpacity(0.8),
+                                    ),
+                                  ),
                           ),
                         );
                       },
