@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/errors/global_error_handler.dart';
 import '../../../services/logging_service.dart';
 import '../../../services/session_manager.dart';
 import '../../blocs/auth/auth_bloc.dart';
@@ -33,6 +35,14 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
   final _emailController = TextEditingController();
   
   bool _isOptedInForMarketing = true;
+  
+  @override
+  void initState() {
+    super.initState();
+    
+    // Hide any "User not found" error message
+    GlobalErrorHandler.hideNewUserWelcome();
+  }
 
   @override
   void dispose() {
@@ -104,6 +114,9 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
         final sessionManager = SessionManager();
         await sessionManager.createSession(userId);
         LoggingService.logFirestore('UserRegistrationPage: Created login session for user $userId');
+        
+        // Explicitly trigger a user profile load for immediate UI update
+        context.read<UserBloc>().add(LoadUserProfileEvent(userId));
       }
     } catch (e) {
       LoggingService.logError('UserRegistrationPage', 'Error creating session: $e');
@@ -114,7 +127,44 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
     Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
-          MaterialPageRoute(builder: (context) => const HomePage()),
+          MaterialPageRoute(
+            builder: (context) {
+              // Get the userId for the BlocProvider
+              final prefs = SharedPreferences.getInstance();
+              final futures = [prefs];
+              
+              return FutureBuilder(
+                future: Future.wait(futures),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.done) {
+                    final userId = (snapshot.data?[0] as SharedPreferences).getString(AppConstants.userTokenKey);
+                    
+                    // Create a fresh UserBloc with pre-loaded data if we have userId
+                    if (userId != null) {
+                      return BlocProvider(
+                        create: (context) => GetIt.instance<UserBloc>()
+                          ..add(LoadUserProfileEvent(userId)),
+                        child: const HomePage(),
+                      );
+                    }
+                    
+                    // Fallback if no userId
+                    return const HomePage();
+                  }
+                  
+                  // Show loading while getting userId
+                  return Scaffold(
+                    backgroundColor: AppTheme.backgroundColor,
+                    body: Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           (route) => false, // Remove all previous routes
         );
       }
@@ -384,6 +434,60 @@ class _UserRegistrationPageState extends State<UserRegistrationPage> {
                           ),
                         );
                       },
+                    ),
+                    
+                    SizedBox(height: 16.h),
+                    
+                    // Terms and conditions - moved from login page to registration page
+                    Center(
+                      child: Text(
+                        'By continuing, you agree to our',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ),
+                    
+                    SizedBox(height: 8.h),
+                    
+                    Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          TextButton(
+                            onPressed: () {
+                              // Navigate to Terms & Conditions
+                            },
+                            child: Text(
+                              'Terms & Conditions',
+                              style: TextStyle(
+                                color: AppTheme.accentColor,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                          ),
+                          Text(
+                            'and',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              // Navigate to Privacy Policy
+                            },
+                            child: Text(
+                              'Privacy Policy',
+                              style: TextStyle(
+                                color: AppTheme.accentColor,
+                                fontSize: 14.sp,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                     
                     SizedBox(height: 16.h),

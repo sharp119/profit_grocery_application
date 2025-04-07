@@ -346,57 +346,7 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
                     
                     SizedBox(height: 24.h),
                     
-                    // Terms and conditions
-                    Center(
-                      child: Text(
-                        'By continuing, you agree to our',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontSize: 14.sp,
-                        ),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 8.h),
-                    
-                    Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          TextButton(
-                            onPressed: () {
-                              // Navigate to Terms & Conditions
-                            },
-                            child: Text(
-                              'Terms & Conditions',
-                              style: TextStyle(
-                                color: AppTheme.accentColor,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                          Text(
-                            'and',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14.sp,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              // Navigate to Privacy Policy
-                            },
-                            child: Text(
-                              'Privacy Policy',
-                              style: TextStyle(
-                                color: AppTheme.accentColor,
-                                fontSize: 14.sp,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    // Terms and conditions removed - moved to registration page
                   ],
                 ),
               ),

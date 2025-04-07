@@ -203,14 +203,20 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
               } else {
                 // For new users, navigate to user registration page
                 LoggingService.logFirestore('OtpVerificationPage: New user - navigating to registration');
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => UserRegistrationPage(
-                      phoneNumber: widget.phoneNumber,
-                    ),
-                  ),
-                );
+                // Small delay to make sure navigation feels smooth
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => UserRegistrationPage(
+                          phoneNumber: widget.phoneNumber,
+                        ),
+                      ),
+                      (route) => false, // Clear navigation stack
+                    );
+                  }
+                });
               }
             } else {
               // Show error if userId is null

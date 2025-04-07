@@ -15,6 +15,7 @@ import 'firebase_options.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
+import 'core/errors/global_error_handler.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
 import 'services/session_manager_firestore.dart';
@@ -227,6 +228,72 @@ class MyApp extends StatelessWidget {
               AppConstants.homeRoute: (context) => const HomePage(),
               AppConstants.loginRoute: (context) => const PhoneEntryPage(),
               // Add more routes as we develop
+            },
+            // Add a global error handler for better error messages
+            builder: (context, child) {
+              return Material(
+                type: MaterialType.transparency,
+                child: Stack(
+                  children: [
+                    child!,
+                    // For better error messages for new users instead of "User not found"
+                    Builder(builder: (context) {
+                      return MediaQuery(
+                        data: MediaQuery.of(context).copyWith(
+                          boldText: false,
+                        ),
+                        child: Directionality(
+                          textDirection: TextDirection.ltr,
+                          child: Align(
+                            alignment: Alignment.bottomCenter,
+                            child: ValueListenableBuilder<bool>(
+                              valueListenable: GlobalErrorHandler.showNewUserNote,
+                              builder: (context, showNote, _) {
+                                if (!showNote) return const SizedBox();
+                                
+                                // Show a bottom note for new users
+                                return GestureDetector(
+                                  onTap: () => GlobalErrorHandler.showNewUserNote.value = false,
+                                  child: Container(
+                                    width: double.infinity,
+                                    padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+                                    decoration: BoxDecoration(
+                                      color: AppTheme.accentColor,
+                                      borderRadius: BorderRadius.vertical(top: Radius.circular(12)),
+                                    ),
+                                    child: SafeArea(
+                                      top: false,
+                                      child: Row(
+                                        children: [
+                                          Icon(Icons.info_outline, color: AppTheme.primaryColor),
+                                          SizedBox(width: 12),
+                                          Expanded(
+                                            child: Text(
+                                              'Welcome to ProfitGrocery! Please fill out your profile.',
+                                              style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => GlobalErrorHandler.showNewUserNote.value = false,
+                                            child: Text(
+                                              'Try Again',
+                                              style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ),
+              );
             },
           );
         },
