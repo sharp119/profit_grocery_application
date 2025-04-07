@@ -134,17 +134,36 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
   
   // Generate subcategory colors
   Map<String, Color> _generateSubcategoryColors() {
-    return {
-      'category_1': const Color(0xFF1A5D1A), // Dark green
-      'category_2': const Color(0xFFE5BEEC), // Light lavender
-      'category_3': const Color(0xFFECB159), // Yellow/orange
-      'category_4': const Color(0xFF219C90), // Teal
-      'snacks_1': const Color(0xFFECB159), // Yellow/orange for chips
-      'grocery_1': const Color(0xFF1A5D1A), // Dark green for vegetables
-      'grocery_2': const Color(0xFFD5A021), // Gold/yellow for grains
-      'grocery_3': const Color(0xFFFF6B6B), // Soft red for oils/spices
-      'kitchen_1': const Color(0xFFA9907E), // Brown for bakery
-    };
+    final Map<String, Color> colors = {};
+    
+    // Map category IDs to colors
+    // Standard category IDs
+    colors['category_1'] = const Color(0xFF1A5D1A); // Dark green
+    colors['category_2'] = const Color(0xFFE5BEEC); // Light lavender
+    colors['category_3'] = const Color(0xFFECB159); // Yellow/orange
+    colors['category_4'] = const Color(0xFF219C90); // Teal
+    
+    // Product ID to category mapping
+    colors['1'] = colors['category_1']!; // Green
+    colors['2'] = colors['category_2']!; // Light lavender
+    colors['3'] = colors['category_3']!; // Yellow/orange
+    
+    // Map all grocery category IDs
+    colors['grocery_1'] = const Color(0xFF1A5D1A); // Dark green for vegetables
+    colors['grocery_2'] = const Color(0xFFD5A021); // Gold/yellow for grains
+    colors['grocery_3'] = const Color(0xFFFF6B6B); // Soft red for oils/spices
+    
+    // Map kitchen category IDs
+    colors['kitchen_1'] = const Color(0xFFA9907E); // Brown for bakery
+    colors['kitchen_2'] = const Color(0xFFABC4AA); // Sage green for dry fruits
+    colors['kitchen_3'] = const Color(0xFF675D50); // Dark brown for meat
+    colors['kitchen_4'] = const Color(0xFF3F4E4F); // Dark slate for kitchenware
+    
+    // Map snacks category IDs
+    colors['snacks_1'] = const Color(0xFFECB159); // Yellow/orange for chips
+    colors['snacks_5'] = const Color(0xFFEEBB4D); // Amber for instant food
+    
+    return colors;
   }
   
   // Mock data methods

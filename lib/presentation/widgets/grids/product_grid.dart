@@ -81,10 +81,10 @@ class ProductGrid extends StatelessWidget {
         final product = products[index];
         final quantity = cartQuantities[product.id] ?? 0;
         
-        // Get the background color based on subcategory if available
+        // Get the background color based on category ID
         Color? backgroundColor;
-        if (subCategoryColors != null && product.subcategoryId != null) {
-          backgroundColor = subCategoryColors?[product.subcategoryId];
+        if (subCategoryColors != null && product.categoryId != null) {
+          backgroundColor = subCategoryColors?[product.categoryId];
         }
         
         return ProductCard.fromEntity(

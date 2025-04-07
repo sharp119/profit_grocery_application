@@ -515,19 +515,20 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Map<String, Color> _generateSubcategoryColors() {
     final Map<String, Color> colors = {};
     
-    // Colors for grocery categories (vegetables, fruits, etc)
+    // Category ID-based colors
+    // Main categories
     colors['grocery_1'] = const Color(0xFF1A5D1A); // Dark green for vegetables
     colors['grocery_2'] = const Color(0xFFD5A021); // Gold/yellow for grains
     colors['grocery_3'] = const Color(0xFFFF6B6B); // Soft red for oils/spices
     colors['grocery_4'] = const Color(0xFFE5BEEC); // Light lavender for dairy
     
-    // Colors for kitchen categories
+    // Kitchen categories
     colors['kitchen_1'] = const Color(0xFFA9907E); // Brown for bakery
     colors['kitchen_2'] = const Color(0xFFABC4AA); // Sage green for dry fruits
     colors['kitchen_3'] = const Color(0xFF675D50); // Dark brown for meat
     colors['kitchen_4'] = const Color(0xFF3F4E4F); // Dark slate for kitchenware
     
-    // Colors for snacks categories
+    // Snacks categories
     colors['snacks_1'] = const Color(0xFFECB159); // Yellow/orange for chips
     colors['snacks_2'] = const Color(0xFFBF3131); // Dark red for sweets
     colors['snacks_3'] = const Color(0xFF219C90); // Teal for drinks
@@ -537,7 +538,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     colors['snacks_7'] = const Color(0xFF116A7B); // Teal for paan
     colors['snacks_8'] = const Color(0xFFCDDBD5); // Light mint for ice cream
     
-    // Colors for store categories
+    // Store categories
     colors['store_1'] = const Color(0xFFE55604); // Orange for pooja
     colors['store_2'] = const Color(0xFF557A46); // Green for pharma
     colors['store_3'] = const Color(0xFF8ECDDD); // Light blue for pet
@@ -546,6 +547,36 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     colors['store_6'] = const Color(0xFF512B81); // Deep purple for stationery
     colors['store_7'] = const Color(0xFF86A3B8); // Slate blue for books
     colors['store_8'] = const Color(0xFFEF9A53); // Orange for toys
+
+    // Color mappings for mock product category IDs
+    colors['1'] = const Color(0xFF1A5D1A);  // Green for product ID 1
+    colors['2'] = const Color(0xFFE5BEEC);  // Light purple for product ID 2
+    colors['3'] = const Color(0xFFECB159);  // Yellow for product ID 3
+    colors['4'] = const Color(0xFF219C90);  // Teal for product ID 4
+    colors['5'] = const Color(0xFF9A3B3B);  // Burgundy for product ID 5
+    colors['6'] = const Color(0xFF557A46);  // Green for product ID 6
+    colors['7'] = const Color(0xFF8ECDDD);  // Light blue for product ID 7
+    colors['8'] = const Color(0xFF068DA9);  // Blue for product ID 8
+    colors['9'] = const Color(0xFF675D50);  // Dark brown for product ID 9
+    colors['10'] = const Color(0xFFA9907E); // Brown for product ID 10
+    colors['11'] = const Color(0xFFECB159); // Yellow for product ID 11
+    colors['12'] = const Color(0xFF3F4E4F); // Slate for product ID 12
+
+    // Add explicit category mapping for bestsellers
+    colors['category_1'] = const Color(0xFF1A5D1A); // Dark green
+    colors['category_2'] = const Color(0xFFE5BEEC); // Light lavender 
+    colors['category_3'] = const Color(0xFFECB159); // Yellow/orange
+    colors['category_4'] = const Color(0xFF219C90); // Teal
+    
+    // Add mappings for CategoryProductsBloc categories
+    colors['vegetables'] = const Color(0xFF1A5D1A);    // Dark green
+    colors['dairy'] = const Color(0xFFE5BEEC);         // Light lavender
+    colors['snacks'] = const Color(0xFFECB159);        // Yellow/orange
+    colors['beverages'] = const Color(0xFF219C90);     // Teal
+    colors['grocery'] = const Color(0xFFD5A021);       // Gold/yellow
+    colors['household'] = const Color(0xFF3F4E4F);     // Dark slate
+    colors['personal_care'] = const Color(0xFF9E4784); // Purple 
+    colors['baby_care'] = const Color(0xFF8ECDDD);     // Light blue
     
     return colors;
   }

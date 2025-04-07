@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
+import 'package:profit_grocery_application/presentation/widgets/cards/product_card.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -470,6 +471,17 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                             scrollDirection: Axis.horizontal,
                             itemCount: 5, // Mock data
                             itemBuilder: (context, index) {
+                              // Create dummy product for similar items
+                              final similarProduct = Product(
+                                id: 'similar_${index}',
+                                name: 'Similar Item ${index + 1}',
+                                image: '${AppConstants.assetsProductsPath}${(index % 6) + 1}.png',
+                                price: 100.0 + (index * 10),
+                                categoryId: product.categoryId, // Use same category as main product
+                                inStock: true,
+                              );
+                              
+                              // Get color for category
                               final categoryColor = product.categoryId != null
                                 ? blocState.subcategoryColors[product.categoryId]
                                 : AppTheme.secondaryColor;
@@ -477,59 +489,11 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                               return Container(
                                 width: 120.w,
                                 margin: EdgeInsets.only(right: 12.w),
-                                decoration: BoxDecoration(
-                                  color: categoryColor,
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  border: Border.all(
-                                    color: AppTheme.accentColor.withOpacity(0.3),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    // Product image
-                                    Expanded(
-                                      child: Container(
-                                        padding: EdgeInsets.all(8.w),
-                                        child: Image.asset(
-                                          '${AppConstants.assetsProductsPath}${(index % 6) + 1}.png',
-                                          fit: BoxFit.contain,
-                                        ),
-                                      ),
-                                    ),
-                                    
-                                    // Product name and price
-                                    Padding(
-                                      padding: EdgeInsets.all(8.w),
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(
-                                            'Similar Item ${index + 1}',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                          
-                                          SizedBox(height: 4.h),
-                                          
-                                          Text(
-                                            '${AppConstants.currencySymbol}${(100 + index * 10).toStringAsFixed(2)}',
-                                            style: TextStyle(
-                                              color: AppTheme.accentColor,
-                                              fontSize: 12.sp,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ],
+                                child: ProductCard.fromEntity(
+                                  product: similarProduct,
+                                  onTap: () {}, // No action needed for now
+                                  onQuantityChanged: (_) {}, // No action needed for now
+                                  backgroundColor: categoryColor,
                                 ),
                               );
                             },

@@ -77,7 +77,7 @@ class ProductCard extends StatelessWidget {
     final calculatedHeight = gridItemWidth / aspectRatio;
     
     // Adapt dimensions proportionally to screen size
-    final imageHeight = (calculatedHeight * 0.38).clamp(70.0, 90.0); // Reduced image height
+    final imageHeight = (calculatedHeight * 0.45).clamp(80.0, 130.0); // Increased image height
     final padding = (screenWidth / 50).clamp(6.0, 10.0);
     final borderRadius = (screenWidth / 40).clamp(10.0, 16.0);
     
@@ -92,7 +92,6 @@ class ProductCard extends StatelessWidget {
       child: Container(
         // No fixed height to avoid overflow
         decoration: BoxDecoration(
-          color: backgroundColor ?? AppTheme.secondaryColor,
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
             color: AppTheme.accentColor.withOpacity(0.1),
@@ -114,68 +113,62 @@ class ProductCard extends StatelessWidget {
                     // Product image and discount badge
                     Stack(
                       children: [
-                        // Product image
-                        ClipRRect(
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(borderRadius),
-                            topRight: Radius.circular(borderRadius),
-                          ),
-                          child: Container(
-                            height: imageHeight,
-                            width: double.infinity,
-                            padding: EdgeInsets.all(padding),
-                            color: Colors.white.withOpacity(0.05),
-                            child: inStock
-                                ? Image.asset(
-                                    image,
-                                    fit: BoxFit.contain,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      // Return a placeholder if image fails to load
-                                      return Icon(
-                                        Icons.image_not_supported,
-                                        color: Colors.grey.withOpacity(0.5),
-                                        size: imageHeight * 0.5,
-                                      );
-                                    },
-                                  )
-                                : Stack(
-                                    alignment: Alignment.center,
-                                    children: [
-                                      Image.asset(
-                                        image,
-                                        fit: BoxFit.contain,
-                                        color: Colors.grey.withOpacity(0.5),
-                                        colorBlendMode: BlendMode.saturation,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          // Return a placeholder if image fails to load
-                                          return Icon(
-                                            Icons.image_not_supported,
-                                            color: Colors.grey.withOpacity(0.3),
-                                            size: imageHeight * 0.5,
-                                          );
-                                        },
+                        // Product image with colored background
+                        Container(
+                          height: imageHeight,
+                          width: double.infinity,
+                          color: backgroundColor ?? AppTheme.secondaryColor,
+                          padding: EdgeInsets.all(padding),
+                          child: inStock
+                              ? Image.asset(
+                                  image,
+                                  fit: BoxFit.contain,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Return a placeholder if image fails to load
+                                    return Icon(
+                                      Icons.image_not_supported,
+                                      color: Colors.grey.withOpacity(0.5),
+                                      size: imageHeight * 0.5,
+                                    );
+                                  },
+                                )
+                              : Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Image.asset(
+                                      image,
+                                      fit: BoxFit.contain,
+                                      color: Colors.grey.withOpacity(0.5),
+                                      colorBlendMode: BlendMode.saturation,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        // Return a placeholder if image fails to load
+                                        return Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey.withOpacity(0.3),
+                                          size: imageHeight * 0.5,
+                                        );
+                                      },
+                                    ),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6.0,
+                                        vertical: 3.0,
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 6.0,
-                                          vertical: 3.0,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.black.withOpacity(0.7),
-                                          borderRadius: BorderRadius.circular(4.0),
-                                        ),
-                                        child: const Text(
-                                          'Out of Stock',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 10.0,
-                                            fontWeight: FontWeight.bold,
-                                          ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withOpacity(0.7),
+                                        borderRadius: BorderRadius.circular(4.0),
+                                      ),
+                                      child: const Text(
+                                        'Out of Stock',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10.0,
+                                          fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                    ],
-                                  ),
-                          ),
+                                    ),
+                                  ],
+                                ),
                         ),
                         
                         // Discount badge
@@ -205,8 +198,10 @@ class ProductCard extends StatelessWidget {
                       ],
                     ),
                     
-                    // Product details - using flexible layout
-                    Padding(
+                    // Product details - using flexible layout with different background
+                    Container(
+                      color: AppTheme.secondaryColor,
+                      width: double.infinity,
                       padding: EdgeInsets.all(padding),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -258,16 +253,14 @@ class ProductCard extends StatelessWidget {
                                 ),
                             ],
                           ),
+                          
+                          // Add to cart button or quantity selector - minimal height
+                          SizedBox(height: 6.h),
+                          quantity > 0
+                              ? _buildQuantitySelector(22.h) // Minimal height
+                              : _buildAddButton(22.h),    // Minimal height
                         ],
                       ),
-                    ),
-                    
-                    // Add to cart button or quantity selector - minimal height
-                    Padding(
-                      padding: EdgeInsets.all(3.h), // Minimal padding
-                      child: quantity > 0
-                          ? _buildQuantitySelector(22.h) // Minimal height
-                          : _buildAddButton(22.h),    // Minimal height
                     ),
                   ],
                 ),

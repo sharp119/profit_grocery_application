@@ -169,29 +169,89 @@ class CategoryProductsBloc extends Bloc<CategoryProductsEvent, CategoryProductsS
   Map<String, Color> _generateSubcategoryColors() {
     final Map<String, Color> colors = {};
     
-    // Colors for vegetables category
+    // Colors for standard category IDs
     colors['vegetables'] = const Color(0xFF1A5D1A); // Dark green for vegetables
-    
-    // Colors for dairy category
-    colors['dairy'] = const Color(0xFFE5BEEC); // Light lavender for dairy
-    
-    // Colors for snacks category
-    colors['snacks'] = const Color(0xFFECB159); // Yellow/orange for chips
-    
-    // Colors for beverages category
-    colors['beverages'] = const Color(0xFF219C90); // Teal for drinks
-    
-    // Colors for grocery category
-    colors['grocery'] = const Color(0xFFD5A021); // Gold/yellow for grains
-    
-    // Colors for household category
-    colors['household'] = const Color(0xFF3F4E4F); // Dark slate for household
-    
-    // Colors for personal care category
+    colors['dairy'] = const Color(0xFFE5BEEC);      // Light lavender for dairy
+    colors['snacks'] = const Color(0xFFECB159);     // Yellow/orange for chips
+    colors['beverages'] = const Color(0xFF219C90);  // Teal for drinks
+    colors['grocery'] = const Color(0xFFD5A021);    // Gold/yellow for grains
+    colors['household'] = const Color(0xFF3F4E4F);  // Dark slate for household
     colors['personal_care'] = const Color(0xFF9E4784); // Purple for personal care
+    colors['baby_care'] = const Color(0xFF8ECDDD);  // Light blue for baby care
     
-    // Colors for baby care category
-    colors['baby_care'] = const Color(0xFF8ECDDD); // Light blue for baby care
+    // Add mappings for dynamic category product IDs that will be generated
+    // Each mock product gets the color of its parent category
+    colors['vegetables_prod_0'] = colors['vegetables']!;
+    colors['vegetables_prod_1'] = colors['vegetables']!;
+    colors['vegetables_prod_2'] = colors['vegetables']!;
+    colors['vegetables_prod_3'] = colors['vegetables']!;
+    colors['vegetables_prod_4'] = colors['vegetables']!;
+    colors['vegetables_prod_5'] = colors['vegetables']!;
+    colors['vegetables_prod_6'] = colors['vegetables']!;
+    colors['vegetables_prod_7'] = colors['vegetables']!;
+    
+    colors['dairy_prod_0'] = colors['dairy']!;
+    colors['dairy_prod_1'] = colors['dairy']!;
+    colors['dairy_prod_2'] = colors['dairy']!;
+    colors['dairy_prod_3'] = colors['dairy']!;
+    colors['dairy_prod_4'] = colors['dairy']!;
+    colors['dairy_prod_5'] = colors['dairy']!;
+    colors['dairy_prod_6'] = colors['dairy']!;
+    colors['dairy_prod_7'] = colors['dairy']!;
+    
+    colors['snacks_prod_0'] = colors['snacks']!;
+    colors['snacks_prod_1'] = colors['snacks']!;
+    colors['snacks_prod_2'] = colors['snacks']!;
+    colors['snacks_prod_3'] = colors['snacks']!;
+    colors['snacks_prod_4'] = colors['snacks']!;
+    colors['snacks_prod_5'] = colors['snacks']!;
+    colors['snacks_prod_6'] = colors['snacks']!;
+    colors['snacks_prod_7'] = colors['snacks']!;
+    
+    colors['beverages_prod_0'] = colors['beverages']!;
+    colors['beverages_prod_1'] = colors['beverages']!;
+    colors['beverages_prod_2'] = colors['beverages']!;
+    colors['beverages_prod_3'] = colors['beverages']!;
+    colors['beverages_prod_4'] = colors['beverages']!;
+    colors['beverages_prod_5'] = colors['beverages']!;
+    colors['beverages_prod_6'] = colors['beverages']!;
+    colors['beverages_prod_7'] = colors['beverages']!;
+    
+    colors['grocery_prod_0'] = colors['grocery']!;
+    colors['grocery_prod_1'] = colors['grocery']!;
+    colors['grocery_prod_2'] = colors['grocery']!;
+    colors['grocery_prod_3'] = colors['grocery']!;
+    colors['grocery_prod_4'] = colors['grocery']!;
+    colors['grocery_prod_5'] = colors['grocery']!;
+    colors['grocery_prod_6'] = colors['grocery']!;
+    colors['grocery_prod_7'] = colors['grocery']!;
+    
+    colors['household_prod_0'] = colors['household']!;
+    colors['household_prod_1'] = colors['household']!;
+    colors['household_prod_2'] = colors['household']!;
+    colors['household_prod_3'] = colors['household']!;
+    colors['household_prod_4'] = colors['household']!;
+    colors['household_prod_5'] = colors['household']!;
+    colors['household_prod_6'] = colors['household']!;
+    colors['household_prod_7'] = colors['household']!;
+    
+    colors['personal_care_prod_0'] = colors['personal_care']!;
+    colors['personal_care_prod_1'] = colors['personal_care']!;
+    colors['personal_care_prod_2'] = colors['personal_care']!;
+    colors['personal_care_prod_3'] = colors['personal_care']!;
+    colors['personal_care_prod_4'] = colors['personal_care']!;
+    colors['personal_care_prod_5'] = colors['personal_care']!;
+    colors['personal_care_prod_6'] = colors['personal_care']!;
+    colors['personal_care_prod_7'] = colors['personal_care']!;
+    
+    colors['baby_care_prod_0'] = colors['baby_care']!;
+    colors['baby_care_prod_1'] = colors['baby_care']!;
+    colors['baby_care_prod_2'] = colors['baby_care']!;
+    colors['baby_care_prod_3'] = colors['baby_care']!;
+    colors['baby_care_prod_4'] = colors['baby_care']!;
+    colors['baby_care_prod_5'] = colors['baby_care']!;
+    colors['baby_care_prod_6'] = colors['baby_care']!;
+    colors['baby_care_prod_7'] = colors['baby_care']!;
     
     return colors;
   }
