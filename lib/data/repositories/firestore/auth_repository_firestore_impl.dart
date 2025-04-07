@@ -147,6 +147,12 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
         // Store phone number for future reference
         await _sharedPreferences.setString(_phoneNumberKey, phoneNumber);
         await _sharedPreferences.setString(AppConstants.userPhoneKey, phoneNumber);
+        
+        // Mark authentication as completed for better persistence
+        await _sharedPreferences.setBool(AppConstants.authCompletedKey, true);
+        
+        // Store login timestamp for reference
+        await _sharedPreferences.setString('last_login_time', DateTime.now().toIso8601String());
 
         // Create and track session using SessionManager
         final session = await _sessionManager.createSession(userId);
@@ -194,21 +200,42 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
 
   @override
   Future<bool> isLoggedIn() async {
+    LoggingService.logFirestore('AuthRepositoryImpl: Checking if user is logged in...');
+    
+    // First check for basic auth flags in SharedPreferences
     final token = _sharedPreferences.getString(_tokenKey);
     final userId = _sharedPreferences.getString(_userIdKey);
+    final authCompleted = _sharedPreferences.getBool(AppConstants.authCompletedKey) ?? false;
     
-    if (token == null || token.isEmpty || userId == null || userId.isEmpty) {
-      LoggingService.logFirestore('AuthRepositoryImpl: Not logged in - missing token or userId');
+    if (!authCompleted || token == null || token.isEmpty || userId == null || userId.isEmpty) {
+      LoggingService.logFirestore('AuthRepositoryImpl: Not logged in - missing token, userId, or auth not completed');
       return false;
     }
+    
+    LoggingService.logFirestore('AuthRepositoryImpl: Basic auth flags found, checking session...');
 
-    // First check if session is active using SessionManager
-    if (!await _sessionManager.hasActiveSession()) {
+    // Check if session is active using SessionManager
+    final sessionActive = await _sessionManager.hasActiveSession();
+    if (!sessionActive) {
       LoggingService.logFirestore('AuthRepositoryImpl: No active session found');
-      return false;
+      
+      // Try to extend the session if it might be expired
+      try {
+        final extended = await _sessionManager.extendSession(userId);
+        if (!extended) {
+          LoggingService.logFirestore('AuthRepositoryImpl: Failed to extend session');
+          return false;
+        } else {
+          LoggingService.logFirestore('AuthRepositoryImpl: Successfully extended session');
+        }
+      } catch (e) {
+        LoggingService.logError('AuthRepositoryImpl', 'Error extending session: $e');
+        return false;
+      }
     }
     
-    // Also verify token validity with the service
+    // Verify token validity with the service - but make this optional
+    // to prevent logout if the server is temporarily unavailable
     try {
       final isValid = await _otpService.verifyAccessToken(token);
       if (!isValid) {
@@ -218,22 +245,36 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
         return false;
       }
       
-      // Make sure user data is loaded in UserService
-      try {
-        final userService = GetIt.instance<UserService>();
-        if (!userService.isLoggedIn()) {
-          await userService.loadUserData(userId);
-        }
-      } catch (e) {
-        LoggingService.logError('AuthRepositoryImpl', 'Error loading user data: $e');
-        // Continue even if user data loading fails
-      }
-      
-      return true;
+      LoggingService.logFirestore('AuthRepositoryImpl: Token verified successfully');
     } catch (e) {
-      LoggingService.logError('AuthRepositoryImpl: Token validation error', e.toString());
-      return false;
+      // Don't fail authentication just because token validation fails
+      // This makes the app more resilient to network issues
+      LoggingService.logError('AuthRepositoryImpl: Token validation error, but continuing', e.toString());
     }
+    
+    // Make sure user data is loaded in UserService
+    try {
+      final userService = GetIt.instance<UserService>();
+      if (!userService.isLoggedIn()) {
+        await userService.loadUserData(userId);
+        LoggingService.logFirestore('AuthRepositoryImpl: User data loaded successfully');
+      }
+    } catch (e) {
+      LoggingService.logError('AuthRepositoryImpl', 'Error loading user data: $e');
+      // Continue even if user data loading fails
+    }
+    
+    LoggingService.logFirestore('AuthRepositoryImpl: User is logged in successfully');
+    
+    // Update the last active timestamp in session
+    try {
+      await _sessionManager.extendSession(userId);
+    } catch (e) {
+      // Just log, don't fail auth check
+      LoggingService.logError('AuthRepositoryImpl', 'Error extending session during auth check: $e');
+    }
+    
+    return true;
   }
 
   @override
@@ -243,6 +284,7 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
+    LoggingService.logFirestore('AuthRepositoryImpl: Starting logout process');
     final userId = await getCurrentUserId();
     
     // Use SessionManager to invalidate the session
@@ -265,11 +307,23 @@ class AuthRepositoryFirestoreImpl implements AuthRepository {
       LoggingService.logError('AuthRepositoryImpl: Error clearing UserService data', e.toString());
     }
     
-    // Clear authentication data
+    // Clear ALL authentication data
     await _sharedPreferences.remove(_tokenKey);
     await _sharedPreferences.remove(_userIdKey);
     await _sharedPreferences.remove(AppConstants.userTokenKey);
+    await _sharedPreferences.remove(AppConstants.authCompletedKey);
+    await _sharedPreferences.remove('last_login_time');
+    
+    // Clear session data
+    await _sharedPreferences.remove('user_session'); // _sessionPrefKey
+    await _sharedPreferences.remove('session_token'); // _sessionTokenKey
+    await _sharedPreferences.remove('session_created'); // _sessionCreatedKey
+    await _sharedPreferences.remove('session_expires'); // _sessionExpiresKey
+    await _sharedPreferences.remove('session_user_id'); // _sessionUserIdKey
+    
     // We'll keep the phone number for convenience
+    // await _sharedPreferences.remove(_phoneNumberKey);
+    // await _sharedPreferences.remove(AppConstants.userPhoneKey);
     
     LoggingService.logFirestore('AuthRepositoryImpl: Logout completed successfully');
   }

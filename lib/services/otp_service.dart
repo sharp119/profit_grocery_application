@@ -127,8 +127,17 @@ class OTPService {
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         
+        // Case 1: Success response
         if (responseData['type'] == 'success') {
           LoggingService.logFirestore('OTPService: Access token verified successfully');
+          return true;
+        }
+        
+        // Case 2: "Already verified" error (code 702) - This is actually valid
+        if (responseData['code'] == 702 || 
+            (responseData['message'] != null && 
+             responseData['message'].toString().contains('already verified'))) {
+          LoggingService.logFirestore('OTPService: Token already verified (valid)');
           return true;
         }
       }

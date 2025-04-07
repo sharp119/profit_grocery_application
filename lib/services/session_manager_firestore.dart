@@ -263,12 +263,62 @@ class SessionManagerFirestore implements ISessionManager {
   Future<bool> hasActiveSession() async {
     await _ensureInitialized();
     
-    final userId = _sharedPreferences?.getString(_sessionUserIdKey);
-    if (userId == null) {
+    // Check for both session user ID and auth user ID
+    final sessionUserId = _sharedPreferences?.getString(_sessionUserIdKey);
+    final authUserId = _sharedPreferences?.getString(AppConstants.userTokenKey);
+    
+    LoggingService.logFirestore('SessionManagerFirestore: Checking for active session: sessionUserId=$sessionUserId, authUserId=$authUserId');
+    
+    if (sessionUserId == null && authUserId == null) {
+      LoggingService.logFirestore('SessionManagerFirestore: No user ID found in preferences');
       return false;
     }
     
-    return await validateSession(userId);
+    final userId = sessionUserId ?? authUserId!;
+    
+    // Check if we have the basic session data
+    final hasSessionData = _sharedPreferences?.containsKey(_sessionPrefKey) ?? false;
+    final hasSessionToken = _sharedPreferences?.containsKey(_sessionTokenKey) ?? false;
+    final authCompleted = _sharedPreferences?.getBool(AppConstants.authCompletedKey) ?? false;
+    
+    LoggingService.logFirestore('SessionManagerFirestore: Session data check: hasSessionData=$hasSessionData, hasSessionToken=$hasSessionToken, authCompleted=$authCompleted');
+    
+    if (!hasSessionData || !hasSessionToken) {
+      // If we have authUserId but no session data, try to create a new session
+      if (authCompleted && authUserId != null) {
+        try {
+          LoggingService.logFirestore('SessionManagerFirestore: Attempting to create new session for existing user');
+          await createSession(authUserId);
+          return true;
+        } catch (e) {
+          LoggingService.logError('SessionManagerFirestore', 'Failed to create new session for existing user: $e');
+          return false;
+        }
+      }
+      return false;
+    }
+    
+    // Validate existing session
+    try {
+      final isValid = await validateSession(userId);
+      
+      if (!isValid && authCompleted && authUserId != null) {
+        // If invalid but the user was previously authenticated, try to create a new session
+        try {
+          LoggingService.logFirestore('SessionManagerFirestore: Session invalid, creating new session for authenticated user');
+          await createSession(authUserId);
+          return true;
+        } catch (e) {
+          LoggingService.logError('SessionManagerFirestore', 'Failed to create new session after validation failed: $e');
+          return false;
+        }
+      }
+      
+      return isValid;
+    } catch (e) {
+      LoggingService.logError('SessionManagerFirestore', 'Error validating session: $e');
+      return false;
+    }
   }
 
   /// Extend the current session

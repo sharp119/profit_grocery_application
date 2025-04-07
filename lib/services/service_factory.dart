@@ -14,6 +14,7 @@ import 'session_manager_firestore.dart';
 import 'session_manager_interface.dart';
 import 'user_service.dart';
 import 'user_service_hybrid.dart';
+import 'user_service_interface.dart';
 import 'logging_service.dart';
 
 /// Factory for creating repository instances based on database preference
@@ -114,17 +115,31 @@ class RepositoryFactory {
   }
 
   /// Create an appropriate UserService implementation
-  Future<UserServiceHybrid> createUserService() async {
-    LoggingService.logFirestore('RepositoryFactory: Creating UserServiceHybrid');
-    
-    final userService = UserServiceHybrid();
-    await userService.init(
-      firestore: _firestore,
-      realtimeDatabase: _realtimeDatabase,
-      sharedPreferences: _sharedPreferences,
-      preferFirestore: _preferFirestore,
-    );
-    
-    return userService;
+  Future<IUserService> createUserService() async {
+    // If we prefer hybrid approach, use UserServiceHybrid
+    if (true) { // Always use hybrid for now as it's more robust
+      LoggingService.logFirestore('RepositoryFactory: Creating UserServiceHybrid');
+      
+      final userService = UserServiceHybrid();
+      await userService.init(
+        firestore: _firestore,
+        realtimeDatabase: _realtimeDatabase,
+        sharedPreferences: _sharedPreferences,
+        preferFirestore: _preferFirestore,
+      );
+      
+      return userService;
+    } else {
+      // Legacy option - use only RTDB implementation
+      LoggingService.logFirestore('RepositoryFactory: Creating UserService (RTDB)');
+      
+      final userService = UserService();
+      await userService.init(
+        firebaseDatabase: _realtimeDatabase,
+        sharedPreferences: _sharedPreferences,
+      );
+      
+      return userService;
+    }
   }
 }

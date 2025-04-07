@@ -25,6 +25,7 @@ class AppConstants {
   static const String userCartKey = 'user_cart';
   static const String isDarkModeKey = 'is_dark_mode';
   static const String firstLaunchKey = 'first_launch';
+  static const String authCompletedKey = 'auth_completed'; // Added for improved auth persistence
   
   // Pagination
   static const int productsPerPage = 10;
@@ -32,7 +33,7 @@ class AppConstants {
   
   // Time Constants
   static const int otpExpiryMinutes = 10;
-  static const int sessionTimeoutMinutes = 60;
+  static const int sessionTimeoutMinutes = 43200; // 30 days (60 * 24 * 30)
   
   // Currency Symbol
   static const String currencySymbol = '₹';

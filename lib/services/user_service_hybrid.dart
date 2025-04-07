@@ -10,10 +10,11 @@ import '../data/models/firestore/user_firestore_model.dart';
 import '../data/models/user_model.dart';
 import '../domain/entities/user.dart';
 import 'logging_service.dart';
+import 'user_service_interface.dart';
 
 /// A singleton service that provides access to the current user data
 /// throughout the application. Supports both Firestore and Realtime Database.
-class UserServiceHybrid {
+class UserServiceHybrid implements IUserService {
   // Singleton pattern
   static final UserServiceHybrid _instance = UserServiceHybrid._internal();
   factory UserServiceHybrid() => _instance;

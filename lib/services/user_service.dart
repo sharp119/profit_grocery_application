@@ -8,10 +8,11 @@ import '../core/constants/app_constants.dart';
 import '../data/models/user_model.dart';
 import '../domain/entities/user.dart';
 import 'logging_service.dart';
+import 'user_service_interface.dart';
 
 /// A singleton service that provides access to the current user data
 /// throughout the application.
-class UserService {
+class UserService implements IUserService {
   // Singleton pattern
   static final UserService _instance = UserService._internal();
   factory UserService() => _instance;

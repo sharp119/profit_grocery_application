@@ -9,7 +9,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/entities/user.dart';
-import '../../../services/user_service_hybrid.dart';
+import '../../../services/user_service_interface.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/home/home_bloc.dart';
@@ -54,13 +54,13 @@ class _HomePageContentState extends State<_HomePageContent> {
   
   // User data
   User? _currentUser;
-  late UserServiceHybrid _userService;
+  late IUserService _userService;
   late final Stream<User?> _userStream;
   
   @override
   void initState() {
     super.initState();
-    _userService = GetIt.instance<UserServiceHybrid>();
+    _userService = GetIt.instance<IUserService>();
     _currentUser = _userService.getCurrentUser();
     _userStream = _userService.userStream;
     

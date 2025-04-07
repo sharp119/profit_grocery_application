@@ -21,6 +21,7 @@ import 'services/session_manager_firestore.dart';
 import 'services/session_manager_interface.dart';
 import 'services/user_service.dart';
 import 'services/user_service_hybrid.dart';
+import 'services/user_service_interface.dart';
 import 'services/service_factory.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/user_repository.dart';
@@ -165,9 +166,17 @@ Future<void> setupDependencyInjection() async {
     );
   }
   
-  // Initialize hybrid user service
-  final userServiceHybrid = await repositoryFactory.createUserService();
-  sl.registerLazySingleton<UserServiceHybrid>(() => userServiceHybrid);
+  // Create hybrid user service via factory
+  final userService = await repositoryFactory.createUserService();
+  
+  // Check the type for proper registration
+  if (userService is UserServiceHybrid) {
+    // Register concrete implementation
+    sl.registerLazySingleton<UserServiceHybrid>(() => userService as UserServiceHybrid);
+  }
+  
+  // Register interface
+  sl.registerLazySingleton<IUserService>(() => userService);
   
   // BLoCs
   sl.registerFactory(
