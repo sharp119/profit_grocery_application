@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -60,12 +61,27 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
     });
     
     try {
-      // Get Firebase reference to check if user exists
-      final usersRef = FirebaseDatabase.instance.ref().child(AppConstants.usersCollection);
-      final query = usersRef.orderByChild('phoneNumber').equalTo(sanitizedPhone);
-      final snapshot = await query.get();
+      // Check Firestore first since that's our primary database
+      final firestore = FirebaseFirestore.instance;
+      final usersCollection = firestore.collection(AppConstants.usersCollection);
       
-      final userExists = snapshot.exists;
+      // Query for user with this phone number
+      final querySnapshot = await usersCollection
+          .where('phoneNumber', isEqualTo: sanitizedPhone)
+          .limit(1)
+          .get();
+      
+      bool userExists = querySnapshot.docs.isNotEmpty;
+      
+      // If not found in Firestore, check RTDB as fallback
+      if (!userExists) {
+        // Get Firebase reference to check if user exists in Realtime DB
+        final usersRef = FirebaseDatabase.instance.ref().child(AppConstants.usersCollection);
+        final query = usersRef.orderByChild('phoneNumber').equalTo(sanitizedPhone);
+        final snapshot = await query.get();
+        
+        userExists = snapshot.exists;
+      }
       
       setState(() {
         _isExistingUser = userExists;
@@ -75,22 +91,39 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
         _isCheckingUserStatus = false;
       });
       
-      // Store the user existence status for use in other pages
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool('is_existing_user', userExists);
-      
+      // Log the results of our user check
+      final userOrigin = querySnapshot.docs.isNotEmpty ? "Firestore" : (userExists ? "RTDB" : "Not found");
       LoggingService.logFirestore(
-        'PhoneEntryPage: User exists check for ${sanitizedPhone.substring(6)}XXXX: $_isExistingUser'
+        'PhoneEntryPage: User exists check for ${sanitizedPhone.substring(sanitizedPhone.length - 4, sanitizedPhone.length)}: ' +
+        '$userExists (source: $userOrigin)'
+      );
+      
+      // Store the user existence status for use in other pages with better logging
+      final prefs = await SharedPreferences.getInstance();
+      
+      // Log existing values before changing them
+      final existingFlag = prefs.getBool('is_existing_user');
+      LoggingService.logFirestore(
+        'PhoneEntryPage: Current is_existing_user flag: $existingFlag, setting to: $userExists'
+      );
+      
+      await prefs.setBool('is_existing_user', userExists);
+      await prefs.setString(AppConstants.userPhoneKey, sanitizedPhone);
+      
+      // Verify the value was saved correctly
+      final savedFlag = prefs.getBool('is_existing_user');
+      LoggingService.logFirestore(
+        'PhoneEntryPage: Saved is_existing_user flag value: $savedFlag'
       );
       
       // Different flow based on whether user exists or not
       if (userExists) {
         // If user exists, send OTP for verification
-        LoggingService.logFirestore('PhoneEntryPage: Existing user - sending OTP');
+        LoggingService.logFirestore('PhoneEntryPage: Existing user - sending OTP for login flow');
         context.read<AuthBloc>().add(SendOtpEvent(sanitizedPhone));
       } else {
         // If new user, navigate to registration page first
-        LoggingService.logFirestore('PhoneEntryPage: New user - navigating to registration');
+        LoggingService.logFirestore('PhoneEntryPage: New user - navigating to registration flow');
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -103,12 +136,27 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
       }
     } catch (e) {
       LoggingService.logError('PhoneEntryPage', 'Error checking user existence: $e');
+      
+      // Show the error to the user
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error checking user status: ${e.toString().split(":").first}. Continuing with registration.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      
       // Default to new user if we can't check
       setState(() {
         _isExistingUser = false;
         _isCheckingUserStatus = false;
         _flowStatusMessage = 'Welcome to ProfitGrocery! We\'ll set up your account.';
       });
+      
+      // Store phone number in prefs anyway
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('is_existing_user', false);
+      await prefs.setString(AppConstants.userPhoneKey, sanitizedPhone);
       
       // If we can't determine user status, assume new user and navigate to registration
       LoggingService.logFirestore('PhoneEntryPage: Error checking user - defaulting to registration flow');

@@ -1,3 +1,19 @@
+    // // Add a debug message to the UI if we're in a potentially inconsistent state
+    // if (phone != widget.phoneNumber) {
+    //   LoggingService.logFirestore(
+    //     'OtpVerificationPage: WARNING - Phone number in prefs ($phone) does not match current phone (${widget.phoneNumber})'
+    //   );
+    // }
+    
+    // if (existingFlag == null) {
+    //   LoggingService.logFirestore(
+    //     'OtpVerificationPage: WARNING - isExistingUser flag is null, defaulting to false'
+    //   );
+      
+    //   // Re-set the flag to ensure consistency
+    //   await prefs.setBool('is_existing_user', false);
+    // }import 'dart:async';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
@@ -54,9 +70,35 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   Future<void> _checkUserStatus() async {
     // Read the isExistingUser flag from SharedPreferences
     final prefs = await SharedPreferences.getInstance();
+    
+    // Read current settings with better logging
+    final existingFlag = prefs.getBool('is_existing_user');
+    final phone = prefs.getString(AppConstants.userPhoneKey);
+    
+    LoggingService.logFirestore(
+        'OtpVerificationPage: Checking user status - isExistingUser flag: $existingFlag, phone: $phone'
+    );
+    
+    // Add a debug message to the UI if we're in a potentially inconsistent state
+    if (phone != widget.phoneNumber) {
+      LoggingService.logFirestore(
+        'OtpVerificationPage: WARNING - Phone number in prefs ($phone) does not match current phone (${widget.phoneNumber})'
+      );
+    }
+    
+    if (existingFlag == null) {
+      LoggingService.logFirestore(
+        'OtpVerificationPage: WARNING - isExistingUser flag is null, defaulting to false'
+      );
+      
+      // Re-set the flag to ensure consistency
+      await prefs.setBool('is_existing_user', false);
+    }
+    
     setState(() {
-      _isExistingUser = prefs.getBool('is_existing_user') ?? false;
+      _isExistingUser = existingFlag ?? false;
     });
+    
     LoggingService.logFirestore('OtpVerificationPage: User status check - isExistingUser: $_isExistingUser');
   }
 
