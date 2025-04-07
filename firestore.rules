@@ -1,0 +1,73 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users collection security rules
+    match /users/{userId} {
+      // Users can read and write their own data
+      allow read, update, delete: if request.auth != null && request.auth.uid == userId;
+      
+      // Anyone can create a new user
+      allow create: if request.resource.data.keys().hasAll(['phoneNumber', 'createdAt', 'lastLogin'])
+                    && request.resource.data.phoneNumber is string
+                    && request.resource.data.createdAt is timestamp
+                    && request.resource.data.lastLogin is timestamp;
+      
+      // Admin users can read all user data
+      allow read: if get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Sessions collection security rules
+    match /sessions/{userId} {
+      // Only the owner can read, create, update, delete their session
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Products collection security rules
+    match /products/{productId} {
+      // Anyone can read products
+      allow read: if true;
+      
+      // Only admins can create, update, delete products
+      allow write: if request.auth != null 
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Categories collection security rules
+    match /categories/{categoryId} {
+      // Anyone can read categories
+      allow read: if true;
+      
+      // Only admins can create, update, delete categories
+      allow write: if request.auth != null 
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Orders collection security rules
+    match /orders/{orderId} {
+      // Users can read their own orders
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      
+      // Users can create orders for themselves
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      
+      // Users can only update specific fields of their own orders (e.g., cancel them)
+      allow update: if request.auth != null 
+                    && resource.data.userId == request.auth.uid
+                    && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status']);
+      
+      // Only admins can delete orders or update all fields
+      allow update, delete: if request.auth != null 
+                          && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+    
+    // Coupons collection security rules
+    match /coupons/{couponId} {
+      // Anyone can read active coupons
+      allow read: if resource.data.isActive == true || request.auth != null;
+      
+      // Only admins can create, update, delete coupons
+      allow write: if request.auth != null 
+                  && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+  }
+}

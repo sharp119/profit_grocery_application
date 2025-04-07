@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants/app_constants.dart';
@@ -10,17 +10,16 @@ import '../data/models/auth_model.dart';
 import 'logging_service.dart';
 import 'session_manager_interface.dart';
 
-/// Manages user sessions with secure token generation, tracking, and validation
-/// using Firebase Realtime Database
-class SessionManager implements ISessionManager {
+/// Manages user sessions with secure token generation, tracking, and validation using Firestore
+class SessionManagerFirestore implements ISessionManager {
   // Singleton pattern
-  static final SessionManager _instance = SessionManager._internal();
-  factory SessionManager() => _instance;
-  SessionManager._internal();
+  static final SessionManagerFirestore _instance = SessionManagerFirestore._internal();
+  factory SessionManagerFirestore() => _instance;
+  SessionManagerFirestore._internal();
 
   // Dependencies will be initialized via setters
   SharedPreferences? _sharedPreferences;
-  FirebaseDatabase? _firebaseDatabase;
+  FirebaseFirestore? _firestore;
   bool _isInitialized = false;
   
   /// Set the SharedPreferences dependency
@@ -28,10 +27,13 @@ class SessionManager implements ISessionManager {
     _sharedPreferences = sharedPreferences;
   }
   
-  /// Set the FirebaseDatabase dependency
-  void setFirebaseDatabase(FirebaseDatabase firebaseDatabase) {
-    _firebaseDatabase = firebaseDatabase;
+  /// Set the FirebaseFirestore dependency
+  void setFirestore(FirebaseFirestore firestore) {
+    _firestore = firestore;
   }
+
+  // Collection references
+  late final CollectionReference<Map<String, dynamic>> _sessionsCollection;
 
   // Constants
   static const String _sessionPrefKey = 'user_session';
@@ -39,10 +41,7 @@ class SessionManager implements ISessionManager {
   static const String _sessionCreatedKey = 'session_created';
   static const String _sessionExpiresKey = 'session_expires';
   static const String _sessionUserIdKey = 'session_user_id';
-  
-  // The Firebase path for sessions
-  static const String _sessionsPath = 'sessions';
-  
+
   /// Initialize the session manager with dependencies
   @override
   Future<void> init() async {
@@ -50,31 +49,32 @@ class SessionManager implements ISessionManager {
     if (_isInitialized) return;
     
     // If dependencies aren't set, this is an error
-    if (_sharedPreferences == null || _firebaseDatabase == null) {
-      throw Exception('SessionManager: Must set dependencies before calling init()');
+    if (_sharedPreferences == null || _firestore == null) {
+      throw Exception('SessionManagerFirestore: Must set dependencies before calling init()');
     }
     
+    _sessionsCollection = _firestore!.collection('sessions');
     _isInitialized = true;
     
-    LoggingService.logFirestore('SessionManager: Initialized');
+    LoggingService.logFirestore('SessionManagerFirestore: Initialized');
     
     try {
       // Check and clean any expired sessions in SharedPreferences
       await _cleanupExpiredSession();
     } catch (e) {
       // Just log the error, don't fail initialization
-      LoggingService.logError('SessionManager', 'Error during expired session cleanup: ${e.toString()}');
+      LoggingService.logError('SessionManagerFirestore', 'Error during expired session cleanup: ${e.toString()}');
     }
   }
   
   /// Ensure initialization before any operation
   Future<void> _ensureInitialized() async {
     if (!_isInitialized) {
-      throw Exception('SessionManager not initialized. Call init() first.');
+      throw Exception('SessionManagerFirestore not initialized. Call init() first.');
     }
     
-    if (_sharedPreferences == null || _firebaseDatabase == null) {
-      throw Exception('SessionManager: Dependencies not set. Call setSharedPreferences() and setFirebaseDatabase() first.');
+    if (_sharedPreferences == null || _firestore == null) {
+      throw Exception('SessionManagerFirestore: Dependencies not set. Call setSharedPreferences() and setFirestore() first.');
     }
   }
 
@@ -105,14 +105,14 @@ class SessionManager implements ISessionManager {
       // 1. Save compact session data to SharedPreferences
       await _saveSessionToPreferences(session);
       
-      // 2. Save complete session data to Firebase
-      await _saveSessionToFirebase(userId, session);
+      // 2. Save complete session data to Firestore
+      await _saveSessionToFirestore(userId, session);
       
-      LoggingService.logFirestore('SessionManager: Created new session for user $userId');
+      LoggingService.logFirestore('SessionManagerFirestore: Created new session for user $userId');
       
       return session;
     } catch (e) {
-      LoggingService.logError('SessionManager: Error creating session', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error creating session', e.toString());
       throw Exception('Failed to create session: $e');
     }
   }
@@ -136,31 +136,31 @@ class SessionManager implements ISessionManager {
       
       // 1. First check if we have a userId
       if (userId.isEmpty) {
-        LoggingService.logFirestore('SessionManager: Empty userId provided for validation');
+        LoggingService.logFirestore('SessionManagerFirestore: Empty userId provided for validation');
         return false;
       }
       
       // 2. Check local session
       final localValid = await _isLocalSessionValid(userId);
       if (!localValid) {
-        LoggingService.logFirestore('SessionManager: Local session validation failed for user $userId');
+        LoggingService.logFirestore('SessionManagerFirestore: Local session validation failed for user $userId');
         return false;
       }
       
-      // 3. Verify with Firebase for cross-device validation (with timeout protection)
-      bool firebaseValid = false;
+      // 3. Verify with Firestore for cross-device validation (with timeout protection)
+      bool firestoreValid = false;
       try {
-        firebaseValid = await _verifySessionInFirebase(userId);
+        firestoreValid = await _verifySessionInFirestore(userId);
       } catch (e) {
-        // If Firebase validation fails, still consider session valid if local is valid
+        // If Firestore validation fails, still consider session valid if local is valid
         // This allows the app to work offline if needed
-        LoggingService.logError('SessionManager', 'Firebase validation failed, using local validation: ${e.toString()}');
-        return true; // Trust local validation if Firebase is unavailable
+        LoggingService.logError('SessionManagerFirestore', 'Firestore validation failed, using local validation: ${e.toString()}');
+        return true; // Trust local validation if Firestore is unavailable
       }
       
-      return firebaseValid;
+      return firestoreValid;
     } catch (e) {
-      LoggingService.logError('SessionManager: Error validating session', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error validating session', e.toString());
       return false;
     }
   }
@@ -185,51 +185,46 @@ class SessionManager implements ISessionManager {
       
       // Check if session is expired
       if (DateTime.now().isAfter(expiresAt)) {
-        LoggingService.logFirestore('SessionManager: Local session expired for user $userId');
+        LoggingService.logFirestore('SessionManagerFirestore: Local session expired for user $userId');
         await _cleanupExpiredSession();
         return false;
       }
       
       return true;
     } catch (e) {
-      LoggingService.logError('SessionManager: Error checking local session', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error checking local session', e.toString());
       return false;
     }
   }
   
-  /// Verify the session in Firebase
-  Future<bool> _verifySessionInFirebase(String userId) async {
+  /// Verify the session in Firestore
+  Future<bool> _verifySessionInFirestore(String userId) async {
     try {
       // Get the local token for comparison
       final localToken = _sharedPreferences?.getString(_sessionTokenKey);
       if (localToken == null) return false;
       
-      // Get the session from Firebase
-      final sessionRef = _firebaseDatabase
-          ?.ref()
-          .child(_sessionsPath)
-          .child(userId);
+      // Get the session from Firestore
+      final sessionDoc = await _sessionsCollection.doc(userId).get();
       
-      final snapshot = await sessionRef?.get();
-      
-      if (!snapshot!.exists) {
-        LoggingService.logFirestore('SessionManager: No session found in Firebase for user $userId');
+      if (!sessionDoc.exists) {
+        LoggingService.logFirestore('SessionManagerFirestore: No session found in Firestore for user $userId');
         return false;
       }
       
-      // Convert snapshot to Map
-      final sessionData = Map<String, dynamic>.from(snapshot.value as Map);
+      // Convert document to Map
+      final sessionData = sessionDoc.data()!;
       
       // Verify token
       if (sessionData['token'] != localToken) {
-        LoggingService.logFirestore('SessionManager: Token mismatch for user $userId');
+        LoggingService.logFirestore('SessionManagerFirestore: Token mismatch for user $userId');
         return false;
       }
       
       // Check expiration
-      final expiresAt = DateTime.parse(sessionData['expiresAt']);
+      final expiresAt = (sessionData['expiresAt'] as Timestamp).toDate();
       if (DateTime.now().isAfter(expiresAt)) {
-        LoggingService.logFirestore('SessionManager: Firebase session expired for user $userId');
+        LoggingService.logFirestore('SessionManagerFirestore: Firestore session expired for user $userId');
         return false;
       }
       
@@ -238,7 +233,7 @@ class SessionManager implements ISessionManager {
       
       return true;
     } catch (e) {
-      LoggingService.logError('SessionManager: Error verifying session in Firebase', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error verifying session in Firestore', e.toString());
       return false;
     }
   }
@@ -254,17 +249,13 @@ class SessionManager implements ISessionManager {
       await _sharedPreferences?.remove(_sessionExpiresKey);
       await _sharedPreferences?.remove(_sessionUserIdKey);
       
-      // 2. Remove from Firebase
-      await _firebaseDatabase
-          ?.ref()
-          .child(_sessionsPath)
-          .child(userId)
-          .remove();
+      // 2. Remove from Firestore
+      await _sessionsCollection.doc(userId).delete();
       
-      LoggingService.logFirestore('SessionManager: Invalidated session for user $userId');
+      LoggingService.logFirestore('SessionManagerFirestore: Invalidated session for user $userId');
     } catch (e) {
-      LoggingService.logError('SessionManager: Error invalidating session', e.toString());
-      // Still consider the session invalidated even if Firebase removal fails
+      LoggingService.logError('SessionManagerFirestore: Error invalidating session', e.toString());
+      // Still consider the session invalidated even if Firestore removal fails
     }
   }
 
@@ -316,20 +307,16 @@ class SessionManager implements ISessionManager {
       await _sharedPreferences?.setString(_sessionPrefKey, jsonEncode(sessionData));
       await _sharedPreferences?.setString(_sessionExpiresKey, newExpiresAt.toIso8601String());
       
-      // Update in Firebase
-      await _firebaseDatabase
-          ?.ref()
-          .child(_sessionsPath)
-          .child(userId)
-          .update({
-            'expiresAt': newExpiresAt.toIso8601String(),
-            'lastActive': now.toIso8601String(),
-          });
+      // Update in Firestore
+      await _sessionsCollection.doc(userId).update({
+        'expiresAt': Timestamp.fromDate(newExpiresAt),
+        'lastActive': Timestamp.fromDate(now),
+      });
       
-      LoggingService.logFirestore('SessionManager: Extended session for user $userId');
+      LoggingService.logFirestore('SessionManagerFirestore: Extended session for user $userId');
       return true;
     } catch (e) {
-      LoggingService.logError('SessionManager: Error extending session', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error extending session', e.toString());
       return false;
     }
   }
@@ -342,39 +329,6 @@ class SessionManager implements ISessionManager {
   /// Get the current user ID from session
   String? getCurrentUserId() {
     return _sharedPreferences?.getString(_sessionUserIdKey);
-  }
-  
-  /// Get all active sessions for a user
-  Future<List<UserSession>> getActiveSessions(String userId) async {
-    await _ensureInitialized();
-    try {
-      final sessionsRef = _firebaseDatabase
-          ?.ref()
-          .child(_sessionsPath)
-          .child(userId);
-      
-      final snapshot = await sessionsRef?.get();
-      
-      if (!snapshot!.exists) {
-        return [];
-      }
-      
-      // Convert to list of sessions
-      // Note: In a real implementation, sessions would be structured better
-      // to support multiple sessions per user with unique IDs
-      final List<UserSession> sessions = [];
-      
-      // For now, just return the current session if it exists
-      if (snapshot.exists) {
-        final sessionData = Map<String, dynamic>.from(snapshot.value as Map);
-        sessions.add(UserSession.fromJson(userId, sessionData));
-      }
-      
-      return sessions;
-    } catch (e) {
-      LoggingService.logError('SessionManager: Error getting active sessions', e.toString());
-      return [];
-    }
   }
   
   /// Cleanup any expired session in SharedPreferences
@@ -393,22 +347,17 @@ class SessionManager implements ISessionManager {
           await _sharedPreferences?.remove(_sessionExpiresKey);
           await _sharedPreferences?.remove(_sessionUserIdKey);
           
-          LoggingService.logFirestore('SessionManager: Cleaned up expired local session');
+          LoggingService.logFirestore('SessionManagerFirestore: Cleaned up expired local session');
         }
       }
     } catch (e) {
-      LoggingService.logError('SessionManager: Error cleaning up expired session', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error cleaning up expired session', e.toString());
     }
   }
 
   // Private helper methods
 
   /// Generate a cryptographically secure token
-  /// Uses a combination of:
-  /// - Secure random values
-  /// - User ID
-  /// - Timestamp
-  /// - SHA-256 hashing
   String _generateSecureToken(String userId) {
     final random = Random.secure();
     
@@ -432,16 +381,19 @@ class SessionManager implements ISessionManager {
     return hash.toString();
   }
 
-  /// Save session data to Firebase
-  Future<void> _saveSessionToFirebase(String userId, UserSession session) async {
+  /// Save session data to Firestore
+  Future<void> _saveSessionToFirestore(String userId, UserSession session) async {
     try {
-      await _firebaseDatabase
-          ?.ref()
-          .child(_sessionsPath)
-          .child(userId)
-          .set(session.toJson());
+      await _sessionsCollection.doc(userId).set({
+        'userId': session.userId,
+        'token': session.token,
+        'createdAt': Timestamp.fromDate(session.createdAt),
+        'expiresAt': Timestamp.fromDate(session.expiresAt),
+        'lastActive': Timestamp.fromDate(session.lastActive),
+        'deviceInfo': session.deviceInfo,
+      });
     } catch (e) {
-      LoggingService.logError('SessionManager: Error saving session to Firebase', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error saving session to Firestore', e.toString());
       throw e;
     }
   }
@@ -449,27 +401,23 @@ class SessionManager implements ISessionManager {
   /// Update the last active timestamp
   Future<void> _updateLastActive(String userId) async {
     try {
-      final now = DateTime.now().toIso8601String();
+      final now = DateTime.now();
       
       // Update in SharedPreferences
       final sessionJson = _sharedPreferences?.getString(_sessionPrefKey);
       if (sessionJson != null) {
         final sessionData = jsonDecode(sessionJson) as Map<String, dynamic>;
-        sessionData['lastActive'] = now;
+        sessionData['lastActive'] = now.toIso8601String();
         await _sharedPreferences?.setString(_sessionPrefKey, jsonEncode(sessionData));
       }
       
-      // Update in Firebase
-      await _firebaseDatabase
-          ?.ref()
-          .child(_sessionsPath)
-          .child(userId)
-          .update({
-            'lastActive': now,
-          });
+      // Update in Firestore
+      await _sessionsCollection.doc(userId).update({
+        'lastActive': Timestamp.fromDate(now),
+      });
     } catch (e) {
       // Log but don't throw - this is a non-critical operation
-      LoggingService.logError('SessionManager: Error updating last active time', e.toString());
+      LoggingService.logError('SessionManagerFirestore: Error updating last active time', e.toString());
     }
   }
 

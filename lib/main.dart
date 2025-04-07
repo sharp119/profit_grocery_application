@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_database/firebase_database.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
@@ -16,11 +17,17 @@ import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
+import 'services/session_manager_firestore.dart';
+import 'services/session_manager_interface.dart';
 import 'services/user_service.dart';
+import 'services/user_service_hybrid.dart';
+import 'services/service_factory.dart';
 import 'domain/repositories/auth_repository.dart';
 import 'domain/repositories/user_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/user_repository_impl.dart';
+import 'data/repositories/firestore/auth_repository_firestore_impl.dart';
+import 'data/repositories/firestore/user_repository_firestore_impl.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/auth/auth_state.dart';
@@ -69,6 +76,8 @@ Future<void> setupRemoteConfig() async {
     AppConstants.featuredCategoriesKey: jsonEncode([]),
     AppConstants.appMaintenanceKey: false,
     AppConstants.minAppVersionKey: '1.0.0',
+    // Add a new default for database preference
+    'prefer_firestore': true,
   });
   
   await remoteConfig.fetchAndActivate();
@@ -81,51 +90,92 @@ Future<void> setupDependencyInjection() async {
   
   // Firebase services
   sl.registerLazySingleton(() => FirebaseDatabase.instance);
+  sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseRemoteConfig.instance);
   
-  // Services
+  // Basic services
   sl.registerLazySingleton(() => OTPService());
   
-  // Initialize SessionManager as a singleton with proper dependencies
-  final sessionManager = SessionManager();
-  await sessionManager.init(
+  // Determine database preference from Remote Config
+  final remoteConfig = FirebaseRemoteConfig.instance;
+  final preferFirestore = remoteConfig.getBool('prefer_firestore');
+  
+  // Initialize repository factory
+  final repositoryFactory = RepositoryFactory(
+    firestore: FirebaseFirestore.instance,
+    realtimeDatabase: FirebaseDatabase.instance,
     sharedPreferences: sharedPreferences,
-    firebaseDatabase: FirebaseDatabase.instance,
-  );
-  sl.registerLazySingleton(() => sessionManager);
-  
-  // Initialize UserService as a singleton with proper dependencies
-  final userService = UserService();
-  await userService.init(
-    sharedPreferences: sharedPreferences,
-    firebaseDatabase: FirebaseDatabase.instance,
-  );
-  sl.registerLazySingleton(() => userService);
-  
-  // Repositories
-  sl.registerLazySingleton<AuthRepository>(
-    () => AuthRepositoryImpl(
-      otpService: sl(),
-      sharedPreferences: sl(),
-      firebaseDatabase: sl(),
-    ),
+    otpService: OTPService(),
+    preferFirestore: preferFirestore,
   );
   
-  sl.registerLazySingleton<UserRepository>(
-    () => UserRepositoryImpl(
-      firebaseDatabase: sl(),
-      sharedPreferences: sl(),
-      sessionManager: sl(),
-    ),
-  );
+  // Register repositories
+  if (preferFirestore) {
+    // Initialize Firestore session manager
+    final sessionManagerFirestore = SessionManagerFirestore();
+    sessionManagerFirestore.setSharedPreferences(sharedPreferences);
+    sessionManagerFirestore.setFirestore(FirebaseFirestore.instance);
+    await sessionManagerFirestore.init();
+    sl.registerLazySingleton<ISessionManager>(() => sessionManagerFirestore);
+    sl.registerLazySingleton<SessionManagerFirestore>(() => sessionManagerFirestore);
+    
+    // Register Firestore repositories
+    sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryFirestoreImpl(
+        otpService: sl<OTPService>(),
+        sharedPreferences: sharedPreferences,
+        firestore: FirebaseFirestore.instance,
+        realtimeDatabase: FirebaseDatabase.instance,
+        sessionManager: sessionManagerFirestore,
+      ),
+    );
+    
+    sl.registerLazySingleton<UserRepository>(
+      () => UserRepositoryFirestoreImpl(
+        firestore: FirebaseFirestore.instance,
+        sharedPreferences: sharedPreferences,
+        sessionManager: sessionManagerFirestore,
+      ),
+    );
+  } else {
+    // Initialize RTDB session manager
+    final sessionManager = SessionManager();
+    sessionManager.setSharedPreferences(sharedPreferences);
+    sessionManager.setFirebaseDatabase(FirebaseDatabase.instance);
+    await sessionManager.init();
+    sl.registerLazySingleton<ISessionManager>(() => sessionManager);
+    sl.registerLazySingleton<SessionManager>(() => sessionManager);
+    
+    // Register RTDB repositories
+    sl.registerLazySingleton<AuthRepository>(
+      () => AuthRepositoryImpl(
+        otpService: sl<OTPService>(),
+        sharedPreferences: sharedPreferences,
+        firebaseDatabase: FirebaseDatabase.instance,
+        sessionManager: sessionManager,
+      ),
+    );
+    
+    sl.registerLazySingleton<UserRepository>(
+      () => UserRepositoryImpl(
+        firebaseDatabase: FirebaseDatabase.instance,
+        sharedPreferences: sharedPreferences,
+        sessionManager: sessionManager,
+      ),
+    );
+  }
+  
+  // Initialize hybrid user service
+  final userServiceHybrid = await repositoryFactory.createUserService();
+  sl.registerLazySingleton<UserServiceHybrid>(() => userServiceHybrid);
   
   // BLoCs
   sl.registerFactory(
-    () => AuthBloc(authRepository: sl()),
+    () => AuthBloc(authRepository: sl<AuthRepository>()),
   );
   
   sl.registerFactory(
-    () => UserBloc(userRepository: sl()),
+    () => UserBloc(userRepository: sl<UserRepository>()),
   );
 }
 
