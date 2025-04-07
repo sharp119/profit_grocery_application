@@ -14,12 +14,17 @@ import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
 import 'services/otp_service.dart';
 import 'domain/repositories/auth_repository.dart';
+import 'domain/repositories/user_repository.dart';
 import 'data/repositories/auth_repository_impl.dart';
+import 'data/repositories/user_repository_impl.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/auth/auth_state.dart';
+import 'presentation/blocs/user/user_bloc.dart';
 import 'presentation/pages/authentication/phone_entry_page.dart';
 import 'presentation/pages/authentication/otp_verification_page.dart';
+import 'presentation/pages/authentication/splash_screen.dart';
+import 'presentation/pages/authentication/user_registration_page.dart';
 import 'presentation/pages/home/home_page.dart';
 
 // GetIt instance for dependency injection
@@ -83,9 +88,20 @@ Future<void> setupDependencyInjection() async {
     ),
   );
   
+  sl.registerLazySingleton<UserRepository>(
+    () => UserRepositoryImpl(
+      firebaseDatabase: sl(),
+      sharedPreferences: sl(),
+    ),
+  );
+  
   // BLoCs
   sl.registerFactory(
-    () => AuthBloc(authRepository: sl())..add(const CheckAuthStatus()),
+    () => AuthBloc(authRepository: sl()),
+  );
+  
+  sl.registerFactory(
+    () => UserBloc(userRepository: sl()),
   );
 }
 
@@ -99,6 +115,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<AuthBloc>(
           create: (context) => sl<AuthBloc>(),
         ),
+        BlocProvider<UserBloc>(
+          create: (context) => sl<UserBloc>(),
+        ),
       ],
       child: ScreenUtilInit(
         // Use more flexible approach with adaptive design size
@@ -111,50 +130,10 @@ class MyApp extends StatelessWidget {
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,
-            home: BlocConsumer<AuthBloc, AuthState>(
-              listener: (context, state) {
-                // Handle auth state changes that require UI responses
-                if (state.status == AuthStatus.error) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(state.errorMessage ?? 'An error occurred'),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
-              builder: (context, state) {
-                // Show different screens based on auth state
-                switch (state.status) {
-                  case AuthStatus.authenticated:
-                    return const HomePage();
-                  case AuthStatus.unauthenticated:
-                  case AuthStatus.initial:
-                  case AuthStatus.error:
-                    return const PhoneEntryPage();
-                  case AuthStatus.loading:
-                    return const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                  case AuthStatus.otpSent:
-                    // Navigate directly to OTP verification screen
-                    return OtpVerificationPage(
-                      phoneNumber: state.phoneNumber!,
-                      requestId: state.requestId!,
-                    );
-                  default:
-                    return const Scaffold(
-                      body: Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    );
-                }
-              },
-            ),
+            home: const SplashScreen(),
             routes: {
               AppConstants.homeRoute: (context) => const HomePage(),
+              AppConstants.loginRoute: (context) => const PhoneEntryPage(),
               // Add more routes as we develop
             },
           );

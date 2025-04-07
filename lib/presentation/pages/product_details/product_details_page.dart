@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:profit_grocery_application/data/inventory/product_inventory.dart';
+import 'package:profit_grocery_application/data/inventory/similar_products.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/product_card.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../core/utils/color_mapper.dart';
 import '../../../domain/entities/product.dart';
 import '../../blocs/product_details/product_details_bloc.dart';
 import '../../blocs/product_details/product_details_event.dart';
@@ -222,13 +225,22 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                     });
                   },
                   itemBuilder: (context, index) {
-                    return Container(
-                      color: Colors.white.withOpacity(0.05),
-                      padding: EdgeInsets.all(24.w),
-                      child: Image.asset(
-                        productImages[index],
-                        fit: BoxFit.contain,
-                      ),
+                    return BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
+                      builder: (context, blocState) {
+                        // Get the background color based on the product's category
+                        final Color backgroundColor = ColorMapper.getColorForCategory(
+                          product.id.split('_').take(2).join('_')
+                        );
+                            
+                        return Container(
+                          color: backgroundColor,
+                          padding: EdgeInsets.all(24.w),
+                          child: Image.asset(
+                            productImages[index],
+                            fit: BoxFit.contain,
+                          ),
+                        );
+                      }
                     );
                   },
                 ),
@@ -466,35 +478,84 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                         SizedBox(height: 8.h),
                         
                         SizedBox(
-                          height: 150.h,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: 5, // Mock data
-                            itemBuilder: (context, index) {
-                              // Create dummy product for similar items
-                              final similarProduct = Product(
-                                id: 'similar_${index}',
-                                name: 'Similar Item ${index + 1}',
-                                image: '${AppConstants.assetsProductsPath}${(index % 6) + 1}.png',
-                                price: 100.0 + (index * 10),
-                                categoryId: product.categoryId, // Use same category as main product
-                                inStock: true,
+                          height: 250.h,
+                          child: Builder(
+                            builder: (context) {
+                              // Get similar product IDs for this product
+                              final similarProductIds = SimilarProducts.getSimilarProductIds(
+                                product.id,
+                                limit: 3,
                               );
                               
-                              // Get color for category
-                              final categoryColor = product.categoryId != null
-                                ? blocState.subcategoryColors[product.categoryId]
-                                : AppTheme.secondaryColor;
+                              // Get all products from inventory
+                              final allProducts = ProductInventory.getAllProducts();
                               
-                              return Container(
-                                width: 120.w,
-                                margin: EdgeInsets.only(right: 12.w),
-                                child: ProductCard.fromEntity(
-                                  product: similarProduct,
-                                  onTap: () {}, // No action needed for now
-                                  onQuantityChanged: (_) {}, // No action needed for now
-                                  backgroundColor: categoryColor,
-                                ),
+                              // Find the similar products
+                              final similarProducts = <Product>[];
+                              
+                              for (final productId in similarProductIds) {
+                                try {
+                                  final similarProduct = allProducts.firstWhere(
+                                    (p) => p.id == productId,
+                                  );
+                                  similarProducts.add(similarProduct);
+                                } catch (e) {
+                                  // Skip if product not found
+                                }
+                              }
+                              
+                              // If no similar products found, show a message
+                              if (similarProducts.isEmpty) {
+                                return Center(
+                                  child: Text(
+                                    'No similar products found',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: 14.sp,
+                                    ),
+                                  ),
+                                );
+                              }
+                              
+                              // Show similar products in a horizontal list
+                              return ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: similarProducts.length,
+                                itemBuilder: (context, index) {
+                                  final similarProduct = similarProducts[index];
+                                  
+                                  // Get color for category
+                                  final categoryColor = ColorMapper.getColorForCategory(
+                                    similarProduct.id.split('_').take(2).join('_')
+                                  );
+                                  
+                                  return Container(
+                                    width: 160.w,
+                                    margin: EdgeInsets.only(right: 12.w),
+                                    child: ProductCard.fromEntity(
+                                      product: similarProduct,
+                                      onTap: () {
+                                        // Navigate to the similar product details
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProductDetailsPage(
+                                              productId: similarProduct.id,
+                                              categoryId: similarProduct.categoryId,
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                      onQuantityChanged: (quantity) {
+                                        // Add the similar product to cart
+                                        context.read<ProductDetailsBloc>().add(
+                                          AddToCart(similarProduct, quantity)
+                                        );
+                                      },
+                                      backgroundColor: categoryColor,
+                                    ),
+                                  );
+                                },
                               );
                             },
                           ),

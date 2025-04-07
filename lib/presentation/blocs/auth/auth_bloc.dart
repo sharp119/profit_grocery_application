@@ -21,19 +21,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     CheckAuthStatus event,
     Emitter<AuthState> emit,
   ) async {
-    emit(state.copyWithLoading());
-    
-    final isLoggedIn = await _authRepository.isLoggedIn();
-    
-    if (isLoggedIn) {
-      final userId = await _authRepository.getCurrentUserId();
-      if (userId != null && !emit.isDone) {
-        emit(state.copyWithAuthenticated(userId));
+    try {
+      emit(state.copyWithLoading());
+      
+      final isLoggedIn = await _authRepository.isLoggedIn();
+      
+      if (isLoggedIn) {
+        final userId = await _authRepository.getCurrentUserId();
+        if (userId != null && !emit.isDone) {
+          emit(state.copyWithAuthenticated(userId));
+        } else if (!emit.isDone) {
+          emit(state.copyWithUnauthenticated());
+        }
       } else if (!emit.isDone) {
         emit(state.copyWithUnauthenticated());
       }
-    } else if (!emit.isDone) {
-      emit(state.copyWithUnauthenticated());
+    } catch (e) {
+      LoggingService.logError('AuthBloc: Error checking auth status', e.toString());
+      if (!emit.isDone) {
+        emit(state.copyWithError('Failed to check auth status: $e'));
+      }
     }
   }
 

@@ -73,11 +73,11 @@ class ProductCard extends StatelessWidget {
     
     // Calculate responsive dimensions
     final gridItemWidth = screenWidth / 2 - 20; // Account for grid spacing
-    final aspectRatio = 0.64; // Reduced aspect ratio to prevent overflow
+    final aspectRatio = 0.7; // Decreased aspect ratio to provide more vertical space
     final calculatedHeight = gridItemWidth / aspectRatio;
     
     // Adapt dimensions proportionally to screen size
-    final imageHeight = (calculatedHeight * 0.45).clamp(80.0, 130.0); // Increased image height
+    final imageHeight = (calculatedHeight * 0.35).clamp(70.0, 110.0); // Further reduced image height
     final padding = (screenWidth / 50).clamp(6.0, 10.0);
     final borderRadius = (screenWidth / 40).clamp(10.0, 16.0);
     
@@ -102,14 +102,11 @@ class ProductCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(borderRadius),
           child: LayoutBuilder(
             builder: (context, constraints) {
-              return Container(
-                constraints: BoxConstraints(
-                  maxHeight: screenWidth * 1.6, // Explicitly limit max height
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Important to prevent overflow
-                  children: [
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
                     // Product image and discount badge
                     Stack(
                       children: [
@@ -118,7 +115,7 @@ class ProductCard extends StatelessWidget {
                           height: imageHeight,
                           width: double.infinity,
                           color: backgroundColor ?? AppTheme.secondaryColor,
-                          padding: EdgeInsets.all(padding),
+                          padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding/2),
                           child: inStock
                               ? Image.asset(
                                   image,
@@ -151,18 +148,18 @@ class ProductCard extends StatelessWidget {
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 6.0,
-                                        vertical: 3.0,
+                                        horizontal: 4.0,
+                                        vertical: 2.0,
                                       ),
                                       decoration: BoxDecoration(
                                         color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(4.0),
+                                        borderRadius: BorderRadius.circular(2.0),
                                       ),
                                       child: const Text(
                                         'Out of Stock',
                                         style: TextStyle(
                                           color: Colors.white,
-                                          fontSize: 10.0,
+                                          fontSize: 8.0, // Smaller font
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -171,25 +168,25 @@ class ProductCard extends StatelessWidget {
                                 ),
                         ),
                         
-                        // Discount badge
+                        // Discount badge - more compact
                         if (hasDiscount)
                           Positioned(
-                            top: 6.0,
-                            left: 6.0,
+                            top: 4.0,
+                            left: 4.0,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 4.0,
-                                vertical: 2.0,
+                                horizontal: 3.0,
+                                vertical: 1.0,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.green,
-                                borderRadius: BorderRadius.circular(4.0),
+                                borderRadius: BorderRadius.circular(2.0),
                               ),
                               child: Text(
                                 '${discountPercentage!.toInt()}% OFF',
                                 style: const TextStyle(
                                   color: Colors.white,
-                                  fontSize: 8.0,
+                                  fontSize: 7.0, // Smaller font
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -202,28 +199,28 @@ class ProductCard extends StatelessWidget {
                     Container(
                       color: AppTheme.secondaryColor,
                       width: double.infinity,
-                      padding: EdgeInsets.all(padding),
+                      padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding / 2), // Reduced vertical padding
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start, // Align content to top
                         children: [
-                          // Product name - display just the number for product_N
+                          // Product name - allow 1 line max with ellipsis to prevent overflow
                           Text(
-                            name.startsWith("product_") 
-                                ? "#${name.split("_").last}" // Just show number with # prefix
-                                : name,
+                            name,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: nameSize,
                               fontWeight: FontWeight.w500,
+                              height: 1.0, // Minimize line height
                             ),
-                            maxLines: 1, // Single line to save space
+                            maxLines: 1, // Allow only one line to prevent overflow
                             overflow: TextOverflow.ellipsis,
                           ),
                           
-                          SizedBox(height: 4.h), // Minimal spacing
+                          SizedBox(height: 1.h), // Minimal spacing
                           
-                          // Price section
+                          // Price section - made more compact
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -232,12 +229,12 @@ class ProductCard extends StatelessWidget {
                                 '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
                                 style: TextStyle(
                                   color: AppTheme.accentColor,
-                                  fontSize: priceSize,
+                                  fontSize: priceSize - 1, // Slightly smaller font 
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               
-                              SizedBox(width: padding / 2),
+                              SizedBox(width: 4.0), // Fixed small width
                               
                               // Original price (MRP) if there is a discount
                               if (hasDiscount)
@@ -246,7 +243,7 @@ class ProductCard extends StatelessWidget {
                                     '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
                                     style: TextStyle(
                                       color: Colors.grey,
-                                      fontSize: mrpSize,
+                                      fontSize: mrpSize - 1, // Slightly smaller font
                                       fontWeight: FontWeight.w500,
                                       decoration: TextDecoration.lineThrough,
                                     ),
@@ -256,17 +253,16 @@ class ProductCard extends StatelessWidget {
                             ],
                           ),
                           
-                          // Add to cart button or quantity selector - minimal height
-                          SizedBox(height: 6.h),
+                          // Add to cart button or quantity selector with minimal height
+                          SizedBox(height: 1.h), // Minimal spacing
                           quantity > 0
-                              ? _buildQuantitySelector(22.h) // Minimal height
-                              : _buildAddButton(22.h),    // Minimal height
+                              ? _buildQuantitySelector(16.h) // Further reduced height
+                              : _buildAddButton(16.h),    // Further reduced height
                         ],
                       ),
                     ),
                   ],
-                ),
-              );
+                );
             },
           ),
         ),
@@ -274,9 +270,9 @@ class ProductCard extends StatelessWidget {
     );
   }
   
-  // Add to cart button
+  // Add to cart button - more compact
   Widget _buildAddButton(double buttonHeight) {
-    final fontSize = (buttonHeight / 2.5).clamp(10.0, 14.0);
+    final fontSize = (buttonHeight / 2.5).clamp(9.0, 12.0); // Smaller font
     
     return SizedBox(
       width: double.infinity,
@@ -286,12 +282,13 @@ class ProductCard extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           foregroundColor: Colors.black,
           backgroundColor: inStock ? AppTheme.accentColor : Colors.grey,
-          padding: const EdgeInsets.symmetric(vertical: 0),
+          padding: EdgeInsets.zero, // No padding
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(6.0),
+            borderRadius: BorderRadius.circular(4.0), // Smaller radius
           ),
-          // Minimize internal padding
+          // Absolutely minimize internal padding
           minimumSize: Size.zero,
+          visualDensity: VisualDensity.compact,
           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         child: Text(
@@ -305,17 +302,17 @@ class ProductCard extends StatelessWidget {
     );
   }
   
-  // Quantity selector for products already in cart
+  // Quantity selector for products already in cart - more compact
   Widget _buildQuantitySelector(double buttonHeight) {
-    final buttonMinWidth = (buttonHeight * 0.9).clamp(24.0, 32.0);
-    final fontSize = (buttonHeight / 2.3).clamp(12.0, 16.0);
-    final iconSize = (buttonHeight / 2.5).clamp(12.0, 16.0);
+    final buttonMinWidth = (buttonHeight * 0.8).clamp(20.0, 28.0); // Smaller width
+    final fontSize = (buttonHeight / 2.3).clamp(10.0, 14.0); // Smaller font
+    final iconSize = (buttonHeight / 2.5).clamp(10.0, 14.0); // Smaller icons
     
     return Container(
       height: buttonHeight,
       decoration: BoxDecoration(
         color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.circular(6.0),
+        borderRadius: BorderRadius.circular(4.0), // Smaller radius
         border: Border.all(
           color: AppTheme.accentColor,
           width: 1,

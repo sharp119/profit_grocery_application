@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../services/logging_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
@@ -30,22 +31,36 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
   void _submitPhoneNumber() {
     if (!_formKey.currentState!.validate()) return;
     
+    // Sanitize the phone number (remove any spaces or symbols)
+    final sanitizedPhone = _phoneController.text.trim().replaceAll(RegExp(r'[^\d]'), '');
+    
+    // Ensure it's a 10-digit number
+    if (sanitizedPhone.length != 10) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please enter a valid 10-digit phone number'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+    
+    LoggingService.logFirestore('PhoneEntryPage: Submitting phone number: ${sanitizedPhone.substring(6)}XXXX');
+    
     // Submit the phone number to the AuthBloc
-    context.read<AuthBloc>().add(SendOtpEvent(_phoneController.text));
+    context.read<AuthBloc>().add(SendOtpEvent(sanitizedPhone));
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
-          // Handle state changes
-          print('PhoneEntryPage listener - AuthState: ${state.status}');
-          print('PhoneEntryPage listener - Phone: ${state.phoneNumber}, RequestId: ${state.requestId}');
+          LoggingService.logFirestore('PhoneEntryPage listener - AuthState: ${state.status}');
           
-          if (state.status == AuthStatus.otpSent) {
-            // Navigate to OTP verification page
-            print('Navigating to OTP verification page');
+          if (state.status == AuthStatus.otpSent && state.requestId != null && state.phoneNumber != null) {
+            LoggingService.logFirestore('PhoneEntryPage: OTP sent, navigating to verification page');
             
             Navigator.push(
               context,
@@ -54,6 +69,14 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
                   phoneNumber: state.phoneNumber!,
                   requestId: state.requestId!,
                 ),
+              ),
+            );
+          } else if (state.status == AuthStatus.error) {
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? 'Failed to send OTP'),
+                backgroundColor: Colors.red,
               ),
             );
           }
@@ -81,6 +104,13 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
                             color: AppTheme.accentColor,
                             width: 2.w,
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppTheme.accentColor.withOpacity(0.3),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
                         ),
                         child: Center(
                           child: Text(
@@ -199,9 +229,30 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
                           height: 56.h,
                           child: ElevatedButton(
                             onPressed: isLoading ? null : _submitPhoneNumber,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentColor,
+                              foregroundColor: AppTheme.primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              elevation: 3,
+                            ),
                             child: isLoading
-                                ? const CircularProgressIndicator()
-                                : const Text('Continue'),
+                                ? SizedBox(
+                                    width: 24.w,
+                                    height: 24.w,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3.w,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                                    ),
+                                  )
+                                : Text(
+                                    'Continue',
+                                    style: TextStyle(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         );
                       },

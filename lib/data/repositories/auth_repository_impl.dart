@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../core/constants/app_constants.dart';
 import '../../core/errors/failures.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../services/otp_service.dart';
@@ -11,8 +12,8 @@ class AuthRepositoryImpl implements AuthRepository {
 
   // Keys for SharedPreferences
   static const String _tokenKey = 'auth_token';
-  static const String _userIdKey = 'user_id';
-  static const String _phoneNumberKey = 'phone_number';
+  static const String _userIdKey = AppConstants.userTokenKey; // Use the same key as in UserRepository
+  static const String _phoneNumberKey = AppConstants.userPhoneKey; // Use the consistent key for phone
 
   AuthRepositoryImpl({
     required OTPService otpService,
@@ -57,13 +58,19 @@ class AuthRepositoryImpl implements AuthRepository {
       // Store access token in SharedPreferences
       await _sharedPreferences.setString(_tokenKey, accessToken);
       
-      // For demo purposes, we're using a simple UUID as user ID
-      // In a real app, you'd get this from the backend
+      // Generate and store user ID
       final userId = DateTime.now().millisecondsSinceEpoch.toString();
+      
+      // Save to both keys to ensure consistency
       await _sharedPreferences.setString(_userIdKey, userId);
+      await _sharedPreferences.setString(AppConstants.userTokenKey, userId);
       
       // Store phone number for future reference
       await _sharedPreferences.setString(_phoneNumberKey, phoneNumber);
+      await _sharedPreferences.setString(AppConstants.userPhoneKey, phoneNumber);
+
+      // Log successful authentication
+      print('AuthRepositoryImpl: Authentication successful. UserID: $userId');
 
       return Right(accessToken);
     } catch (e) {

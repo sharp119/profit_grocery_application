@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:profit_grocery_application/data/models/product_model.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../data/inventory/bestseller_products.dart';
+import '../../../data/inventory/product_inventory.dart';
+import '../../../data/inventory/similar_products.dart';
 import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
@@ -458,44 +462,55 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   List<Product> _getMockBestSellers() {
-    return [
-      Product(
-        id: '9',
-        name: 'Tata Salt 1kg',
-        image: '${AppConstants.assetsProductsPath}3.png',
-        price: 22.0,
-        mrp: 24.0,
-        inStock: true,
-        categoryId: 'grocery_3',
-      ),
-      Product(
-        id: '10',
-        name: 'Good Day Cookies',
-        image: '${AppConstants.assetsProductsPath}4.png',
-        price: 30.0,
-        mrp: 35.0,
-        inStock: true,
-        categoryId: 'kitchen_1',
-      ),
-      Product(
-        id: '11',
-        name: 'Maggi Noodles Pack of 12',
-        image: '${AppConstants.assetsProductsPath}5.png',
-        price: 160.0,
-        mrp: 180.0,
-        inStock: true,
-        categoryId: 'snacks_5',
-      ),
-      Product(
-        id: '12',
-        name: 'Surf Excel 1kg',
-        image: '${AppConstants.assetsProductsPath}6.png',
-        price: 140.0,
-        mrp: 150.0,
-        inStock: false,
-        categoryId: 'kitchen_4',
-      ),
-    ];
+    // Get bestseller products from the inventory using IDs from BestsellerProducts
+    final allProducts = ProductInventory.getAllProducts();
+    final bestSellerProducts = <Product>[];
+    
+    // Find each bestseller product by ID
+    for (final productId in BestsellerProducts.productIds) {
+      // Look for the product in the inventory
+      final product = allProducts.firstWhere(
+        (product) => product.id == productId,
+        orElse: () => ProductModel(
+          id: 'fallback_${productId}',
+          name: 'Product Not Found',
+          image: '${AppConstants.assetsProductsPath}1.png',
+          price: 0.0,
+          categoryId: 'fallback',
+        ),
+      );
+      
+      // Add to list if found
+      if (product != null) {
+        bestSellerProducts.add(product);
+      }
+    }
+    
+    // If no products found (unlikely), return a fallback list
+    if (bestSellerProducts.isEmpty) {
+      return [
+        Product(
+          id: '9',
+          name: 'Tata Salt 1kg',
+          image: '${AppConstants.assetsProductsPath}3.png',
+          price: 22.0,
+          mrp: 24.0,
+          inStock: true,
+          categoryId: 'grocery_3',
+        ),
+        Product(
+          id: '10',
+          name: 'Good Day Cookies',
+          image: '${AppConstants.assetsProductsPath}4.png',
+          price: 30.0,
+          mrp: 35.0,
+          inStock: true,
+          categoryId: 'kitchen_1',
+        ),
+      ];
+    }
+    
+    return bestSellerProducts;
   }
   
   Map<String, int> _getMockCartQuantities() {

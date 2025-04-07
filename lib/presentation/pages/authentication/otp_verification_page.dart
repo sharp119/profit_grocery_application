@@ -5,9 +5,12 @@ import 'package:pinput/pinput.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../services/logging_service.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
+import '../home/home_page.dart';
+import 'user_registration_page.dart';
 
 class OtpVerificationPage extends StatefulWidget {
   final String phoneNumber;
@@ -28,11 +31,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   bool _isResending = false;
   int _remainingTime = 60; // 60 seconds countdown
+  bool _isAutoVerifying = false;
 
   @override
   void initState() {
     super.initState();
     _startResendTimer();
+    LoggingService.logFirestore('OtpVerificationPage: Initialized with requestId: ${widget.requestId}');
   }
 
   @override
@@ -61,6 +66,8 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       _isResending = true;
     });
     
+    LoggingService.logFirestore('OtpVerificationPage: Resending OTP to phone: ${widget.phoneNumber}');
+    
     // Send OTP request again
     context.read<AuthBloc>().add(SendOtpEvent(widget.phoneNumber));
     
@@ -74,6 +81,12 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   void _verifyOtp() {
     if (!_formKey.currentState!.validate()) return;
+    
+    setState(() {
+      _isAutoVerifying = true;
+    });
+    
+    LoggingService.logFirestore('OtpVerificationPage: Verifying OTP for requestId: ${widget.requestId}');
     
     // Verify OTP through AuthBloc
     context.read<AuthBloc>().add(
@@ -98,13 +111,20 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       ),
       decoration: BoxDecoration(
         color: AppTheme.secondaryColor,
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(12.r),
       ),
     );
 
     final focusedPinTheme = defaultPinTheme.copyDecorationWith(
       border: Border.all(color: AppTheme.accentColor, width: 2.w),
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(12.r),
+      boxShadow: [
+        BoxShadow(
+          color: AppTheme.accentColor.withOpacity(0.3),
+          blurRadius: 8,
+          spreadRadius: 2,
+        ),
+      ],
     );
 
     final submittedPinTheme = defaultPinTheme.copyWith(
@@ -114,6 +134,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
     );
 
     return Scaffold(
+      backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
         title: const Text('Verify Phone'),
         leading: IconButton(
@@ -123,15 +144,38 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
       ),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
+          LoggingService.logFirestore('OtpVerificationPage listener - AuthState: ${state.status}');
+          
           if (state.status == AuthStatus.authenticated) {
-            // Pop all routes and go to homepage (already handled in MyApp widget)
-            Navigator.of(context).popUntil((route) => route.isFirst);
+            LoggingService.logFirestore('OtpVerificationPage: User authenticated with ID: ${state.userId ?? "unknown"}, navigating to registration');
+            
+            // Navigate to user registration page (for new users)
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => UserRegistrationPage(
+                  phoneNumber: widget.phoneNumber,
+                ),
+              ),
+            );
           } else if (state.status == AuthStatus.otpSent) {
             // Show toast/snackbar for OTP resent
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('OTP sent successfully!'),
                 backgroundColor: Colors.green,
+              ),
+            );
+          } else if (state.status == AuthStatus.error) {
+            setState(() {
+              _isAutoVerifying = false;
+            });
+            
+            // Show error message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.errorMessage ?? 'Failed to verify OTP'),
+                backgroundColor: Colors.red,
               ),
             );
           }
@@ -198,12 +242,18 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     Center(
                       child: Pinput(
                         controller: _otpController,
-                        length: 4, // Changed from 6 to 4 digits
+                        length: 4, // 4-digit OTP
                         defaultPinTheme: defaultPinTheme,
                         focusedPinTheme: focusedPinTheme,
                         submittedPinTheme: submittedPinTheme,
                         pinputAutovalidateMode: PinputAutovalidateMode.onSubmit,
                         showCursor: true,
+                        onCompleted: (pin) {
+                          // Auto-verify when all digits are entered
+                          if (!_isAutoVerifying) {
+                            _verifyOtp();
+                          }
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) {
                             return 'Please enter the OTP';
@@ -223,9 +273,13 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                       child: TextButton(
                         onPressed: _remainingTime > 0 ? null : _resendOtp,
                         child: _isResending
-                            ? const CircularProgressIndicator(
-                                color: AppTheme.accentColor,
-                                strokeWidth: 2,
+                            ? SizedBox(
+                                width: 20.w,
+                                height: 20.w,
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.accentColor,
+                                  strokeWidth: 2.w,
+                                ),
                               )
                             : Text(
                                 _remainingTime > 0
@@ -246,20 +300,57 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                     // Verify button
                     BlocBuilder<AuthBloc, AuthState>(
                       builder: (context, state) {
-                        final isLoading = state.status == AuthStatus.loading;
+                        final isLoading = state.status == AuthStatus.loading || _isAutoVerifying;
                         
                         return SizedBox(
                           width: double.infinity,
                           height: 56.h,
                           child: ElevatedButton(
                             onPressed: isLoading ? null : _verifyOtp,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppTheme.accentColor,
+                              foregroundColor: AppTheme.primaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12.r),
+                              ),
+                              elevation: 3,
+                            ),
                             child: isLoading
-                                ? const CircularProgressIndicator()
-                                : const Text('Verify & Continue'),
+                                ? SizedBox(
+                                    width: 24.w,
+                                    height: 24.w,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 3.w,
+                                      valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+                                    ),
+                                  )
+                                : Text(
+                                    'Verify & Continue',
+                                    style: TextStyle(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         );
                       },
                     ),
+                    
+                    // Didn't receive OTP?
+                    if (_remainingTime == 0)
+                      Center(
+                        child: Padding(
+                          padding: EdgeInsets.only(top: 24.h),
+                          child: Text(
+                            "Didn't receive the OTP? Try resending it.",
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14.sp,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),

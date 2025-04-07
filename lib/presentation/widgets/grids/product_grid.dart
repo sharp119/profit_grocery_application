@@ -85,7 +85,7 @@ class ProductGrid extends StatelessWidget {
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: 16.w,
         mainAxisSpacing: 16.h,
-        childAspectRatio: 0.64, // Match the ProductCard's aspect ratio
+        childAspectRatio: 0.7, // Decreased to provide more vertical space
       ),
       shrinkWrap: shrinkWrap,
       // Don't load all items at once, use caching

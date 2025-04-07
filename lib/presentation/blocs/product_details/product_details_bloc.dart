@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../data/inventory/bestseller_products.dart';
+import '../../../data/inventory/similar_products.dart';
 import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/product.dart';
 import 'product_details_event.dart';
@@ -135,34 +137,49 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
   
   // Generate subcategory colors
   Map<String, Color> _generateSubcategoryColors() {
-    final Map<String, Color> colors = {};
+    // Use the centralized color definitions from BestsellerProducts
+    final Map<String, Color> colors = Map.from(BestsellerProducts.subcategoryColors);
     
-    // Map category IDs to colors
-    // Standard category IDs
+    // Add legacy category mappings
     colors['category_1'] = const Color(0xFF1A5D1A); // Dark green
     colors['category_2'] = const Color(0xFFE5BEEC); // Light lavender
     colors['category_3'] = const Color(0xFFECB159); // Yellow/orange
     colors['category_4'] = const Color(0xFF219C90); // Teal
     
-    // Product ID to category mapping
+    // Map grocery & kitchen categories
+    colors['grocery_1'] = colors['vegetables_fruits']!;
+    colors['grocery_2'] = colors['atta_rice_dal']!;
+    colors['grocery_3'] = colors['oil_ghee_masala']!;
+    colors['grocery_4'] = const Color(0xFFE5BEEC); // Light lavender for dairy
+    
+    colors['kitchen_1'] = const Color(0xFFA9907E); // Brown for bakery
+    colors['kitchen_2'] = colors['dry_fruits_cereals']!;
+    colors['kitchen_3'] = const Color(0xFF675D50); // Dark brown for meat
+    colors['kitchen_4'] = colors['kitchenware']!;
+    
+    // Map snacks categories
+    colors['snacks_1'] = colors['chips_namkeen']!;
+    colors['snacks_2'] = colors['sweets_chocolates']!;
+    colors['snacks_3'] = colors['drinks_juices']!;
+    colors['snacks_4'] = colors['tea_coffee_milk']!;
+    colors['snacks_5'] = colors['instant_food']!;
+    colors['snacks_6'] = colors['sauces_spreads']!;
+    colors['snacks_7'] = colors['paan_corner']!;
+    colors['snacks_8'] = colors['ice_cream']!;
+    
+    // Product ID to category mapping for mock products
     colors['1'] = colors['category_1']!; // Green
     colors['2'] = colors['category_2']!; // Light lavender
     colors['3'] = colors['category_3']!; // Yellow/orange
-    
-    // Map all grocery category IDs
-    colors['grocery_1'] = const Color(0xFF1A5D1A); // Dark green for vegetables
-    colors['grocery_2'] = const Color(0xFFD5A021); // Gold/yellow for grains
-    colors['grocery_3'] = const Color(0xFFFF6B6B); // Soft red for oils/spices
-    
-    // Map kitchen category IDs
-    colors['kitchen_1'] = const Color(0xFFA9907E); // Brown for bakery
-    colors['kitchen_2'] = const Color(0xFFABC4AA); // Sage green for dry fruits
-    colors['kitchen_3'] = const Color(0xFF675D50); // Dark brown for meat
-    colors['kitchen_4'] = const Color(0xFF3F4E4F); // Dark slate for kitchenware
-    
-    // Map snacks category IDs
-    colors['snacks_1'] = const Color(0xFFECB159); // Yellow/orange for chips
-    colors['snacks_5'] = const Color(0xFFEEBB4D); // Amber for instant food
+    colors['4'] = colors['category_4']!; // Teal
+    colors['5'] = colors['sauces_spreads']!; // Burgundy
+    colors['6'] = colors['vegetables_fruits']!; // Green
+    colors['7'] = colors['drinks_juices']!; // Teal
+    colors['8'] = colors['chips_namkeen']!; // Yellow/orange
+    colors['9'] = colors['kitchen_3']!; // Dark brown
+    colors['10'] = colors['kitchen_1']!; // Brown
+    colors['11'] = colors['chips_namkeen']!; // Yellow
+    colors['12'] = colors['kitchenware']!; // Slate
     
     return colors;
   }
