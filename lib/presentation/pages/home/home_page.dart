@@ -21,6 +21,7 @@ import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/tabs/horizontal_category_tabs.dart';
 import '../cart/cart_page.dart';
+import '../category_products/category_products_page.dart';
 import '../product_details/product_details_page.dart';
 
 class HomePage extends StatelessWidget {
@@ -55,12 +56,12 @@ class _HomePageContentState extends State<_HomePageContent> {
   void _onCategoryTap(Category category) {
     // Navigate to category products screen
     debugPrint('Tapped on category: ${category.name}');
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(
-    //     builder: (context) => CategoryProductsPage(category: category),
-    //   ),
-    // );
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CategoryProductsPage(categoryId: category.id),
+      ),
+    );
   }
 
   void _onProductTap(Product product) {
@@ -304,7 +305,11 @@ class _HomePageContentState extends State<_HomePageContent> {
               backgroundColor: group.backgroundColor,
               itemBackgroundColor: group.itemBackgroundColor,
               onItemTap: (index) {
-                debugPrint('Tapped on ${group.items[index].label} in ${group.title}');
+                final category = state.mainCategories.firstWhere(
+                  (c) => c.name == group.items[index].label,
+                  orElse: () => state.mainCategories.first,
+                );
+                _onCategoryTap(category);
               },
             )).toList(),
             
@@ -357,6 +362,7 @@ class _HomePageContentState extends State<_HomePageContent> {
               onQuantityChanged: _onProductQuantityChanged,
               cartQuantities: state.cartQuantities,
               crossAxisCount: 2,
+              subCategoryColors: state.subcategoryColors,
             ),
           ],
           

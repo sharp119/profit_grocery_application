@@ -21,6 +21,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
   final double? totalAmount;
   final VoidCallback onCartTap;
   final String? cartPreviewImage;
+  final Map<String, Color>? subcategoryColors;
 
   const TwoPanelCategoryProductView({
     Key? key,
@@ -34,6 +35,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
     this.totalAmount,
     required this.onCartTap,
     this.cartPreviewImage,
+    this.subcategoryColors,
   }) : super(key: key);
 
   @override
@@ -178,10 +180,20 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                 width: 30.w,
                                 height: 30.w,
                                 child: Image.asset(
-                                  category.icon ?? category.image,
+                                  category.image,
                                   color: isSelected
                                       ? AppTheme.accentColor
                                       : Colors.white,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    // Show a generic icon if the image fails to load
+                                    return Icon(
+                                      Icons.category,
+                                      color: isSelected
+                                          ? AppTheme.accentColor
+                                          : Colors.white,
+                                      size: 24.w,
+                                    );
+                                  },
                                 ),
                               ),
                             ),
@@ -275,6 +287,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                   shrinkWrap: true,
                                   physics: const NeverScrollableScrollPhysics(),
                                   padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                  subCategoryColors: widget.subcategoryColors,
                                 )
                               else
                                 Padding(

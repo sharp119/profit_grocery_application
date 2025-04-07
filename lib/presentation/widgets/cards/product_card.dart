@@ -16,6 +16,7 @@ class ProductCard extends StatelessWidget {
   final VoidCallback onTap;
   final Function(int) onQuantityChanged;
   final int quantity;
+  final Color? backgroundColor;
 
   const ProductCard({
     Key? key,
@@ -28,6 +29,7 @@ class ProductCard extends StatelessWidget {
     required this.onTap,
     required this.onQuantityChanged,
     this.quantity = 0,
+    this.backgroundColor,
   }) : super(key: key);
 
   /// Create a ProductCard from a Product entity
@@ -36,6 +38,7 @@ class ProductCard extends StatelessWidget {
     required VoidCallback onTap,
     required Function(int) onQuantityChanged,
     int quantity = 0,
+    Color? backgroundColor,
   }) {
     return ProductCard(
       id: product.id,
@@ -47,6 +50,7 @@ class ProductCard extends StatelessWidget {
       onTap: onTap,
       onQuantityChanged: onQuantityChanged,
       quantity: quantity,
+      backgroundColor: backgroundColor,
     );
   }
 
@@ -67,185 +71,209 @@ class ProductCard extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // Calculate responsive dimensions based on the available screen size
+    // Calculate responsive dimensions
     final gridItemWidth = screenWidth / 2 - 20; // Account for grid spacing
-    final aspectRatio = 0.75; // Maintain a consistent aspect ratio
+    final aspectRatio = 0.64; // Reduced aspect ratio to prevent overflow
     final calculatedHeight = gridItemWidth / aspectRatio;
     
     // Adapt dimensions proportionally to screen size
-    final imageHeight = (calculatedHeight * 0.45).clamp(90.0, 120.0);
+    final imageHeight = (calculatedHeight * 0.38).clamp(70.0, 90.0); // Reduced image height
     final padding = (screenWidth / 50).clamp(6.0, 10.0);
     final borderRadius = (screenWidth / 40).clamp(10.0, 16.0);
     
     // Font sizes proportional to screen width
-    final nameSize = (screenWidth / 35).clamp(10.0, 14.0);
-    final priceSize = (screenWidth / 30).clamp(12.0, 16.0);
-    final mrpSize = (screenWidth / 40).clamp(9.0, 12.0);
+    final nameSize = (screenWidth / 38).clamp(9.0, 13.0); // Smaller font
+    final priceSize = (screenWidth / 32).clamp(11.0, 15.0); // Smaller font
+    final mrpSize = (screenWidth / 42).clamp(8.0, 11.0); // Smaller font
     final buttonHeight = (screenWidth / 15).clamp(24.0, 32.0);
     
     return GestureDetector(
       onTap: inStock ? onTap : null,
       child: Container(
-        // Ensure container has no fixed height that could cause overflow
+        // No fixed height to avoid overflow
         decoration: BoxDecoration(
-          color: AppTheme.secondaryColor,
+          color: backgroundColor ?? AppTheme.secondaryColor,
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
             color: AppTheme.accentColor.withOpacity(0.1),
             width: 1,
           ),
         ),
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min, // Important to prevent overflow
-              children: [
-                // Product image and discount badge
-                Stack(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(borderRadius),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return Container(
+                constraints: BoxConstraints(
+                  maxHeight: screenWidth * 1.6, // Explicitly limit max height
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min, // Important to prevent overflow
                   children: [
-                    // Product image
-                    ClipRRect(
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(borderRadius),
-                        topRight: Radius.circular(borderRadius),
-                      ),
-                      child: Container(
-                        height: imageHeight,
-                        width: double.infinity,
-                        padding: EdgeInsets.all(padding),
-                        color: Colors.white.withOpacity(0.05),
-                        child: inStock
-                            ? Image.asset(
-                                image,
-                                fit: BoxFit.contain,
-                              )
-                            : Stack(
-                                alignment: Alignment.center,
-                                children: [
-                                  Image.asset(
+                    // Product image and discount badge
+                    Stack(
+                      children: [
+                        // Product image
+                        ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(borderRadius),
+                            topRight: Radius.circular(borderRadius),
+                          ),
+                          child: Container(
+                            height: imageHeight,
+                            width: double.infinity,
+                            padding: EdgeInsets.all(padding),
+                            color: Colors.white.withOpacity(0.05),
+                            child: inStock
+                                ? Image.asset(
                                     image,
                                     fit: BoxFit.contain,
-                                    color: Colors.grey.withOpacity(0.5),
-                                    colorBlendMode: BlendMode.saturation,
-                                  ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 6.0,
-                                      vertical: 3.0,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withOpacity(0.7),
-                                      borderRadius: BorderRadius.circular(4.0),
-                                    ),
-                                    child: const Text(
-                                      'Out of Stock',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10.0,
-                                        fontWeight: FontWeight.bold,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      // Return a placeholder if image fails to load
+                                      return Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey.withOpacity(0.5),
+                                        size: imageHeight * 0.5,
+                                      );
+                                    },
+                                  )
+                                : Stack(
+                                    alignment: Alignment.center,
+                                    children: [
+                                      Image.asset(
+                                        image,
+                                        fit: BoxFit.contain,
+                                        color: Colors.grey.withOpacity(0.5),
+                                        colorBlendMode: BlendMode.saturation,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          // Return a placeholder if image fails to load
+                                          return Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey.withOpacity(0.3),
+                                            size: imageHeight * 0.5,
+                                          );
+                                        },
                                       ),
-                                    ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 6.0,
+                                          vertical: 3.0,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.black.withOpacity(0.7),
+                                          borderRadius: BorderRadius.circular(4.0),
+                                        ),
+                                        child: const Text(
+                                          'Out of Stock',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10.0,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                          ),
+                        ),
+                        
+                        // Discount badge
+                        if (hasDiscount)
+                          Positioned(
+                            top: 6.0,
+                            left: 6.0,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4.0,
+                                vertical: 2.0,
                               ),
+                              decoration: BoxDecoration(
+                                color: Colors.green,
+                                borderRadius: BorderRadius.circular(4.0),
+                              ),
+                              child: Text(
+                                '${discountPercentage!.toInt()}% OFF',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8.0,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                    
+                    // Product details - using flexible layout
+                    Padding(
+                      padding: EdgeInsets.all(padding),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Product name
+                          Text(
+                            name,
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: nameSize,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1, // Single line to save space
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          
+                          SizedBox(height: 4.h), // Minimal spacing
+                          
+                          // Price section
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Current price
+                              Text(
+                                '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: AppTheme.accentColor,
+                                  fontSize: priceSize,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              
+                              SizedBox(width: padding / 2),
+                              
+                              // Original price (MRP) if there is a discount
+                              if (hasDiscount)
+                                Flexible(
+                                  child: Text(
+                                    '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
+                                    style: TextStyle(
+                                      color: Colors.grey,
+                                      fontSize: mrpSize,
+                                      fontWeight: FontWeight.w500,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                     
-                    // Discount badge
-                    if (hasDiscount)
-                      Positioned(
-                        top: 6.0,
-                        left: 6.0,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 4.0,
-                            vertical: 2.0,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(4.0),
-                          ),
-                          child: Text(
-                            '${discountPercentage!.toInt()}% OFF',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 8.0,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ),
+                    // Add to cart button or quantity selector - minimal height
+                    Padding(
+                      padding: EdgeInsets.all(3.h), // Minimal padding
+                      child: quantity > 0
+                          ? _buildQuantitySelector(22.h) // Minimal height
+                          : _buildAddButton(22.h),    // Minimal height
+                    ),
                   ],
                 ),
-                
-                // Product details - using flexible layout
-                Padding(
-                  padding: EdgeInsets.all(padding),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Product name
-                      Text(
-                        name,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: nameSize,
-                          fontWeight: FontWeight.w500,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      
-                      SizedBox(height: padding / 2),
-                      
-                      // Price section
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Current price
-                          Text(
-                            '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: AppTheme.accentColor,
-                              fontSize: priceSize,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          
-                          SizedBox(width: padding / 2),
-                          
-                          // Original price (MRP) if there is a discount
-                          if (hasDiscount)
-                            Flexible(
-                              child: Text(
-                                '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: mrpSize,
-                                  fontWeight: FontWeight.w500,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Add to cart button or quantity selector
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding / 2),
-                  child: quantity > 0
-                      ? _buildQuantitySelector(buttonHeight)
-                      : _buildAddButton(buttonHeight),
-                ),
-              ],
-            );
-          }
+              );
+            },
+          ),
         ),
       ),
     );

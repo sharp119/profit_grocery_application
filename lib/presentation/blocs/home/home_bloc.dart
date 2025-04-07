@@ -1,6 +1,8 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/constants/app_theme.dart';
 import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
@@ -26,6 +28,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     try {
       emit(state.copyWith(status: HomeStatus.loading));
+      
+      // Generate subcategory colors
+      final Map<String, Color> subcategoryColors = _generateSubcategoryColors();
 
       // In a real app, we would fetch this data from repositories
       // For now, we'll use mock data
@@ -80,6 +85,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         cartTotalAmount: cartTotalAmount,
         cartQuantities: cartQuantities,
         categoryGroups: categoryGroups,
+        subcategoryColors: subcategoryColors,
       ));
     } catch (e) {
       emit(state.copyWith(
@@ -503,5 +509,44 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   List<CategoryGroup> _getMockCategoryGroups() {
     // Get 4 random category groups from our pre-defined list
     return CategoryGroups.getRandomGroups(4);
+  }
+  
+  // Generate subcategory colors for products
+  Map<String, Color> _generateSubcategoryColors() {
+    final Map<String, Color> colors = {};
+    
+    // Colors for grocery categories (vegetables, fruits, etc)
+    colors['grocery_1'] = const Color(0xFF1A5D1A); // Dark green for vegetables
+    colors['grocery_2'] = const Color(0xFFD5A021); // Gold/yellow for grains
+    colors['grocery_3'] = const Color(0xFFFF6B6B); // Soft red for oils/spices
+    colors['grocery_4'] = const Color(0xFFE5BEEC); // Light lavender for dairy
+    
+    // Colors for kitchen categories
+    colors['kitchen_1'] = const Color(0xFFA9907E); // Brown for bakery
+    colors['kitchen_2'] = const Color(0xFFABC4AA); // Sage green for dry fruits
+    colors['kitchen_3'] = const Color(0xFF675D50); // Dark brown for meat
+    colors['kitchen_4'] = const Color(0xFF3F4E4F); // Dark slate for kitchenware
+    
+    // Colors for snacks categories
+    colors['snacks_1'] = const Color(0xFFECB159); // Yellow/orange for chips
+    colors['snacks_2'] = const Color(0xFFBF3131); // Dark red for sweets
+    colors['snacks_3'] = const Color(0xFF219C90); // Teal for drinks
+    colors['snacks_4'] = const Color(0xFF6C3428); // Coffee brown
+    colors['snacks_5'] = const Color(0xFFEEBB4D); // Amber for instant food
+    colors['snacks_6'] = const Color(0xFF9A3B3B); // Burgundy for sauces
+    colors['snacks_7'] = const Color(0xFF116A7B); // Teal for paan
+    colors['snacks_8'] = const Color(0xFFCDDBD5); // Light mint for ice cream
+    
+    // Colors for store categories
+    colors['store_1'] = const Color(0xFFE55604); // Orange for pooja
+    colors['store_2'] = const Color(0xFF557A46); // Green for pharma
+    colors['store_3'] = const Color(0xFF8ECDDD); // Light blue for pet
+    colors['store_4'] = const Color(0xFF068DA9); // Blue for sports
+    colors['store_5'] = const Color(0xFF9E4784); // Purple for fashion
+    colors['store_6'] = const Color(0xFF512B81); // Deep purple for stationery
+    colors['store_7'] = const Color(0xFF86A3B8); // Slate blue for books
+    colors['store_8'] = const Color(0xFFEF9A53); // Orange for toys
+    
+    return colors;
   }
 }

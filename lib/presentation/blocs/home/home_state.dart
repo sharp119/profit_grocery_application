@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:flutter/material.dart';
 
 import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
@@ -31,6 +32,7 @@ class HomeState extends Equatable {
   final String? cartPreviewImage;
   final double? cartTotalAmount;
   final Map<String, int> cartQuantities;
+  final Map<String, Color> subcategoryColors;
 
   const HomeState({
     this.status = HomeStatus.initial,
@@ -52,6 +54,7 @@ class HomeState extends Equatable {
     this.cartPreviewImage,
     this.cartTotalAmount,
     this.cartQuantities = const {},
+    this.subcategoryColors = const {},
   });
 
   HomeState copyWith({
@@ -74,6 +77,7 @@ class HomeState extends Equatable {
     String? cartPreviewImage,
     double? cartTotalAmount,
     Map<String, int>? cartQuantities,
+    Map<String, Color>? subcategoryColors,
   }) {
     return HomeState(
       status: status ?? this.status,
@@ -95,6 +99,7 @@ class HomeState extends Equatable {
       cartPreviewImage: cartPreviewImage ?? this.cartPreviewImage,
       cartTotalAmount: cartTotalAmount ?? this.cartTotalAmount,
       cartQuantities: cartQuantities ?? this.cartQuantities,
+      subcategoryColors: subcategoryColors ?? this.subcategoryColors,
     );
   }
 
@@ -119,5 +124,6 @@ class HomeState extends Equatable {
     cartPreviewImage,
     cartTotalAmount,
     cartQuantities,
+    subcategoryColors,
   ];
 }

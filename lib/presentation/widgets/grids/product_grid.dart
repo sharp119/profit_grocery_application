@@ -15,6 +15,7 @@ class ProductGrid extends StatelessWidget {
   final bool shrinkWrap;
   final ScrollPhysics? physics;
   final EdgeInsetsGeometry? padding;
+  final Map<String, Color>? subCategoryColors; // Map of subcategory ID to color
 
   const ProductGrid({
     Key? key,
@@ -26,6 +27,7 @@ class ProductGrid extends StatelessWidget {
     this.shrinkWrap = true,
     this.physics,
     this.padding,
+    this.subCategoryColors,
   }) : super(key: key);
 
   /// Create a ProductGrid with cart information
@@ -38,6 +40,7 @@ class ProductGrid extends StatelessWidget {
     bool shrinkWrap = true,
     ScrollPhysics? physics,
     EdgeInsetsGeometry? padding,
+    Map<String, Color>? subCategoryColors,
   }) {
     // Create a map of product IDs to quantities from the cart
     final cartQuantities = <String, int>{};
@@ -54,6 +57,7 @@ class ProductGrid extends StatelessWidget {
       shrinkWrap: shrinkWrap,
       physics: physics,
       padding: padding,
+      subCategoryColors: subCategoryColors,
     );
   }
 
@@ -64,21 +68,31 @@ class ProductGrid extends StatelessWidget {
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: 16.w,
         mainAxisSpacing: 16.h,
-        childAspectRatio: 0.7, // Adjust based on your card design
+        childAspectRatio: 0.64, // Match the ProductCard's new aspect ratio
       ),
       shrinkWrap: shrinkWrap,
+      // Don't load all items at once, use caching
+      cacheExtent: 500, // Increase the cache extent for smoother scrolling
       physics: physics ?? const NeverScrollableScrollPhysics(),
       padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
-      itemCount: products.length,
+      // Limit the number of items initially loaded
+      itemCount: products.length > 20 ? 20 : products.length,
       itemBuilder: (context, index) {
         final product = products[index];
         final quantity = cartQuantities[product.id] ?? 0;
+        
+        // Get the background color based on subcategory if available
+        Color? backgroundColor;
+        if (subCategoryColors != null && product.subcategoryId != null) {
+          backgroundColor = subCategoryColors?[product.subcategoryId];
+        }
         
         return ProductCard.fromEntity(
           product: product,
           onTap: () => onProductTap(product),
           onQuantityChanged: (newQuantity) => onQuantityChanged(product, newQuantity),
           quantity: quantity,
+          backgroundColor: backgroundColor,
         );
       },
     );

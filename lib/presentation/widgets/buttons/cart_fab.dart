@@ -83,6 +83,14 @@ class CartFAB extends StatelessWidget {
                       child: Image.asset(
                         previewImagePath!,
                         fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          // Return a fallback icon if image fails to load
+                          return Icon(
+                            Icons.shopping_bag,
+                            color: Colors.black,
+                            size: 24.w,
+                          );
+                        },
                       ),
                     ),
                   ),

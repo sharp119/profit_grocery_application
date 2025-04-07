@@ -176,4 +176,9 @@ class ShimmerLoader extends StatelessWidget {
       ),
     );
   }
+  
+  /// Create a generic shimmer container with custom child
+  static Widget withChild(Widget child) {
+    return ShimmerLoader(child: child);
+  }
 }

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -27,6 +28,9 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
       // For now, we'll use mock data
       final product = await _getMockProduct(event.productId);
       
+      // Generate subcategory colors
+      final Map<String, Color> subcategoryColors = _generateSubcategoryColors();
+      
       // Simulate network delay
       await Future.delayed(const Duration(milliseconds: 800));
 
@@ -36,6 +40,7 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
           product: product,
           cartItemCount: 2, // Mock cart count
           cartTotalAmount: 350.0, // Mock cart total
+          subcategoryColors: subcategoryColors,
         ));
       } else {
         emit(state.copyWith(
@@ -125,6 +130,21 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
     });
     
     return total;
+  }
+  
+  // Generate subcategory colors
+  Map<String, Color> _generateSubcategoryColors() {
+    return {
+      'category_1': const Color(0xFF1A5D1A), // Dark green
+      'category_2': const Color(0xFFE5BEEC), // Light lavender
+      'category_3': const Color(0xFFECB159), // Yellow/orange
+      'category_4': const Color(0xFF219C90), // Teal
+      'snacks_1': const Color(0xFFECB159), // Yellow/orange for chips
+      'grocery_1': const Color(0xFF1A5D1A), // Dark green for vegetables
+      'grocery_2': const Color(0xFFD5A021), // Gold/yellow for grains
+      'grocery_3': const Color(0xFFFF6B6B), // Soft red for oils/spices
+      'kitchen_1': const Color(0xFFA9907E), // Brown for bakery
+    };
   }
   
   // Mock data methods

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -15,23 +16,27 @@ import '../cart/cart_page.dart';
 
 class ProductDetailsPage extends StatelessWidget {
   final String productId;
+  final String? categoryId;
 
   const ProductDetailsPage({
     Key? key,
     required this.productId,
+    this.categoryId,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
       create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
-      child: const _ProductDetailsContent(),
+      child: _ProductDetailsContent(categoryId: categoryId),
     );
   }
 }
 
 class _ProductDetailsContent extends StatefulWidget {
-  const _ProductDetailsContent();
+  final String? categoryId;
+  
+  const _ProductDetailsContent({this.categoryId});
 
   @override
   State<_ProductDetailsContent> createState() => _ProductDetailsContentState();
@@ -106,7 +111,26 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
           backgroundColor: AppTheme.backgroundColor,
           appBar: AppBar(
             title: const Text('Product Details'),
-            actions: [
+          actions: [
+            if (widget.categoryId != null)
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => CategoryProductsPage(categoryId: widget.categoryId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.grid_view, color: AppTheme.accentColor),
+                label: Text(
+                  'View All',
+                  style: TextStyle(
+                    color: AppTheme.accentColor,
+                    fontSize: 14.sp,
+                  ),
+                ),
+              ),
               IconButton(
                 icon: const Icon(Icons.share_outlined),
                 onPressed: () {
@@ -418,89 +442,102 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                 ),
                 _buildSpecificationItem(
                   'Category',
-                  product.categoryName ?? 'Uncategorized',
+                  product.categoryName ?? product.categoryId,
                 ),
                 
                 SizedBox(height: 16.h),
                 
-                // Similar products section (just a placeholder)
-                Text(
-                  'Similar Products',
-                  style: TextStyle(
-                    color: AppTheme.accentColor,
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                
-                SizedBox(height: 8.h),
-                
-                SizedBox(
-                  height: 150.h,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 5, // Mock data
-                    itemBuilder: (context, index) {
-                      return Container(
-                        width: 120.w,
-                        margin: EdgeInsets.only(right: 12.w),
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondaryColor,
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(
-                            color: AppTheme.accentColor.withOpacity(0.3),
-                            width: 1,
+                // Similar products section
+                BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
+                  builder: (blocContext, blocState) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Similar Products',
+                          style: TextStyle(
+                            color: AppTheme.accentColor,
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Product image
-                            Expanded(
-                              child: Container(
-                                padding: EdgeInsets.all(8.w),
-                                child: Image.asset(
-                                  '${AppConstants.assetsProductsPath}${(index % 6) + 1}.png',
-                                  fit: BoxFit.contain,
+                        
+                        SizedBox(height: 8.h),
+                        
+                        SizedBox(
+                          height: 150.h,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: 5, // Mock data
+                            itemBuilder: (context, index) {
+                              final categoryColor = product.categoryId != null
+                                ? blocState.subcategoryColors[product.categoryId]
+                                : AppTheme.secondaryColor;
+                              
+                              return Container(
+                                width: 120.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                decoration: BoxDecoration(
+                                  color: categoryColor,
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(
+                                    color: AppTheme.accentColor.withOpacity(0.3),
+                                    width: 1,
+                                  ),
                                 ),
-                              ),
-                            ),
-                            
-                            // Product name and price
-                            Padding(
-                              padding: EdgeInsets.all(8.w),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Similar Item ${index + 1}',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.w500,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Product image
+                                    Expanded(
+                                      child: Container(
+                                        padding: EdgeInsets.all(8.w),
+                                        child: Image.asset(
+                                          '${AppConstants.assetsProductsPath}${(index % 6) + 1}.png',
+                                          fit: BoxFit.contain,
+                                        ),
+                                      ),
                                     ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                  
-                                  SizedBox(height: 4.h),
-                                  
-                                  Text(
-                                    '₹${(100 + index * 10).toStringAsFixed(2)}',
-                                    style: TextStyle(
-                                      color: AppTheme.accentColor,
-                                      fontSize: 12.sp,
-                                      fontWeight: FontWeight.bold,
+                                    
+                                    // Product name and price
+                                    Padding(
+                                      padding: EdgeInsets.all(8.w),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            'Similar Item ${index + 1}',
+                                            style: TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                          
+                                          SizedBox(height: 4.h),
+                                          
+                                          Text(
+                                            '${AppConstants.currencySymbol}${(100 + index * 10).toStringAsFixed(2)}',
+                                            style: TextStyle(
+                                              color: AppTheme.accentColor,
+                                              fontSize: 12.sp,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
                         ),
-                      );
-                    },
-                  ),
+                      ],
+                    );
+                  },
                 ),
                 
                 // Space for bottom bar
