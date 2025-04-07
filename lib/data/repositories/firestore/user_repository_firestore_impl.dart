@@ -230,7 +230,45 @@ class UserRepositoryFirestoreImpl implements UserRepository {
       final docSnapshot = await _usersCollection.doc(id).get();
       
       if (!docSnapshot.exists) {
-        return Left(NotFoundFailure(message: 'User not found'));
+        // Instead of returning an error, we'll create a basic user object
+        // This makes the app more resilient by allowing auto-creation of users
+        LoggingService.logFirestore('UserRepository: Creating new user profile for ID: $id');
+        
+        // Get phone number from SharedPreferences if available
+        final phoneNumber = _sharedPreferences.getString(AppConstants.userPhoneKey);
+        
+        if (phoneNumber == null) {
+          // If we don't have a phone number, we can't proceed
+          return Left(NotFoundFailure(message: 'User not found and phone number not available'));
+        }
+        
+        // Create a new user with basic info
+        final now = DateTime.now();
+        final userModel = UserFirestoreModel(
+          id: id,
+          phoneNumber: phoneNumber,
+          name: null,
+          email: null,
+          addresses: const [],
+          createdAt: now,
+          lastLogin: now,
+          isOptedInForMarketing: false,
+        );
+        
+        // Save the basic user profile to Firestore
+        try {
+          await _usersCollection.doc(id).set(userModel.toFirestore());
+          
+          // Also store basic info in SharedPreferences
+          await _storeUserBasicInfo(userModel);
+          
+          LoggingService.logFirestore('UserRepository: Auto-created user profile for ID: $id');
+          
+          return Right(userModel);
+        } catch (e) {
+          LoggingService.logError('UserRepository', 'Failed to auto-create user: $e');
+          return Left(NotFoundFailure(message: 'User not found'));
+        }
       }
       
       // Convert to UserFirestoreModel

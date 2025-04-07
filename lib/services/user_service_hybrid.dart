@@ -97,7 +97,9 @@ class UserServiceHybrid implements IUserService {
       }
       
       if (user == null) {
-        // Silently return instead of logging "user not found" message
+        // User not found - this could be a normal situation for new users
+        // Rather than throwing an error, we'll just return silently
+        LoggingService.logFirestore('UserServiceHybrid: No user data found for ID: $userId');
         return;
       }
       
