@@ -51,22 +51,38 @@ class CategoryProductsPage extends StatelessWidget {
   }
 
   Widget _buildAppBarTitle() {
-    return Row(
-      children: [
-        const Icon(
-          Icons.shopping_basket_outlined,
-          color: AppTheme.accentColor,
-        ),
-        SizedBox(width: 8.w),
-        Text(
-          categoryId != null ? 'Browse Products' : 'All Categories',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 18.sp,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
+    return BlocBuilder<CategoryProductsBloc, CategoryProductsState>(
+      builder: (context, state) {
+        String title = categoryId != null ? 'Browse Products' : 'All Categories';
+        
+        // If we have a loaded state, try to get the category group name
+        if (state is CategoryProductsLoaded && state.categories.isNotEmpty) {
+          // Use the first category's parent name (they all have the same parent)
+          final parentCategoryName = state.categories.first.type == 'subcategory' 
+              ? state.categories.first.name.split(' ').first // Get the first word as category name
+              : 'Products';
+              
+          title = parentCategoryName;
+        }
+        
+        return Row(
+          children: [
+            const Icon(
+              Icons.shopping_basket_outlined,
+              color: AppTheme.accentColor,
+            ),
+            SizedBox(width: 8.w),
+            Text(
+              title,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -248,16 +264,16 @@ class CategoryProductsPage extends StatelessWidget {
               context.read<CategoryProductsBloc>().add(SelectCategory(category));
             },
             onProductTap: (product) {
-              // Navigate to product details
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProductDetailsPage(
-                    productId: product.id,
-                    categoryId: product.categoryId,
-                  ),
-                ),
-              );
+            // Navigate to product details
+            Navigator.push(
+            context,
+            MaterialPageRoute(
+            builder: (context) => ProductDetailsPage(
+            productId: product.id,
+            categoryId: product.categoryId, // Use product's categoryId to preserve color
+            ),
+            ),
+            );
             },
             onQuantityChanged: (product, quantity) {
               context.read<CategoryProductsBloc>().add(

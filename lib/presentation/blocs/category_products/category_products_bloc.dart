@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../../core/utils/category_assets.dart';
 import '../../../data/models/category_model.dart';
 import '../../../data/models/product_model.dart';
+import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 
@@ -31,47 +32,65 @@ class CategoryProductsBloc extends Bloc<CategoryProductsEvent, CategoryProductsS
       // Simulate API delay
       await Future.delayed(const Duration(milliseconds: 800));
       
-      // For demo purposes, generate mock data
-      final List<CategoryModel> allCategories = _generateMockCategories();
-      final List<CategoryModel> categories = event.categoryId != null
-          ? allCategories.where((c) => c.id == event.categoryId).toList()
-          : allCategories;
+      // Use the CategoryGroups for better subcategory organization
+      // For demo purposes, use the predefined category groups
+      final List<CategoryGroup> categoryGroups = CategoryGroups.all;
       
-      // Handle case where no categories match the filter
-      if (categories.isEmpty && event.categoryId != null) {
-        categories.addAll(allCategories);
-      }
-      
-      final Map<String, List<ProductModel>> categoryProducts = {};
-      
-      // Generate products for each category
-      for (final category in categories) {
-        categoryProducts[category.id] = _generateMockCategoryProducts(category);
-      }
-      
-      // If a specific category ID is provided, select it
-      CategoryModel selectedCategory;
-      if (event.categoryId != null && categories.isNotEmpty) {
+      // Get the selected category group based on the categoryId
+      CategoryGroup selectedGroup;
+      if (event.categoryId != null) {
+        // Try to find a direct match first
         try {
-          selectedCategory = categories.firstWhere(
-            (c) => c.id == event.categoryId,
-            orElse: () => categories.first,
+          selectedGroup = categoryGroups.firstWhere(
+            (group) => group.id == event.categoryId,
           );
         } catch (e) {
-          // Fallback if categories is empty or firstWhere fails
-          selectedCategory = categories.isNotEmpty ? categories.first : _generateMockCategories().first;
+          // Try to find a matching group by partial ID match
+          final matchingGroups = categoryGroups.where(
+            (group) => group.id.startsWith(event.categoryId!) ||
+                      event.categoryId!.startsWith(group.id)
+          ).toList();
+          
+          selectedGroup = matchingGroups.isNotEmpty ? matchingGroups.first : categoryGroups.first;
         }
       } else {
-        selectedCategory = categories.isNotEmpty ? categories.first : _generateMockCategories().first;
+        selectedGroup = categoryGroups.first;
       }
       
-      // Generate subcategory colors
-      final Map<String, Color> subcategoryColors = _generateSubcategoryColors();
+      // Create subcategory models from ALL the CategoryItems in the selected group
+      // Make sure to use all 8 subcategories
+      final List<CategoryModel> subcategories = selectedGroup.items.map((item) {
+        return CategoryModel(
+          id: item.id,
+          name: item.label,
+          image: item.imagePath,
+          type: 'subcategory',
+        );
+      }).toList();
+      
+      // Create product mapping for each subcategory
+      final Map<String, List<ProductModel>> subcategoryProducts = {};
+      final Map<String, Color> subcategoryColors = {};
+      
+      // Generate 8-15 products for each subcategory with sequential naming
+      for (final subcategory in subcategories) {
+        // Generate a random number of products between 8 and 15
+        final productCount = 8 + (subcategory.id.hashCode % 8); // Between 8 and 15
+        
+        subcategoryProducts[subcategory.id] = _generateSequentialProducts(
+          subcategory, 
+          productCount,
+          selectedGroup.itemBackgroundColor
+        );
+        
+        // Set the subcategory color from the CategoryGroup
+        subcategoryColors[subcategory.id] = selectedGroup.itemBackgroundColor;
+      }
       
       emit(CategoryProductsLoaded(
-        categories: categories,
-        categoryProducts: categoryProducts,
-        selectedCategory: selectedCategory,
+        categories: subcategories,
+        categoryProducts: subcategoryProducts,
+        selectedCategory: subcategories.first,
         cartQuantities: const {},
         subcategoryColors: subcategoryColors,
       ));
@@ -111,173 +130,30 @@ class CategoryProductsBloc extends Bloc<CategoryProductsEvent, CategoryProductsS
     }
   }
 
-  // Generate mock categories for demo purposes
-  List<CategoryModel> _generateMockCategories() {
-    return [
-      CategoryModel(
-        id: 'vegetables',
-        name: 'Vegetables & Fruits',
-        image: 'assets/images/categories/vegetables.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'dairy',
-        name: 'Dairy & Breakfast',
-        image: 'assets/images/categories/dairy.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'snacks',
-        name: 'Chips & Namkeen',
-        image: 'assets/images/categories/snacks.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'beverages',
-        name: 'Cold Drinks & Juices',
-        image: 'assets/images/categories/beverages.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'grocery',
-        name: 'Atta, Rice & Dal',
-        image: 'assets/images/categories/grocery.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'household',
-        name: 'Cleaning & Household',
-        image: 'assets/images/categories/household.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'personal_care',
-        name: 'Personal Care',
-        image: 'assets/images/categories/personal_care.png',
-        type: 'regular',
-      ),
-      CategoryModel(
-        id: 'baby_care',
-        name: 'Baby Care',
-        image: 'assets/images/categories/baby_care.png',
-        type: 'regular',
-      ),
-    ];
-  }
-
-  // Generate subcategory colors for products
-  Map<String, Color> _generateSubcategoryColors() {
-    final Map<String, Color> colors = {};
-    
-    // Colors for standard category IDs
-    colors['vegetables'] = const Color(0xFF1A5D1A); // Dark green for vegetables
-    colors['dairy'] = const Color(0xFFE5BEEC);      // Light lavender for dairy
-    colors['snacks'] = const Color(0xFFECB159);     // Yellow/orange for chips
-    colors['beverages'] = const Color(0xFF219C90);  // Teal for drinks
-    colors['grocery'] = const Color(0xFFD5A021);    // Gold/yellow for grains
-    colors['household'] = const Color(0xFF3F4E4F);  // Dark slate for household
-    colors['personal_care'] = const Color(0xFF9E4784); // Purple for personal care
-    colors['baby_care'] = const Color(0xFF8ECDDD);  // Light blue for baby care
-    
-    // Add mappings for dynamic category product IDs that will be generated
-    // Each mock product gets the color of its parent category
-    colors['vegetables_prod_0'] = colors['vegetables']!;
-    colors['vegetables_prod_1'] = colors['vegetables']!;
-    colors['vegetables_prod_2'] = colors['vegetables']!;
-    colors['vegetables_prod_3'] = colors['vegetables']!;
-    colors['vegetables_prod_4'] = colors['vegetables']!;
-    colors['vegetables_prod_5'] = colors['vegetables']!;
-    colors['vegetables_prod_6'] = colors['vegetables']!;
-    colors['vegetables_prod_7'] = colors['vegetables']!;
-    
-    colors['dairy_prod_0'] = colors['dairy']!;
-    colors['dairy_prod_1'] = colors['dairy']!;
-    colors['dairy_prod_2'] = colors['dairy']!;
-    colors['dairy_prod_3'] = colors['dairy']!;
-    colors['dairy_prod_4'] = colors['dairy']!;
-    colors['dairy_prod_5'] = colors['dairy']!;
-    colors['dairy_prod_6'] = colors['dairy']!;
-    colors['dairy_prod_7'] = colors['dairy']!;
-    
-    colors['snacks_prod_0'] = colors['snacks']!;
-    colors['snacks_prod_1'] = colors['snacks']!;
-    colors['snacks_prod_2'] = colors['snacks']!;
-    colors['snacks_prod_3'] = colors['snacks']!;
-    colors['snacks_prod_4'] = colors['snacks']!;
-    colors['snacks_prod_5'] = colors['snacks']!;
-    colors['snacks_prod_6'] = colors['snacks']!;
-    colors['snacks_prod_7'] = colors['snacks']!;
-    
-    colors['beverages_prod_0'] = colors['beverages']!;
-    colors['beverages_prod_1'] = colors['beverages']!;
-    colors['beverages_prod_2'] = colors['beverages']!;
-    colors['beverages_prod_3'] = colors['beverages']!;
-    colors['beverages_prod_4'] = colors['beverages']!;
-    colors['beverages_prod_5'] = colors['beverages']!;
-    colors['beverages_prod_6'] = colors['beverages']!;
-    colors['beverages_prod_7'] = colors['beverages']!;
-    
-    colors['grocery_prod_0'] = colors['grocery']!;
-    colors['grocery_prod_1'] = colors['grocery']!;
-    colors['grocery_prod_2'] = colors['grocery']!;
-    colors['grocery_prod_3'] = colors['grocery']!;
-    colors['grocery_prod_4'] = colors['grocery']!;
-    colors['grocery_prod_5'] = colors['grocery']!;
-    colors['grocery_prod_6'] = colors['grocery']!;
-    colors['grocery_prod_7'] = colors['grocery']!;
-    
-    colors['household_prod_0'] = colors['household']!;
-    colors['household_prod_1'] = colors['household']!;
-    colors['household_prod_2'] = colors['household']!;
-    colors['household_prod_3'] = colors['household']!;
-    colors['household_prod_4'] = colors['household']!;
-    colors['household_prod_5'] = colors['household']!;
-    colors['household_prod_6'] = colors['household']!;
-    colors['household_prod_7'] = colors['household']!;
-    
-    colors['personal_care_prod_0'] = colors['personal_care']!;
-    colors['personal_care_prod_1'] = colors['personal_care']!;
-    colors['personal_care_prod_2'] = colors['personal_care']!;
-    colors['personal_care_prod_3'] = colors['personal_care']!;
-    colors['personal_care_prod_4'] = colors['personal_care']!;
-    colors['personal_care_prod_5'] = colors['personal_care']!;
-    colors['personal_care_prod_6'] = colors['personal_care']!;
-    colors['personal_care_prod_7'] = colors['personal_care']!;
-    
-    colors['baby_care_prod_0'] = colors['baby_care']!;
-    colors['baby_care_prod_1'] = colors['baby_care']!;
-    colors['baby_care_prod_2'] = colors['baby_care']!;
-    colors['baby_care_prod_3'] = colors['baby_care']!;
-    colors['baby_care_prod_4'] = colors['baby_care']!;
-    colors['baby_care_prod_5'] = colors['baby_care']!;
-    colors['baby_care_prod_6'] = colors['baby_care']!;
-    colors['baby_care_prod_7'] = colors['baby_care']!;
-    
-    return colors;
-  }
-  
-  // Generate mock products for a given category
-  List<ProductModel> _generateMockCategoryProducts(Category category) {
-    // Reduce the number of products to 8 per category maximum
-    final productCount = 8;
-    
-    return List.generate(productCount, (index) {
+  // Generate sequentially named products for a given subcategory
+  List<ProductModel> _generateSequentialProducts(Category subcategory, int count, Color backgroundColor) {
+    return List.generate(count, (index) {
       final bool isDiscounted = index % 3 == 0;
-      final double originalPrice = 50.0 + (index * 10) + (category.id.hashCode % 10);
+      final double originalPrice = 50.0 + (index * 10);
       final double discountPercentage = isDiscounted ? (10 + (index % 3) * 5) : 0;
       final double discountedPrice = isDiscounted
           ? originalPrice * (1 - discountPercentage / 100)
           : originalPrice;
       
+      // Create product ID with subcategory ID prefix for easy color mapping
+      final productId = '${subcategory.id}_product_${index + 1}';
+      
       return ProductModel(
-        id: '${category.id}_prod_$index',
-        name: '${category.name} Item ${index + 1}',
-        description: 'This is a sample product in the ${category.name} category',
-        price: discountedPrice, // Use the calculated discounted price as the actual price
-        mrp: isDiscounted ? originalPrice : null, // Set the mrp only if there's a discount
-        categoryId: category.id,
+        id: productId,
+        name: '${subcategory.name} Product ${index + 1}', // Include subcategory name for clearer mapping
+        description: 'This is product ${index + 1} in the ${subcategory.name} subcategory',
+        price: discountedPrice.roundToDouble(),
+        mrp: isDiscounted ? originalPrice.roundToDouble() : null,
+        categoryId: subcategory.id,  // Important: Use subcategory ID for color mapping
+        subcategoryId: subcategory.id,
         image: CategoryAssets.getRandomProductImage(),
         inStock: index % 5 != 0, // 80% of products are in stock
+        tags: [subcategory.id], // Add subcategory ID as a tag for easier filtering
       );
     });
   }

@@ -137,7 +137,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left panel: Category navigation
+            // Left panel: Category navigation (subcategories)
             SizedBox(
               width: 100.w,
               child: ListView.builder(
@@ -146,6 +146,9 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                 itemBuilder: (context, index) {
                   final category = widget.categories[index];
                   final isSelected = index == _selectedCategoryIndex;
+                  
+                  // Get background color for the subcategory
+                  final Color? backgroundColor = widget.subcategoryColors?[category.id];
                   
                   return GestureDetector(
                     onTap: () => _handleCategoryTap(index, category),
@@ -159,14 +162,14 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                       ),
                       child: Column(
                         children: [
-                          // Category icon
+                          // Category icon with subcategory background color
                           Container(
                             width: 50.w,
                             height: 50.w,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? AppTheme.accentColor.withOpacity(0.1)
-                                  : Colors.transparent,
+                                  ? backgroundColor?.withOpacity(0.8) ?? AppTheme.accentColor.withOpacity(0.1)
+                                  : backgroundColor?.withOpacity(0.4) ?? Colors.transparent,
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isSelected
@@ -182,7 +185,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                 child: Image.asset(
                                   category.image,
                                   color: isSelected
-                                      ? AppTheme.accentColor
+                                      ? Colors.black.withOpacity(0.7)
                                       : Colors.white,
                                   errorBuilder: (context, error, stackTrace) {
                                     // Show a generic icon if the image fails to load
@@ -201,7 +204,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                           
                           SizedBox(height: 8.h),
                           
-                          // Category name
+                          // Category name (shorter for better UI)
                           Text(
                             category.name,
                             style: TextStyle(
@@ -276,18 +279,36 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                 ),
                               ),
                               
-                              // Product grid for this category
+                              // Product grid for this subcategory with consistent styling
                               if (products.isNotEmpty)
-                                ProductGrid(
-                                  products: products,
-                                  onProductTap: widget.onProductTap,
-                                  onQuantityChanged: widget.onQuantityChanged,
-                                  cartQuantities: widget.cartQuantities,
-                                  crossAxisCount: 2,
-                                  shrinkWrap: true,
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                  subCategoryColors: widget.subcategoryColors,
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    // Subcategory description/header
+                                    Padding(
+                                      padding: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 8.h),
+                                      child: Text(
+                                        '${products.length} products available',
+                                        style: TextStyle(
+                                          color: Colors.white.withOpacity(0.7),
+                                          fontSize: 12.sp,
+                                        ),
+                                      ),
+                                    ),
+                                    
+                                    // Product grid with subcategory-specific background color
+                                    ProductGrid(
+                                      products: products,
+                                      onProductTap: widget.onProductTap,
+                                      onQuantityChanged: widget.onQuantityChanged,
+                                      cartQuantities: widget.cartQuantities,
+                                      crossAxisCount: 2,
+                                      shrinkWrap: true,
+                                      physics: const NeverScrollableScrollPhysics(),
+                                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                      subCategoryColors: widget.subcategoryColors,
+                                    ),
+                                  ],
                                 )
                               else
                                 Padding(

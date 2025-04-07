@@ -59,7 +59,9 @@ class _HomePageContentState extends State<_HomePageContent> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => CategoryProductsPage(categoryId: category.id),
+        builder: (context) => CategoryProductsPage(
+          categoryId: category.id.split('_').first, // Use first part before underscore as category group ID
+        ),
       ),
     );
   }

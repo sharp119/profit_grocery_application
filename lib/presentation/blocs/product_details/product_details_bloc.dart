@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/product.dart';
 import 'product_details_event.dart';
 import 'product_details_state.dart';

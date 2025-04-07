@@ -207,9 +207,11 @@ class ProductCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Product name
+                          // Product name - modified to show either the full name or just "Product N"
                           Text(
-                            name,
+                            name.contains("Product") 
+                                ? name.split("Product").last.trim() // Just show "N" if pattern is "Something Product N"
+                                : name,
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: nameSize,

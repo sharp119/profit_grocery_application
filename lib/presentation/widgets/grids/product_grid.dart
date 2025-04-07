@@ -75,8 +75,8 @@ class ProductGrid extends StatelessWidget {
       cacheExtent: 500, // Increase the cache extent for smoother scrolling
       physics: physics ?? const NeverScrollableScrollPhysics(),
       padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
-      // Limit the number of items initially loaded
-      itemCount: products.length > 20 ? 20 : products.length,
+      // Limit the number of items displayed to between 8 and 15
+      itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
         final quantity = cartQuantities[product.id] ?? 0;
