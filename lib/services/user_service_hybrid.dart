@@ -97,7 +97,7 @@ class UserServiceHybrid implements IUserService {
       }
       
       if (user == null) {
-        LoggingService.logFirestore('UserServiceHybrid: User not found in either database for userId: $userId');
+        // Silently return instead of logging "user not found" message
         return;
       }
       

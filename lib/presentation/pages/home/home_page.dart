@@ -97,8 +97,7 @@ class _HomePageContentState extends State<_HomePageContent> {
     // Add a short delay to allow the UI to build, then check if user data is loaded
     Future.delayed(Duration.zero, () {
       if (_currentUser == null || _currentUser?.name == null) {
-        LoggingService.logFirestore('HomePage: User data not loaded, attempting to reload');
-        // Try to reload user data if not already loaded
+        // Silently try to reload user data without showing "not found" message
         final userId = _userService.getCurrentUserId();
         if (userId != null) {
           // First try to load directly from service
@@ -112,7 +111,8 @@ class _HomePageContentState extends State<_HomePageContent> {
           }
         }
       } else {
-        LoggingService.logFirestore('HomePage: User data already loaded: ${_currentUser?.name}');
+        // Silently log that user data is loaded
+        LoggingService.logFirestore('HomePage: User data loaded: ${_currentUser?.name}');
       }
     });
   }

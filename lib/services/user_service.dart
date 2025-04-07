@@ -76,7 +76,7 @@ class UserService implements IUserService {
       final snapshot = await userRef.get();
       
       if (!snapshot.exists) {
-        LoggingService.logFirestore('UserService: User not found for userId: $userId');
+        // Silently return without showing "user not found" message
         return;
       }
       
