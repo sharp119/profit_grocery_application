@@ -53,11 +53,20 @@ class AppConstants {
   static const String productDetailsRoute = '/product-details';
   static const String cartRoute = '/cart';
   static const String checkoutRoute = '/checkout';
+  static const String addressSelectionRoute = '/checkout/address-selection';
   static const String orderSuccessRoute = '/order-success';
   static const String ordersRoute = '/orders';
   static const String orderDetailsRoute = '/order-details';
   static const String couponRoute = '/coupon';
   static const String settingsRoute = '/settings';
+  
+  // Profile Routes
+  static const String profileRoute = '/profile';
+  static const String profileEditRoute = '/profile/edit';
+  static const String addressesRoute = '/profile/addresses';
+  static const String addAddressRoute = '/profile/address/add';
+  static const String editAddressRoute = '/profile/address/edit';
+  static const String registerRoute = '/auth/register';
   
   // Admin Routes
   static const String adminLoginRoute = '/admin/login';

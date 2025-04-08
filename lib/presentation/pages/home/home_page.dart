@@ -6,6 +6,7 @@ import 'package:profit_grocery_application/core/errors/global_error_handler.dart
 import 'package:profit_grocery_application/presentation/blocs/user/user_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
+import 'package:profit_grocery_application/presentation/widgets/profile/profile_completion_banner.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -173,6 +174,21 @@ class _HomePageContentState extends State<_HomePageContent> {
     }
   }
 
+  // Navigate to profile page
+  void _navigateToProfile() {
+    Navigator.pushNamed(context, AppConstants.profileRoute);
+  }
+  
+  // Navigate to orders page
+  void _navigateToOrders() {
+    Navigator.pushNamed(context, AppConstants.ordersRoute);
+  }
+  
+  // Navigate to addresses page
+  void _navigateToAddresses() {
+    Navigator.pushNamed(context, AppConstants.addressesRoute);
+  }
+
   // Show profile options menu
   void _showUserProfileOptions(BuildContext context) {
     showModalBottomSheet(
@@ -239,6 +255,7 @@ class _HomePageContentState extends State<_HomePageContent> {
                   onTap: () {
                     Navigator.pop(context);
                     // Navigate to profile page
+                    _navigateToProfile();
                   },
                 ),
                 
@@ -248,6 +265,7 @@ class _HomePageContentState extends State<_HomePageContent> {
                   onTap: () {
                     Navigator.pop(context);
                     // Navigate to orders page
+                    _navigateToOrders();
                   },
                 ),
                 
@@ -257,6 +275,7 @@ class _HomePageContentState extends State<_HomePageContent> {
                   onTap: () {
                     Navigator.pop(context);
                     // Navigate to addresses page
+                    _navigateToAddresses();
                   },
                 ),
                 
@@ -487,6 +506,15 @@ class _HomePageContentState extends State<_HomePageContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Profile completion banner if user profile is incomplete
+          if (_currentUser != null) ...[  
+            SizedBox(height: 16.h),
+            ProfileCompletionBanner(
+              user: _currentUser!,
+              onAddAddressTap: () => _navigateToAddresses(),
+            ),
+          ],
+          
           // Promotional banners
           SizedBox(height: 16.h),
           PromotionalBanner(

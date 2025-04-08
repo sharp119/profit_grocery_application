@@ -8,6 +8,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
@@ -16,6 +17,7 @@ import 'firebase_options.dart';
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
 import 'core/errors/global_error_handler.dart';
+import 'core/routing/app_router.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
 import 'services/session_manager_firestore.dart';
@@ -34,14 +36,16 @@ import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/user/user_bloc.dart';
-import 'presentation/pages/authentication/phone_entry_page.dart';
-import 'presentation/pages/authentication/otp_verification_page.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
-import 'presentation/pages/authentication/user_registration_page.dart';
-import 'presentation/pages/home/home_page.dart';
 
 // GetIt instance for dependency injection
 final GetIt sl = GetIt.instance;
+
+// Convenience method to get the current user ID
+Future<String?> getCurrentUserId() async {
+  final prefs = await SharedPreferences.getInstance();
+  return prefs.getString(AppConstants.userTokenKey);
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -209,7 +213,21 @@ class MyApp extends StatelessWidget {
           create: (context) => sl<AuthBloc>()..add(const CheckAuthStatus()),
         ),
         BlocProvider<UserBloc>(
-          create: (context) => sl<UserBloc>(),
+          create: (context) {
+            // Get the UserBloc instance
+            final userBloc = sl<UserBloc>();
+            
+            // Try to load user data from SharedPreferences
+            final prefs = sl<SharedPreferences>();
+            final userId = prefs.getString(AppConstants.userTokenKey);
+            
+            // If we have a userId, load the user profile
+            if (userId != null && userId.isNotEmpty) {
+              userBloc.add(LoadUserProfileEvent(userId));
+            }
+            
+            return userBloc;
+          },
         ),
       ],
       child: ScreenUtilInit(
@@ -224,12 +242,8 @@ class MyApp extends StatelessWidget {
             debugShowCheckedModeBanner: false,
             theme: AppTheme.darkTheme,
             home: const SplashScreen(),
-            routes: {
-              AppConstants.homeRoute: (context) => const HomePage(),
-              AppConstants.loginRoute: (context) => const PhoneEntryPage(),
-              // Add more routes as we develop
-            },
-            // No global error handler - let Flutter handle errors
+            onGenerateRoute: AppRouter.generateRoute,
+            initialRoute: AppConstants.splashRoute,
           );
         },
       ),

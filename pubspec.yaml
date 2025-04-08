@@ -36,6 +36,7 @@ dependencies:
   change_app_package_name: ^1.5.0
   rename: ^3.0.2
   sendotp_flutter_sdk: ^0.0.1
+  uuid: ^4.3.3
   # sendotp_flutter_sdk: ^0.1.1
 
 dev_dependencies:

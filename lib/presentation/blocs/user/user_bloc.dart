@@ -13,6 +13,12 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     on<CreateUserProfileEvent>(_onCreateUserProfile);
     on<LoadUserProfileEvent>(_onLoadUserProfile);
     on<UpdateUserProfileEvent>(_onUpdateUserProfile);
+    
+    // Address-related events
+    on<AddAddressEvent>(_onAddAddress);
+    on<UpdateAddressEvent>(_onUpdateAddress);
+    on<RemoveAddressEvent>(_onRemoveAddress);
+    on<SetDefaultAddressEvent>(_onSetDefaultAddress);
   }
 
   Future<void> _onCreateUserProfile(
@@ -121,6 +127,123 @@ class UserBloc extends Bloc<UserEvent, UserState> {
     } catch (e) {
       LoggingService.logError('UserBloc: Exception during user update', e.toString());
       if (!emit.isDone) emit(state.copyWithError('Failed to update user profile: $e'));
+    }
+  }
+  
+  // Address-related event handlers
+  Future<void> _onAddAddress(
+    AddAddressEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    LoggingService.logFirestore('UserBloc: Adding address for user ${event.userId}');
+    emit(state.copyWithLoading());
+
+    try {
+      final result = await _userRepository.addAddress(
+        userId: event.userId,
+        address: event.address,
+      );
+
+      await result.fold(
+        (failure) async {
+          LoggingService.logError('UserBloc: Failed to add address', failure.message);
+          if (!emit.isDone) emit(state.copyWithError(failure.message));
+        },
+        (user) async {
+          LoggingService.logFirestore('UserBloc: Address added successfully');
+          if (!emit.isDone) emit(state.copyWithUpdated(user));
+        },
+      );
+    } catch (e) {
+      LoggingService.logError('UserBloc: Exception during address addition', e.toString());
+      if (!emit.isDone) emit(state.copyWithError('Failed to add address: $e'));
+    }
+  }
+
+  Future<void> _onUpdateAddress(
+    UpdateAddressEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    LoggingService.logFirestore('UserBloc: Updating address for user ${event.userId}');
+    emit(state.copyWithLoading());
+
+    try {
+      final result = await _userRepository.updateAddress(
+        userId: event.userId,
+        address: event.address,
+      );
+
+      await result.fold(
+        (failure) async {
+          LoggingService.logError('UserBloc: Failed to update address', failure.message);
+          if (!emit.isDone) emit(state.copyWithError(failure.message));
+        },
+        (user) async {
+          LoggingService.logFirestore('UserBloc: Address updated successfully');
+          if (!emit.isDone) emit(state.copyWithUpdated(user));
+        },
+      );
+    } catch (e) {
+      LoggingService.logError('UserBloc: Exception during address update', e.toString());
+      if (!emit.isDone) emit(state.copyWithError('Failed to update address: $e'));
+    }
+  }
+
+  Future<void> _onRemoveAddress(
+    RemoveAddressEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    LoggingService.logFirestore('UserBloc: Removing address ${event.addressId} for user ${event.userId}');
+    emit(state.copyWithLoading());
+
+    try {
+      final result = await _userRepository.removeAddress(
+        userId: event.userId,
+        addressId: event.addressId,
+      );
+
+      await result.fold(
+        (failure) async {
+          LoggingService.logError('UserBloc: Failed to remove address', failure.message);
+          if (!emit.isDone) emit(state.copyWithError(failure.message));
+        },
+        (user) async {
+          LoggingService.logFirestore('UserBloc: Address removed successfully');
+          if (!emit.isDone) emit(state.copyWithUpdated(user));
+        },
+      );
+    } catch (e) {
+      LoggingService.logError('UserBloc: Exception during address removal', e.toString());
+      if (!emit.isDone) emit(state.copyWithError('Failed to remove address: $e'));
+    }
+  }
+
+  Future<void> _onSetDefaultAddress(
+    SetDefaultAddressEvent event,
+    Emitter<UserState> emit,
+  ) async {
+    LoggingService.logFirestore('UserBloc: Setting address ${event.addressId} as default for user ${event.userId}');
+    emit(state.copyWithLoading());
+
+    try {
+      final result = await _userRepository.setDefaultAddress(
+        userId: event.userId,
+        addressId: event.addressId,
+      );
+
+      await result.fold(
+        (failure) async {
+          LoggingService.logError('UserBloc: Failed to set default address', failure.message);
+          if (!emit.isDone) emit(state.copyWithError(failure.message));
+        },
+        (user) async {
+          LoggingService.logFirestore('UserBloc: Default address set successfully');
+          if (!emit.isDone) emit(state.copyWithUpdated(user));
+        },
+      );
+    } catch (e) {
+      LoggingService.logError('UserBloc: Exception during setting default address', e.toString());
+      if (!emit.isDone) emit(state.copyWithError('Failed to set default address: $e'));
     }
   }
 }
