@@ -32,10 +32,13 @@ import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/user_repository_impl.dart';
 import 'data/repositories/firestore/auth_repository_firestore_impl.dart';
 import 'data/repositories/firestore/user_repository_firestore_impl.dart';
+import 'data/repositories/firestore/order_repository_impl.dart';
+import 'domain/repositories/order_repository.dart';
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/user/user_bloc.dart';
+import 'presentation/blocs/orders/orders_bloc.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
 
 // GetIt instance for dependency injection
@@ -192,6 +195,11 @@ Future<void> setupDependencyInjection() async {
   );
   sl.registerLazySingleton<UserService>(() => rtdbUserService);
   
+  // Register order repository implementation
+  sl.registerLazySingleton<OrderRepository>(
+    () => OrderRepositoryImpl(),
+  );
+  
   // BLoCs
   sl.registerFactory(
     () => AuthBloc(authRepository: sl<AuthRepository>()),
@@ -199,6 +207,10 @@ Future<void> setupDependencyInjection() async {
   
   sl.registerFactory(
     () => UserBloc(userRepository: sl<UserRepository>()),
+  );
+  
+  sl.registerFactory(
+    () => OrdersBloc(orderRepository: sl<OrderRepository>()),
   );
 }
 
@@ -228,6 +240,9 @@ class MyApp extends StatelessWidget {
             
             return userBloc;
           },
+        ),
+        BlocProvider<OrdersBloc>(
+          create: (context) => sl<OrdersBloc>(),
         ),
       ],
       child: ScreenUtilInit(

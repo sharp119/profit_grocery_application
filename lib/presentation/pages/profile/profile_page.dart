@@ -242,7 +242,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
   Widget _buildProfileHeader(BuildContext context, User user) {
     return Container(
-      padding: EdgeInsets.all(24.w),
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 24.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -267,95 +267,110 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       child: Column(
         children: [
-          // User avatar with gold border
-          Container(
-            width: 90.w,
-            height: 90.w,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppTheme.primaryColor,
-              border: Border.all(
-                color: AppTheme.accentColor,
-                width: 3,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.accentColor.withOpacity(0.3),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Text(
-                user.name != null && user.name!.isNotEmpty
-                    ? user.name![0].toUpperCase()
-                    : user.phoneNumber[0],
-                style: TextStyle(
-                  color: AppTheme.accentColor,
-                  fontSize: 40.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          
-          // User name with larger font
-          Text(
-            user.name ?? 'User',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 26.sp,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 0.5,
-            ),
-          ),
-          SizedBox(height: 8.h),
-          
-          // Phone number with icon
+          // Horizontal profile information layout
           Row(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Icon(
-                Icons.phone_android,
-                color: AppTheme.accentColor,
-                size: 16.sp,
+              // User avatar with gold border
+              Container(
+                width: 80.w,
+                height: 80.w,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppTheme.primaryColor,
+                  border: Border.all(
+                    color: AppTheme.accentColor,
+                    width: 3,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.accentColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      spreadRadius: 1,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Text(
+                    user.name != null && user.name!.isNotEmpty
+                        ? user.name![0].toUpperCase()
+                        : user.phoneNumber[0],
+                    style: TextStyle(
+                      color: AppTheme.accentColor,
+                      fontSize: 36.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
               ),
-              SizedBox(width: 8.w),
-              Text(
-                user.phoneNumber,
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16.sp,
+              SizedBox(width: 20.w),
+              
+              // User information
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // User name with larger font
+                    Text(
+                      user.name ?? 'User',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    
+                    // Phone number with icon
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone_android,
+                          color: AppTheme.accentColor,
+                          size: 16.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          user.phoneNumber,
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    // Email if available
+                    if (user.email != null && user.email!.isNotEmpty) ...[
+                      SizedBox(height: 4.h),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.email_outlined,
+                            color: AppTheme.accentColor,
+                            size: 16.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              user.email!,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 16.sp,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
                 ),
               ),
             ],
           ),
-          
-          // Email if available
-          if (user.email != null && user.email!.isNotEmpty) ...[
-            SizedBox(height: 4.h),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.email_outlined,
-                  color: AppTheme.accentColor,
-                  size: 16.sp,
-                ),
-                SizedBox(width: 8.w),
-                Text(
-                  user.email!,
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16.sp,
-                  ),
-                ),
-              ],
-            ),
-          ],
           
           // Edit profile button with better styling
           SizedBox(height: 24.h),

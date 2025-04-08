@@ -1126,9 +1126,9 @@ class _CheckoutPageContent extends StatelessWidget {
                   width: double.infinity,
                   child: TextButton(
                     onPressed: () {
-                      // Navigate to orders page
+                      // Navigate to orders page with current orders tab selected
                       Navigator.popUntil(context, (route) => route.isFirst);
-                      // TODO: Navigate to orders page with the order ID
+                      Navigator.pushNamed(context, AppConstants.ordersRoute, arguments: {'initialTab': 0});
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.symmetric(vertical: 14.h),

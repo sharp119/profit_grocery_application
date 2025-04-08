@@ -11,6 +11,8 @@ import '../../presentation/pages/checkout/checkout_page.dart';
 import '../../presentation/pages/checkout/address_selection_page.dart';
 import '../../presentation/pages/home/home_page.dart';
 import '../../presentation/pages/orders/orders_page.dart';
+import '../../presentation/pages/orders/order_details_page.dart';
+import '../../domain/entities/order.dart';
 import '../../presentation/pages/profile/addresses_page.dart';
 import '../../presentation/pages/profile/address_form_page.dart';
 import '../../presentation/pages/profile/profile_edit_page.dart';
@@ -81,7 +83,16 @@ class AppRouter {
         
       // Order routes
       case AppConstants.ordersRoute:
-        return MaterialPageRoute(builder: (_) => const OrdersPage());
+        final args = settings.arguments as Map<String, dynamic>?;
+        return MaterialPageRoute(builder: (_) => OrdersPage(
+          initialTab: args != null ? args['initialTab'] ?? 0 : 0,
+        ));
+        
+      case AppConstants.orderDetailsRoute:
+        final order = settings.arguments as Order;
+        return MaterialPageRoute(
+          builder: (_) => OrderDetailsPage(order: order),
+        );
         
       // User registration route
       case AppConstants.registerRoute:
