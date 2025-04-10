@@ -25,7 +25,7 @@ class OrdersPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => OrdersBloc(
         orderRepository: OrderRepositoryImpl(),
-      )..add(const LoadCurrentOrder(userId: 'current_user')),
+      ),
       child: OrdersView(initialTab: initialTab),
     );
   }
@@ -46,7 +46,7 @@ class _OrdersViewState extends State<OrdersView> with SingleTickerProviderStateM
 
   void _refreshOrders() {
     context.read<OrdersBloc>().add(
-          const LoadCurrentOrder(userId: 'current_user'),
+          const RefreshOrders(userId: 'current_user'),
         );
   }
 
@@ -111,7 +111,7 @@ class _OrdersViewState extends State<OrdersView> with SingleTickerProviderStateM
                   ElevatedButton(
                     onPressed: () {
                       context.read<OrdersBloc>().add(
-                            const LoadCurrentOrder(userId: 'current_user'),
+                            const RefreshOrders(userId: 'current_user'),
                           );
                     },
                     child: const Text('Retry'),
@@ -272,7 +272,7 @@ class _OrdersViewState extends State<OrdersView> with SingleTickerProviderStateM
       key: _refreshKey,
       onRefresh: () async {
         context.read<OrdersBloc>().add(
-              const LoadCurrentOrder(userId: 'current_user'),
+              const RefreshOrders(userId: 'current_user'),
             );
         await Future.delayed(const Duration(milliseconds: 300)); // Small delay for UX
       },

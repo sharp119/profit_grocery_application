@@ -14,6 +14,9 @@ class OrdersBloc extends Bloc<OrdersEvent, OrdersState> {
     on<LoadOrderDetails>(_onLoadOrderDetails);
     on<CancelOrder>(_onCancelOrder);
     on<RefreshOrders>(_onRefreshOrders);
+    
+    // Load initial data
+    add(const RefreshOrders(userId: 'current_user'));
   }
 
   Future<void> _onLoadUserOrders(

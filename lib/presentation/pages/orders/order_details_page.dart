@@ -40,9 +40,14 @@ class OrderDetailsPage extends StatelessWidget {
       showBackButton: true,
       body: SingleChildScrollView(
         padding: EdgeInsets.all(16.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width - 32.w,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
             // Order ID and Status
             Container(
               padding: EdgeInsets.all(16.h),
@@ -53,30 +58,34 @@ class OrderDetailsPage extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Order #${order.id.substring(0, 6)}',
-                            style: TextStyle(
-                              color: AppTheme.textPrimaryColor,
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.bold,
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Order #${order.id.substring(0, 6)}',
+                              style: TextStyle(
+                                color: AppTheme.textPrimaryColor,
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'Placed on $formattedDate at $formattedTime',
-                            style: TextStyle(
-                              color: AppTheme.textSecondaryColor,
-                              fontSize: 12.sp,
+                            SizedBox(height: 4.h),
+                            Text(
+                              'Placed on $formattedDate at $formattedTime',
+                              style: TextStyle(
+                                color: AppTheme.textSecondaryColor,
+                                fontSize: 12.sp,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      SizedBox(width: 8.w),
                       Container(
                         padding: EdgeInsets.symmetric(
-                          horizontal: 12.w,
+                          horizontal: 8.w,
                           vertical: 6.h,
                         ),
                         decoration: BoxDecoration(
@@ -84,10 +93,11 @@ class OrderDetailsPage extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8.r),
                         ),
                         child: Text(
-                          order.status.toUpperCase(),
+                          order.status.toUpperCase().replaceAll('_', ' '),
+                          softWrap: true,
                           style: TextStyle(
                             color: statusColor,
-                            fontSize: 12.sp,
+                            fontSize: 11.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
@@ -152,6 +162,8 @@ class OrderDetailsPage extends StatelessWidget {
                                 color: AppTheme.textSecondaryColor,
                                 fontSize: 12.sp,
                               ),
+                              overflow: TextOverflow.ellipsis,
+                              maxLines: 3,
                             ),
                           ],
                         ),
@@ -227,6 +239,8 @@ class OrderDetailsPage extends StatelessWidget {
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.bold,
                                     ),
+                                    overflow: TextOverflow.ellipsis,
+                                    maxLines: 2,
                                   ),
                                   SizedBox(height: 4.h),
                                   Text(
@@ -308,13 +322,14 @@ class OrderDetailsPage extends StatelessWidget {
                     if (order.couponId != null) ...[
                       SizedBox(height: 4.h),
                       Padding(
-                        padding: EdgeInsets.only(left: 120.w),
+                        padding: EdgeInsets.only(left: 110.w),
                         child: Text(
                           'Coupon: ${order.couponId}',
                           style: TextStyle(
                             color: Colors.green,
                             fontSize: 12.sp,
                           ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -362,7 +377,8 @@ class OrderDetailsPage extends StatelessWidget {
             ],
             
             SizedBox(height: 16.h),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -377,13 +393,14 @@ class OrderDetailsPage extends StatelessWidget {
     return Row(
       children: [
         SizedBox(
-          width: 120.w,
+          width: 110.w, // Reduced width to prevent overflow
           child: Text(
             label,
             style: TextStyle(
               color: AppTheme.textSecondaryColor,
               fontSize: 14.sp,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
         Expanded(
@@ -394,6 +411,7 @@ class OrderDetailsPage extends StatelessWidget {
               fontSize: 14.sp,
               fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
             ),
+            overflow: TextOverflow.ellipsis,
           ),
         ),
       ],

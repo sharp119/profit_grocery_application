@@ -58,7 +58,7 @@ class OrderInventory {
   
   // Get all dummy orders for a user
   static List<Order> getDummyOrders(String userId) {
-    // Generate dummy orders
+    // Always ensure we have at least 3 orders for testing purposes
     return [
       _createDummyOrder(
         id: 'ORD123456',
