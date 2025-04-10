@@ -36,28 +36,26 @@ We've added comprehensive logging throughout the cart system to help diagnose is
 
 4. **Check Firebase Realtime Database**:
    - Open the Firebase console and navigate to the Realtime Database
-   - Look for entries under path `users/{userId}/cart`
-   - Verify that JSON data under this path matches expected cart structure:
-   ```json
-   {
-     "userId": "user123",
-     "items": [
-       {
-         "productId": "1",
-         "name": "Product Name",
-         "image": "image_url",
-         "price": 99.99,
-         "quantity": 2,
-         "categoryId": "category_id",
-         "categoryName": "Category Name"
-       }
-     ],
-     "appliedCouponId": null,
-     "appliedCouponCode": null,
-     "discount": 0.0,
-     "deliveryFee": 0.0
-   }
+   - Look for entries under path `cartItems/{sessionId}/{userId}`
+   - Verify that data under this path matches the expected cart structure:
    ```
+   cartItems/
+     └── {sessionId}/
+         └── {userId}/
+             ├── {productId}/
+             │   ├── quantity: 2
+             │   ├── addedAt: 1712345678901
+             │   └── updatedAt: 1712345789012
+             ├── {anotherProductId}/
+             │   └── ...
+             └── coupon/
+                 ├── id: "coupon123"
+                 ├── code: "SAVE10"
+                 ├── discount: 29.99
+                 └── appliedAt: 1712345678901
+   ```
+   - Check that session ID is consistent with the value logged in console with pattern `Using session ID: xxxx-xxxx-xxxx`
+   - Verify that product IDs in the database match those being added to the cart
 
 5. **Check Local Storage**:
    - Check logs with prefix `LOCAL` for cache operations

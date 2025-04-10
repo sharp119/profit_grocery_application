@@ -1,5 +1,8 @@
 import 'package:firebase_database/firebase_database.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:uuid/uuid.dart';
 
+import '../../../../core/constants/app_constants.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../utils/cart_logger.dart';
 import '../../../models/cart_model.dart';
@@ -50,10 +53,13 @@ abstract class CartRemoteDataSource {
 
 class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   final FirebaseDatabase database;
+  final uuid = const Uuid();
+  String? _sessionId;
 
   CartRemoteDataSourceImpl({required this.database}) {
     // Debug: Verify database connection on initialization
     _verifyDatabaseConnection();
+    _initializeSession();
   }
   
   // Helper method to verify database connection
@@ -92,11 +98,38 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
     }
   }
 
+  // Initialize session ID
+  Future<void> _initializeSession() async {
+    try {
+      // Get session ID from SharedPreferences or create a new one
+      final prefs = await SharedPreferences.getInstance();
+      _sessionId = prefs.getString('CART_SESSION_ID');
+      
+      if (_sessionId == null || _sessionId!.isEmpty) {
+        _sessionId = uuid.v4();
+        await prefs.setString('CART_SESSION_ID', _sessionId!);
+        CartLogger.log('REMOTE', 'Created new cart session ID: $_sessionId');
+      } else {
+        CartLogger.log('REMOTE', 'Using existing cart session ID: $_sessionId');
+      }
+    } catch (e) {
+      // If there's an error, create a new session ID in memory
+      _sessionId = uuid.v4();
+      CartLogger.error('REMOTE', 'Error initializing session, using temporary ID: $_sessionId', e);
+    }
+  }
+
   @override
   Future<CartModel> getCart(String userId) async {
     try {
-      CartLogger.log('REMOTE', 'Fetching cart from Firebase for user: $userId');
-      final ref = database.ref().child('users/$userId/cart');
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
+      CartLogger.log('REMOTE', 'Fetching cart from Firebase for user: $userId, session: $_sessionId');
+      
+      // Use the new structure: cartItems --> sessionId --> userId --> cart data
+      final ref = database.ref().child('cartItems/$_sessionId/$userId');
       final snapshot = await ref.get();
       
       CartLogger.info('REMOTE', 'Firebase cart snapshot exists: ${snapshot.exists}, hasValue: ${snapshot.value != null}');
@@ -104,9 +137,79 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
       if (snapshot.exists && snapshot.value != null) {
         try {
           CartLogger.info('REMOTE', 'Raw Firebase data: ${snapshot.value}');
-          final data = Map<String, dynamic>.from(snapshot.value as Map);
-          CartLogger.log('REMOTE', 'Successfully parsed cart data from Firebase');
-          return CartModel.fromJson(data);
+          final Map<String, dynamic> cartData = {
+            'userId': userId,
+            'items': <Map<String, dynamic>>[],
+            'appliedCouponId': null,
+            'appliedCouponCode': null,
+            'discount': 0.0,
+            'deliveryFee': 0.0,
+          };
+          
+          // Parse cart items
+          final Map<dynamic, dynamic> itemsData = snapshot.value as Map;
+          final List<CartItemModel> cartItems = [];
+          
+          for (final entry in itemsData.entries) {
+            final String productId = entry.key.toString();
+            final Map<dynamic, dynamic> itemData = entry.value as Map;
+            
+            // Fetch detailed product information based on productId
+            final productRef = database.ref().child('products/$productId');
+            final productSnapshot = await productRef.get();
+            
+            String name = 'Product';
+            String image = 'assets/images/products/default.png';
+            double price = 0.0;
+            double? mrp;
+            String? categoryId;
+            String? categoryName;
+            
+            // If product details are available, use them
+            if (productSnapshot.exists && productSnapshot.value != null) {
+              final productData = productSnapshot.value as Map<dynamic, dynamic>;
+              name = productData['name']?.toString() ?? 'Product';
+              image = productData['image']?.toString() ?? 'assets/images/products/default.png';
+              price = double.tryParse(productData['price']?.toString() ?? '0.0') ?? 0.0;
+              mrp = double.tryParse(productData['mrp']?.toString() ?? '');
+              categoryId = productData['categoryId']?.toString();
+              categoryName = productData['categoryName']?.toString();
+            }
+            
+            // Get quantity from cart data
+            final int quantity = int.tryParse(itemData['quantity']?.toString() ?? '1') ?? 1;
+            
+            // Create cart item model
+            final cartItem = CartItemModel(
+              productId: productId,
+              name: name,
+              image: image,
+              price: price,
+              mrp: mrp,
+              quantity: quantity,
+              categoryId: categoryId,
+              categoryName: categoryName,
+            );
+            
+            cartItems.add(cartItem);
+          }
+          
+          // Check for applied coupon
+          final couponRef = database.ref().child('cartItems/$_sessionId/$userId/coupon');
+          final couponSnapshot = await couponRef.get();
+          
+          if (couponSnapshot.exists && couponSnapshot.value != null) {
+            final couponData = couponSnapshot.value as Map<dynamic, dynamic>;
+            cartData['appliedCouponId'] = couponData['id']?.toString();
+            cartData['appliedCouponCode'] = couponData['code']?.toString();
+            cartData['discount'] = double.tryParse(couponData['discount']?.toString() ?? '0.0') ?? 0.0;
+          }
+          
+          // Create the cart model
+          cartData['items'] = cartItems.map((item) => item.toJson()).toList();
+          
+          CartLogger.log('REMOTE', 'Successfully parsed cart data from Firebase, ${cartItems.length} items');
+          return CartModel.fromJson(cartData);
         } catch (parsingError) {
           // Log the error and return empty cart if data cannot be parsed
           CartLogger.error('REMOTE', 'Error parsing cart data from Firebase', parsingError);
@@ -125,74 +228,43 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> updateCart(CartModel cart) async {
     try {
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
       final userId = cart.userId;
-      CartLogger.log('REMOTE', 'Updating cart in Firebase for user: $userId');
+      CartLogger.log('REMOTE', 'Updating cart in Firebase for user: $userId, session: $_sessionId');
       
-      // Directly reference the users node in Realtime Database
-      final ref = database.ref().child('users/$userId/cart');
+      // Reference to cart items in the new structure
+      final cartRef = database.ref().child('cartItems/$_sessionId/$userId');
       
-      // Convert cart to JSON and ensure it's properly formatted
-      final cartJson = cart.toJson();
-      CartLogger.info('REMOTE', 'Cart JSON to update: $cartJson');
+      // Clear existing cart data
+      await cartRef.remove();
       
-      try {
-        // Use set instead of update to ensure full replacement
-        // This is more reliable for the cart structure
-        await ref.set(cartJson);
-        CartLogger.log('REMOTE', 'Firebase update operation completed');
-      } catch (e) {
-        CartLogger.error('REMOTE', 'Error during Firebase set operation', e);
+      // Add each item to the cart
+      for (final item in cart.items) {
+        final cartItemModel = item as CartItemModel;
+        final productId = cartItemModel.productId;
         
-        // Try a different approach with update if set fails
-        try {
-          CartLogger.log('REMOTE', 'Trying alternative update method');
-          await ref.update(cartJson);
-          CartLogger.log('REMOTE', 'Firebase alternative update operation completed');
-        } catch (updateError) {
-          CartLogger.error('REMOTE', 'Error during Firebase update operation', updateError);
-          throw ServerException(message: 'Failed to update cart: $updateError');
-        }
+        await cartRef.child(productId).set({
+          'quantity': cartItemModel.quantity,
+          'addedAt': ServerValue.timestamp,
+        });
       }
       
-      // Verify the update by getting the latest data
-      final updatedSnapshot = await ref.get();
-      CartLogger.info('REMOTE', 'Snapshot exists: ${updatedSnapshot.exists}, has value: ${updatedSnapshot.value != null}');
-      
-      if (updatedSnapshot.exists && updatedSnapshot.value != null) {
-        try {
-          CartLogger.info('REMOTE', 'Raw updated Firebase data: ${updatedSnapshot.value}');
-          final data = Map<String, dynamic>.from(updatedSnapshot.value as Map);
-          final updatedCart = CartModel.fromJson(data);
-          CartLogger.success('REMOTE', 'Successfully verified updated cart in Firebase, items: ${updatedCart.items.length}');
-          return updatedCart;
-        } catch (parsingError) {
-          // Return the original cart if parsing fails
-          CartLogger.error('REMOTE', 'Error parsing updated cart data', parsingError);
-          return cart;
-        }
-      } else {
-        // Return the original cart if no data exists, but try to force a retry
-        CartLogger.error('REMOTE', 'Updated cart not found in Firebase after update - forcing a retry');
-        
-        // Try one more time with a delay
-        await Future.delayed(const Duration(milliseconds: 500));
-        try {
-          await ref.set(cartJson);
-          CartLogger.log('REMOTE', 'Retry Firebase update operation completed');
-          
-          // Check again
-          final retrySnapshot = await ref.get();
-          if (retrySnapshot.exists && retrySnapshot.value != null) {
-            CartLogger.success('REMOTE', 'Retry successful, cart data exists now');
-          } else {
-            CartLogger.error('REMOTE', 'Retry failed, cart data still missing');
-          }
-        } catch (retryError) {
-          CartLogger.error('REMOTE', 'Error during retry operation', retryError);
-        }
-        
-        return cart;
+      // Add coupon data if applicable
+      if (cart.appliedCouponId != null && cart.appliedCouponCode != null) {
+        await cartRef.child('coupon').set({
+          'id': cart.appliedCouponId,
+          'code': cart.appliedCouponCode,
+          'discount': cart.discount,
+        });
       }
+      
+      CartLogger.log('REMOTE', 'Firebase update operation completed');
+      
+      // Return the updated cart (ideally we should fetch it again, but for simplicity we'll return the input cart)
+      return cart;
     } catch (e) {
       CartLogger.error('REMOTE', 'Failed to update cart in Firebase', e);
       throw ServerException(message: 'Failed to update cart: $e');
@@ -202,6 +274,10 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> addCartItem(String userId, CartItemModel item) async {
     try {
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
       CartLogger.log('REMOTE', 'Adding item to cart in Firebase: ${item.name} (${item.productId}), quantity: ${item.quantity}');
       
       // Get current cart
@@ -213,34 +289,56 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
         (cartItem) => cartItem.productId == item.productId
       );
       
-      final List<CartItemModel> updatedItems = List.from(
-        currentCart.items.map((item) => item as CartItemModel)
-      );
+      // Reference to the specific cart item
+      final itemRef = database.ref().child('cartItems/$_sessionId/$userId/${item.productId}');
       
       if (existingItemIndex != -1) {
         // Update existing item quantity
-        final existingItem = updatedItems[existingItemIndex];
+        final existingItem = currentCart.items[existingItemIndex] as CartItemModel;
         final newQuantity = existingItem.quantity + item.quantity;
         CartLogger.info('REMOTE', 'Item already exists in cart. Updating quantity from ${existingItem.quantity} to $newQuantity');
         
+        await itemRef.update({
+          'quantity': newQuantity,
+          'updatedAt': ServerValue.timestamp,
+        });
+        
+        // Update the item in the current cart for return
+        final List<CartItemModel> updatedItems = List.from(
+          currentCart.items.map((item) => item as CartItemModel)
+        );
         updatedItems[existingItemIndex] = existingItem.copyWith(
           quantity: newQuantity
         ) as CartItemModel;
+        
+        final updatedCart = currentCart.copyWith(
+          items: updatedItems
+        ) as CartModel;
+        
+        return updatedCart;
       } else {
         // Add new item
         CartLogger.info('REMOTE', 'Adding new item to cart');
+        
+        await itemRef.set({
+          'quantity': item.quantity,
+          'addedAt': ServerValue.timestamp,
+        });
+        
+        // Add the new item to the current cart for return
+        final List<CartItemModel> updatedItems = List.from(
+          currentCart.items.map((item) => item as CartItemModel)
+        );
         updatedItems.add(item);
+        
+        final updatedCart = currentCart.copyWith(
+          items: updatedItems
+        ) as CartModel;
+        
+        CartLogger.info('REMOTE', 'Updated cart has ${updatedCart.items.length} items, total: ${updatedCart.total}');
+        
+        return updatedCart;
       }
-      
-      // Create updated cart
-      final updatedCart = currentCart.copyWith(
-        items: updatedItems
-      ) as CartModel;
-      
-      CartLogger.info('REMOTE', 'Updated cart has ${updatedCart.items.length} items, total: ${updatedCart.total}');
-      
-      // Save to Firebase
-      return updateCart(updatedCart);
     } catch (e) {
       CartLogger.error('REMOTE', 'Failed to add item to cart in Firebase', e);
       throw ServerException(message: 'Failed to add item to cart: $e');
@@ -250,6 +348,10 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> updateCartItemQuantity(String userId, String productId, int quantity) async {
     try {
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
       // Get current cart
       final currentCart = await getCart(userId);
       
@@ -262,26 +364,44 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
         throw ServerException(message: 'Item not found in cart');
       }
       
-      final List<CartItemModel> updatedItems = List.from(
-        currentCart.items.map((item) => item as CartItemModel)
-      );
+      // Reference to the specific cart item
+      final itemRef = database.ref().child('cartItems/$_sessionId/$userId/$productId');
       
       if (quantity <= 0) {
         // Remove item if quantity is 0 or negative
+        await itemRef.remove();
+        
+        // Update the cart for return
+        final List<CartItemModel> updatedItems = List.from(
+          currentCart.items.map((item) => item as CartItemModel)
+        );
         updatedItems.removeAt(itemIndex);
+        
+        final updatedCart = currentCart.copyWith(
+          items: updatedItems
+        ) as CartModel;
+        
+        return updatedCart;
       } else {
         // Update item quantity
+        await itemRef.update({
+          'quantity': quantity,
+          'updatedAt': ServerValue.timestamp,
+        });
+        
+        // Update the cart for return
+        final List<CartItemModel> updatedItems = List.from(
+          currentCart.items.map((item) => item as CartItemModel)
+        );
         final item = updatedItems[itemIndex];
         updatedItems[itemIndex] = item.copyWith(quantity: quantity) as CartItemModel;
+        
+        final updatedCart = currentCart.copyWith(
+          items: updatedItems
+        ) as CartModel;
+        
+        return updatedCart;
       }
-      
-      // Create updated cart
-      final updatedCart = currentCart.copyWith(
-        items: updatedItems
-      ) as CartModel;
-      
-      // Save to Firebase
-      return updateCart(updatedCart);
     } catch (e) {
       throw ServerException(message: 'Failed to update item quantity: $e');
     }
@@ -290,21 +410,29 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> removeCartItem(String userId, String productId) async {
     try {
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
       // Get current cart
       final currentCart = await getCart(userId);
       
-      // Remove item
+      // Reference to the specific cart item
+      final itemRef = database.ref().child('cartItems/$_sessionId/$userId/$productId');
+      
+      // Remove the item
+      await itemRef.remove();
+      
+      // Update the cart for return
       final List<CartItemModel> updatedItems = List.from(
         currentCart.items.map((item) => item as CartItemModel)
       )..removeWhere((item) => item.productId == productId);
       
-      // Create updated cart
       final updatedCart = currentCart.copyWith(
         items: updatedItems
       ) as CartModel;
       
-      // Save to Firebase
-      return updateCart(updatedCart);
+      return updatedCart;
     } catch (e) {
       throw ServerException(message: 'Failed to remove item from cart: $e');
     }
@@ -313,11 +441,18 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> clearCart(String userId) async {
     try {
-      // Create empty cart
-      final emptyCart = CartModel.empty(userId);
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
       
-      // Save to Firebase
-      return updateCart(emptyCart);
+      // Reference to the user's cart
+      final cartRef = database.ref().child('cartItems/$_sessionId/$userId');
+      
+      // Remove all cart items
+      await cartRef.remove();
+      
+      // Return empty cart
+      return CartModel.empty(userId);
     } catch (e) {
       throw ServerException(message: 'Failed to clear cart: $e');
     }
@@ -326,18 +461,32 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> applyCoupon(String userId, String couponId, String couponCode, double discount) async {
     try {
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
       // Get current cart
       final currentCart = await getCart(userId);
       
-      // Apply coupon
+      // Reference to the coupon in cart
+      final couponRef = database.ref().child('cartItems/$_sessionId/$userId/coupon');
+      
+      // Add coupon data
+      await couponRef.set({
+        'id': couponId,
+        'code': couponCode,
+        'discount': discount,
+        'appliedAt': ServerValue.timestamp,
+      });
+      
+      // Return updated cart
       final updatedCart = currentCart.copyWith(
         appliedCouponId: couponId,
         appliedCouponCode: couponCode,
         discount: discount
       ) as CartModel;
       
-      // Save to Firebase
-      return updateCart(updatedCart);
+      return updatedCart;
     } catch (e) {
       throw ServerException(message: 'Failed to apply coupon: $e');
     }
@@ -346,18 +495,27 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> removeCoupon(String userId) async {
     try {
+      if (_sessionId == null) {
+        await _initializeSession();
+      }
+      
       // Get current cart
       final currentCart = await getCart(userId);
       
-      // Remove coupon
+      // Reference to the coupon in cart
+      final couponRef = database.ref().child('cartItems/$_sessionId/$userId/coupon');
+      
+      // Remove coupon data
+      await couponRef.remove();
+      
+      // Return updated cart
       final updatedCart = currentCart.copyWith(
         appliedCouponId: null,
         appliedCouponCode: null,
         discount: 0.0
       ) as CartModel;
       
-      // Save to Firebase
-      return updateCart(updatedCart);
+      return updatedCart;
     } catch (e) {
       throw ServerException(message: 'Failed to remove coupon: $e');
     }

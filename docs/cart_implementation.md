@@ -38,23 +38,27 @@ The application employs a multi-layered persistence strategy:
    - Provides cloud backup and cross-device synchronization
    - Data sync happens automatically when online
 
-## Recent Fixes
+## Recent Improvements
 
-We've addressed several issues with the cart functionality:
+We've redesigned the cart functionality with several important improvements:
 
-1. **Cart Visibility Issue**
-   - Fixed condition to show cart FAB only when cart has items
-   - Added null checks and stricter validation
+1. **New Firebase Realtime Database Structure**
+   - Implemented session-based cart storage with UUID generation
+   - Store only essential data (product IDs and quantities) in the database
+   - Fetch full product details only when needed for display
+   - Improved performance with more efficient data structure
 
-2. **Cart Persistence Issues**
-   - Enhanced CartLocalDataSource with better error handling
-   - Improved verification of cached data
-   - Added logging for debugging
+2. **Cart Implementation Enhancements**
+   - Added support for multiple active sessions per user (different devices)
+   - Implemented SessionID persistence via SharedPreferences
+   - Improved database operations with proper timestamp tracking
+   - Enhanced error handling and recovery mechanisms
 
 3. **Firebase Synchronization**
    - Changed from `ref.update()` to `ref.set()` for more reliable updates
-   - Added proper verification of database operations
-   - Fixed JSON handling and error management
+   - Added atomic operations for individual cart items
+   - Implemented proper verification of database operations
+   - Enhanced error management with specific error handling
 
 4. **Cart State Management**
    - Added optimistic updates for immediate UI feedback
@@ -63,7 +67,8 @@ We've addressed several issues with the cart functionality:
 
 5. **Better Debugging**
    - Added comprehensive logging throughout cart flow
-   - Created debugging guide with troubleshooting steps
+   - Added session ID tracking in logs
+   - Created debugging guide with improved troubleshooting steps for new structure
 
 ## Cart Data Flow
 
@@ -75,30 +80,40 @@ We've addressed several issues with the cart functionality:
 6. Data is pushed to Firebase when online
 7. CartSyncService handles offline operations
 
-## Firebase Realtime Database Structure
+## Firebase Realtime Database Structure (Updated)
 
-Cart data is stored in the following structure:
+Cart data is now stored in the following improved structure:
 
 ```
-users/
-  ├── {userId}/
-  │    └── cart/
-  │         ├── userId: "user123"
-  │         ├── items: [
-  │         │    {
-  │         │      productId: "prod1",
-  │         │      name: "Product Name",
-  │         │      image: "image_url",
-  │         │      price: 299.99,
-  │         │      quantity: 2,
-  │         │      ...
-  │         │    }
-  │         │ ]
-  │         ├── appliedCouponId: "coupon123"
-  │         ├── appliedCouponCode: "SAVE10"
-  │         ├── discount: 29.99
-  │         └── deliveryFee: 0.0
+cartItems/
+  └── {sessionId}/
+      └── {userId}/
+          ├── {productId}/
+          │   ├── quantity: int
+          │   ├── addedAt: timestamp
+          │   └── updatedAt: timestamp (optional)
+          ├── {productId2}/
+          │   └── ...
+          └── coupon/
+              ├── id: string
+              ├── code: string
+              ├── discount: double
+              └── appliedAt: timestamp
 ```
+
+### Key Benefits of New Structure
+
+- **Session-Based**: Supports multiple sessions per user (different devices)
+- **Minimal Storage**: Only stores essential cart data, not duplicating product details
+- **Scalable**: Can easily handle large numbers of users and sessions
+- **Performance**: Efficient for both reading and writing cart data
+
+### Implementation Details
+
+- Each product is stored by its ID, containing only quantity and timestamps
+- Full product details are fetched from the products collection when needed
+- Session ID is generated using UUID v4 and stored in SharedPreferences
+- Timestamps use Firebase's `ServerValue.timestamp` to ensure consistency
 
 ## Debugging
 
