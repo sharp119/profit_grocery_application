@@ -51,7 +51,46 @@ abstract class CartRemoteDataSource {
 class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   final FirebaseDatabase database;
 
-  CartRemoteDataSourceImpl({required this.database});
+  CartRemoteDataSourceImpl({required this.database}) {
+    // Debug: Verify database connection on initialization
+    _verifyDatabaseConnection();
+  }
+  
+  // Helper method to verify database connection
+  Future<void> _verifyDatabaseConnection() async {
+    try {
+      CartLogger.log('REMOTE', 'Verifying Firebase Realtime Database connection...');
+      final testRef = database.ref().child('.info/connected');
+      final snapshot = await testRef.get();
+      
+      if (snapshot.exists && snapshot.value != null) {
+        final connected = snapshot.value as bool;
+        CartLogger.log('REMOTE', 'Firebase Realtime Database connection status: ${connected ? "CONNECTED" : "DISCONNECTED"}');
+      } else {
+        CartLogger.error('REMOTE', 'Unable to determine connection status');
+      }
+      
+      // Test writing to a test path
+      try {
+        final testWriteRef = database.ref().child('connection_test');
+        await testWriteRef.set({
+          'timestamp': DateTime.now().toIso8601String(),
+          'status': 'test_write'
+        });
+        CartLogger.success('REMOTE', 'Successfully wrote test data to Firebase Realtime Database');
+        
+        // Read it back
+        final testReadSnapshot = await testWriteRef.get();
+        if (testReadSnapshot.exists) {
+          CartLogger.success('REMOTE', 'Successfully read test data from Firebase Realtime Database');
+        }
+      } catch (writeError) {
+        CartLogger.error('REMOTE', 'Failed to write test data to Firebase', writeError);
+      }
+    } catch (e) {
+      CartLogger.error('REMOTE', 'Error verifying Firebase connection', e);
+    }
+  }
 
   @override
   Future<CartModel> getCart(String userId) async {
@@ -88,18 +127,37 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
     try {
       final userId = cart.userId;
       CartLogger.log('REMOTE', 'Updating cart in Firebase for user: $userId');
+      
+      // Directly reference the users node in Realtime Database
       final ref = database.ref().child('users/$userId/cart');
       
       // Convert cart to JSON and ensure it's properly formatted
       final cartJson = cart.toJson();
       CartLogger.info('REMOTE', 'Cart JSON to update: $cartJson');
       
-      // Use update instead of set to ensure atomicity
-      await ref.update(cartJson);
-      CartLogger.log('REMOTE', 'Firebase update operation completed');
+      try {
+        // Use set instead of update to ensure full replacement
+        // This is more reliable for the cart structure
+        await ref.set(cartJson);
+        CartLogger.log('REMOTE', 'Firebase update operation completed');
+      } catch (e) {
+        CartLogger.error('REMOTE', 'Error during Firebase set operation', e);
+        
+        // Try a different approach with update if set fails
+        try {
+          CartLogger.log('REMOTE', 'Trying alternative update method');
+          await ref.update(cartJson);
+          CartLogger.log('REMOTE', 'Firebase alternative update operation completed');
+        } catch (updateError) {
+          CartLogger.error('REMOTE', 'Error during Firebase update operation', updateError);
+          throw ServerException(message: 'Failed to update cart: $updateError');
+        }
+      }
       
       // Verify the update by getting the latest data
       final updatedSnapshot = await ref.get();
+      CartLogger.info('REMOTE', 'Snapshot exists: ${updatedSnapshot.exists}, has value: ${updatedSnapshot.value != null}');
+      
       if (updatedSnapshot.exists && updatedSnapshot.value != null) {
         try {
           CartLogger.info('REMOTE', 'Raw updated Firebase data: ${updatedSnapshot.value}');
@@ -113,8 +171,26 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
           return cart;
         }
       } else {
-        // Return the original cart if no data exists
-        CartLogger.error('REMOTE', 'Updated cart not found in Firebase after update');
+        // Return the original cart if no data exists, but try to force a retry
+        CartLogger.error('REMOTE', 'Updated cart not found in Firebase after update - forcing a retry');
+        
+        // Try one more time with a delay
+        await Future.delayed(const Duration(milliseconds: 500));
+        try {
+          await ref.set(cartJson);
+          CartLogger.log('REMOTE', 'Retry Firebase update operation completed');
+          
+          // Check again
+          final retrySnapshot = await ref.get();
+          if (retrySnapshot.exists && retrySnapshot.value != null) {
+            CartLogger.success('REMOTE', 'Retry successful, cart data exists now');
+          } else {
+            CartLogger.error('REMOTE', 'Retry failed, cart data still missing');
+          }
+        } catch (retryError) {
+          CartLogger.error('REMOTE', 'Error during retry operation', retryError);
+        }
+        
         return cart;
       }
     } catch (e) {

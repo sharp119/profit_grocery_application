@@ -12,6 +12,7 @@ import '../../data/repositories/coupon/coupon_repository_impl.dart';
 import '../../domain/repositories/cart_repository.dart';
 import '../../domain/repositories/coupon_repository.dart';
 import '../../presentation/blocs/cart/cart_bloc.dart';
+import '../../services/cart/cart_initializer.dart';
 import '../../services/cart/cart_sync_service.dart';
 import '../network/network_info.dart';
 
@@ -86,6 +87,14 @@ Future<void> initCartDependencies() async {
     () => CartBloc(
       cartRepository: sl<CartRepository>(),
       cartSyncService: sl<CartSyncService>(), // Add the cart sync service
+    ),
+  );
+  
+  // Cart Initializer - create last after CartBloc is registered
+  sl.registerLazySingleton<CartInitializer>(
+    () => CartInitializer(
+      cartBloc: sl<CartBloc>(),
+      sharedPreferences: sl<SharedPreferences>(),
     ),
   );
 }

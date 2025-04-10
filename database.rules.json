@@ -3,11 +3,35 @@
     "users": {
       ".indexOn": ["phoneNumber"],
       "$userId": {
-        ".read": "auth.uid === $userId",
-        ".write": "auth.uid === $userId || !data.exists()"
+        ".read": true,
+        ".write": true
       }
     },
-    ".read": "auth != null",
-    ".write": "auth != null"
+    "sessions": {
+      "$userId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    "products": {
+      ".read": true,
+      ".write": true
+    },
+    "categories": {
+      ".read": true,
+      ".write": true
+    },
+    "coupons": {
+      ".read": true,
+      ".write": true
+    },
+    "orders": {
+      "$userId": {
+        ".read": true,
+        ".write": true
+      }
+    },
+    ".read": true,
+    ".write": true
   }
 }

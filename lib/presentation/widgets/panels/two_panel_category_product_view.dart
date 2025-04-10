@@ -335,20 +335,21 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           ),
         ),
         
-        // Cart FAB
-        Positioned(
-          bottom: 16.h,
-          left: 0,
-          right: 0,
-          child: Center(
-            child: CartFAB(
-              itemCount: widget.cartItemCount,
-              totalAmount: widget.totalAmount,
-              onTap: widget.onCartTap,
-              previewImagePath: widget.cartPreviewImage,
+        // Cart FAB - Only show when cart has items
+        if (widget.cartItemCount > 0)
+          Positioned(
+            bottom: 16.h,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: CartFAB(
+                itemCount: widget.cartItemCount,
+                totalAmount: widget.totalAmount,
+                onTap: widget.onCartTap,
+                previewImagePath: widget.cartPreviewImage,
+              ),
             ),
           ),
-        ),
       ],
     );
   }

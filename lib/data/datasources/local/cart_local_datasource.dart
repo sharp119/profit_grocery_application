@@ -58,14 +58,37 @@ class CartLocalDataSourceImpl implements CartLocalDataSource {
       final jsonString = json.encode(cartToCache.toJson());
       CartLogger.info('LOCAL', 'Cart JSON to cache: $jsonString');
       
-      // Save to SharedPreferences
-      final result = await sharedPreferences.setString(
+      // First, try to save with setString
+      bool result = await sharedPreferences.setString(
         '$CACHED_CART_PREFIX$userId',
         jsonString,
       );
       
+      // If setString fails, try to ensure the SharedPreferences instance is working
+      if (!result) {
+        CartLogger.error('LOCAL', 'setString failed, trying to verify SharedPreferences');
+        
+        // Try to check if SharedPreferences is working with a test key
+        result = await sharedPreferences.setString('test_key', 'test_value');
+        if (!result) {
+          CartLogger.error('LOCAL', 'SharedPreferences test failed, cannot save cart');
+          return false;
+        }
+        
+        // If test succeeded, try again with cart data
+        result = await sharedPreferences.setString('$CACHED_CART_PREFIX$userId', jsonString);
+      }
+      
       if (result) {
-        CartLogger.success('LOCAL', 'Successfully cached cart');
+        CartLogger.success('LOCAL', 'Successfully cached cart with ${cartToCache.items.length} items');
+        
+        // Verify the cached data was written correctly
+        final verifyJson = sharedPreferences.getString('$CACHED_CART_PREFIX$userId');
+        if (verifyJson != null && verifyJson.isNotEmpty) {
+          CartLogger.info('LOCAL', 'Verified cached data exists');
+        } else {
+          CartLogger.error('LOCAL', 'Cached data verification failed - data not found after caching');
+        }
       } else {
         CartLogger.error('LOCAL', 'Failed to cache cart');
       }

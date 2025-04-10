@@ -35,3 +35,20 @@ class UpdateCartQuantity extends HomeEvent {
   @override
   List<Object?> get props => [product, quantity];
 }
+
+class UpdateHomeCartData extends HomeEvent {
+  final Map<String, int> cartQuantities;
+  final int cartItemCount;
+  final double cartTotalAmount;
+  final String? cartPreviewImage;
+
+  const UpdateHomeCartData({
+    required this.cartQuantities,
+    required this.cartItemCount,
+    required this.cartTotalAmount,
+    this.cartPreviewImage,
+  });
+
+  @override
+  List<Object?> get props => [cartQuantities, cartItemCount, cartTotalAmount, cartPreviewImage];
+}

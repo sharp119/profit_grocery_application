@@ -25,6 +25,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<RefreshHomeData>(_onRefreshHomeData);
     on<SelectCategoryTab>(_onSelectCategoryTab);
     on<UpdateCartQuantity>(_onUpdateCartQuantity);
+    on<UpdateHomeCartData>(_onUpdateHomeCartData);
   }
 
   Future<void> _onLoadHomeData(
@@ -175,6 +176,24 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     ));
     
     CartLogger.success('HOME_BLOC', 'Cart state updated successfully');
+  }
+  
+  void _onUpdateHomeCartData(
+    UpdateHomeCartData event,
+    Emitter<HomeState> emit,
+  ) {
+    CartLogger.log('HOME_BLOC', 'Updating cart data from CartBloc sync');
+    CartLogger.info('HOME_BLOC', 'Cart data: items: ${event.cartItemCount}, total: ${event.cartTotalAmount}');
+    CartLogger.info('HOME_BLOC', 'Cart quantities: ${event.cartQuantities}');
+    
+    emit(state.copyWith(
+      cartQuantities: event.cartQuantities,
+      cartItemCount: event.cartItemCount,
+      cartTotalAmount: event.cartTotalAmount,
+      cartPreviewImage: event.cartPreviewImage,
+    ));
+    
+    CartLogger.success('HOME_BLOC', 'Cart data updated from CartBloc sync');
   }
   
   // Calculate total cart value
@@ -527,10 +546,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
   
   Map<String, int> _getMockCartQuantities() {
-    return {
-      '1': 2, // 2 items of product with ID '1' in cart
-      '3': 1, // 1 item of product with ID '3' in cart
-    };
+    // Return empty cart (no mock data) for production
+    CartLogger.log('HOME_BLOC', 'Returning empty cart for initialization');
+    return {};
   }
   
   // Get random category groups for home screen

@@ -135,7 +135,43 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use the cart sync service
+      // IMMEDIATE UI UPDATE: First update the state optimistically for immediate UI feedback
+      // This helps keep the UI responsive while we wait for the actual repository operation
+      final currentItems = List<CartItem>.from(state.items);
+      final existingItemIndex = currentItems.indexWhere((item) => item.productId == product.id);
+      
+      if (existingItemIndex != -1) {
+        // Update existing item
+        final existingItem = currentItems[existingItemIndex];
+        currentItems[existingItemIndex] = existingItem.copyWith(quantity: existingItem.quantity + quantity);
+      } else {
+        // Add new item
+        currentItems.add(CartItem(
+          productId: product.id,
+          name: product.name,
+          image: product.image,
+          price: product.price,
+          mrp: product.mrp,
+          quantity: quantity,
+          categoryId: product.categoryId,
+          categoryName: product.categoryName,
+        ));
+      }
+      
+      // Calculate new totals
+      final newSubtotal = currentItems.fold(0.0, (sum, item) => sum + (item.price * item.quantity));
+      final newItemCount = currentItems.fold(0, (sum, item) => sum + item.quantity);
+      
+      // Emit optimistic update
+      emit(state.copyWith(
+        items: currentItems,
+        subtotal: newSubtotal,
+        total: newSubtotal - state.discount + state.deliveryFee,
+        itemCount: newItemCount,
+        status: CartStatus.loading,
+      ));
+      
+      // Use the cart sync service to persist changes
       CartLogger.info('BLOC', 'Adding item to cart via CartSyncService');
       final result = await _cartSyncService.addToCart(
         userId: userId,

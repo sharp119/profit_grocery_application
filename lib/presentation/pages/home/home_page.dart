@@ -3,11 +3,16 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/core/errors/global_error_handler.dart';
+import 'package:profit_grocery_application/main.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
 import 'package:profit_grocery_application/presentation/widgets/profile/profile_completion_banner.dart';
+import 'package:profit_grocery_application/services/cart/home_cart_bridge.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
+import 'package:profit_grocery_application/utils/cart_logger.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -96,6 +101,46 @@ class _HomePageContentState extends State<_HomePageContent> {
       LoggingService.logError('HomePage', 'UserBloc not available: $e');
     }
     
+    // Listen to CartBloc state changes to sync with HomeBloc
+    try {
+      final cartBloc = context.read<CartBloc>();
+      final homeBloc = context.read<HomeBloc>();
+      
+      // Create a HomeCartBridge and initialize it
+      final bridge = HomeCartBridge(
+        cartBloc: cartBloc,
+        homeBloc: homeBloc,
+      );
+      bridge.initialize();
+      
+      // Listen to CartBloc state changes to update HomeBloc
+      cartBloc.stream.listen((state) {
+        if (state.status == CartStatus.loaded && mounted) {
+          // Create a map of product IDs to quantities from cart items
+          final Map<String, int> cartQuantities = {};
+          for (final item in state.items) {
+            cartQuantities[item.productId] = item.quantity;
+          }
+          
+          // Get the first product image for cart preview
+          String? cartPreviewImage;
+          if (state.items.isNotEmpty) {
+            cartPreviewImage = state.items.first.image;
+          }
+          
+          // Update HomeBloc with cart data from CartBloc
+          homeBloc.add(UpdateHomeCartData(
+            cartQuantities: cartQuantities,
+            cartItemCount: state.itemCount,
+            cartTotalAmount: state.total,
+            cartPreviewImage: cartPreviewImage,
+          ));
+        }
+      });
+    } catch (e) {
+      LoggingService.logError('HomePage', 'Error syncing CartBloc with HomeBloc: $e');
+    }
+    
     // Add a short delay to allow the UI to build, then check if user data is loaded
     Future.delayed(Duration.zero, () {
       if (_currentUser == null || _currentUser?.name == null) {
@@ -149,8 +194,25 @@ class _HomePageContentState extends State<_HomePageContent> {
   }
 
   void _onProductQuantityChanged(Product product, int quantity) {
-    // Update cart
-    context.read<HomeBloc>().add(UpdateCartQuantity(product, quantity));
+    CartLogger.log('HOME_PAGE', 'Product quantity changed: ${product.name}, quantity: $quantity');
+    
+    // Get the CartBloc
+    final cartBloc = context.read<CartBloc>();
+    
+    // Create a temporary HomeCartBridge
+    final bridge = HomeCartBridge(
+      cartBloc: cartBloc,
+      homeBloc: context.read<HomeBloc>(),
+    );
+    
+    // Use the bridge to update cart
+    if (quantity <= 0) {
+      bridge.removeFromCart(product);
+    } else {
+      bridge.updateCartItemQuantity(product, quantity);
+    }
+    
+    CartLogger.success('HOME_PAGE', 'Cart updated via bridge');
   }
 
   void _navigateToCart() {
@@ -446,20 +508,21 @@ class _HomePageContentState extends State<_HomePageContent> {
                 ),
               ),
               
-              // Cart FAB
-              Positioned(
-                bottom: 16.h,
-                left: 0,
-                right: 0,
-                child: Center(
-                  child: CartFAB(
-                    itemCount: cartItemCount,
-                    totalAmount: totalAmount,
-                    onTap: _navigateToCart,
-                    previewImagePath: cartPreviewImage,
+              // Cart FAB - Only show when cart has items
+              if (cartItemCount > 0)
+                Positioned(
+                  bottom: 16.h,
+                  left: 0,
+                  right: 0,
+                  child: Center(
+                    child: CartFAB(
+                      itemCount: cartItemCount,
+                      totalAmount: totalAmount,
+                      onTap: _navigateToCart,
+                      previewImagePath: cartPreviewImage,
+                    ),
                   ),
                 ),
-              ),
             ],
           ),
         );

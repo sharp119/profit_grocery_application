@@ -28,6 +28,11 @@ class CartFAB extends StatelessWidget {
     // Make sure we don't show the FAB when cart is empty
     CartLogger.log('CART_FAB', 'Building CartFAB with itemCount: $itemCount, totalAmount: $totalAmount');
     
+    // Detailed logging for debugging
+    CartLogger.info('CART_FAB', 'CartFAB build details - itemCount type: ${itemCount.runtimeType}, value: $itemCount');
+    CartLogger.info('CART_FAB', 'CartFAB build details - totalAmount type: ${totalAmount?.runtimeType}, value: $totalAmount');
+    
+    // Triple-check to ensure we don't show an empty cart
     if (itemCount <= 0) {
       CartLogger.info('CART_FAB', 'Cart is empty, not showing FAB');
       return const SizedBox.shrink(); // Don't show when cart is empty

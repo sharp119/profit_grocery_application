@@ -11,6 +11,7 @@ import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
+import 'package:profit_grocery_application/services/session_manager_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
@@ -24,7 +25,8 @@ import 'core/routing/app_router.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
 import 'services/session_manager_firestore.dart';
-import 'services/session_manager_interface.dart';
+import 'services/cart/cart_initializer.dart';
+import 'services/cart/home_cart_bridge.dart';
 import 'services/user_service.dart';
 import 'services/user_service_hybrid.dart';
 import 'services/user_service_interface.dart';
@@ -73,6 +75,9 @@ void main() async {
     DeviceOrientation.portraitDown,
   ]);
   
+  // Run the cart initializer to ensure cart is loaded at startup
+  await sl<CartInitializer>().initialize();
+  
   runApp(const MyApp());
 }
 
@@ -88,8 +93,8 @@ Future<void> setupRemoteConfig() async {
     AppConstants.featuredCategoriesKey: jsonEncode([]),
     AppConstants.appMaintenanceKey: false,
     AppConstants.minAppVersionKey: '1.0.0',
-    // Add a new default for database preference
-    'prefer_firestore': true,
+    // Set database preference to use Realtime Database
+    'prefer_firestore': false,
   });
   
   await remoteConfig.fetchAndActivate();

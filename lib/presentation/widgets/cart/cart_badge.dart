@@ -79,7 +79,7 @@ class FloatingCartBadge extends StatelessWidget {
         CartLogger.log('CART_BADGE', 'Building FloatingCartBadge with state: ${state.status}, itemCount: ${state.itemCount}');
         
         // Don't show if cart is empty
-        if (state.itemCount == 0) {
+        if (state.itemCount <= 0 || state.total <= 0) {
           CartLogger.info('CART_BADGE', 'Cart is empty, not showing floating badge');
           return const SizedBox.shrink();
         }
