@@ -9,6 +9,7 @@ import '../../core/errors/failures.dart';
 import '../../data/models/cart_model.dart';
 import '../../domain/entities/cart.dart';
 import '../../domain/repositories/cart_repository.dart';
+import '../../utils/cart_logger.dart';
 
 /// Service to handle synchronization between local and remote cart data
 class CartSyncService {
@@ -36,16 +37,20 @@ class CartSyncService {
   
   // Initialize the sync service
   Future<void> init() async {
+    CartLogger.log('SYNC', 'Initializing CartSyncService');
     // Listen for connectivity changes
     _connectivitySubscription = connectivity.onConnectivityChanged.listen((result) {
+      CartLogger.info('SYNC', 'Connectivity changed: $result');
       if (result != ConnectivityResult.none) {
         // We're back online, try to sync pending operations
+        CartLogger.log('SYNC', 'Back online, processing pending operations');
         _processPendingOperations();
       }
     });
     
     // Check if we have pending operations and try to process them
     await _processPendingOperations();
+    CartLogger.success('SYNC', 'CartSyncService initialized');
   }
   
   // Dispose the sync service
@@ -56,9 +61,11 @@ class CartSyncService {
   
   // Add an operation to the pending list
   Future<void> _addPendingOperation(CartOperation operation) async {
+    CartLogger.log('SYNC', 'Adding operation to pending list: ${operation.type}');
     final List<String> pendingOperations = sharedPreferences.getStringList(_pendingOperationsKey) ?? [];
     pendingOperations.add(operation.toJson());
     await sharedPreferences.setStringList(_pendingOperationsKey, pendingOperations);
+    CartLogger.info('SYNC', 'Pending operations count: ${pendingOperations.length}');
   }
   
   // Process pending operations
@@ -67,20 +74,27 @@ class CartSyncService {
       final List<String> pendingOperations = sharedPreferences.getStringList(_pendingOperationsKey) ?? [];
       
       if (pendingOperations.isEmpty) {
+        CartLogger.info('SYNC', 'No pending operations to process');
         return;
       }
       
+      CartLogger.log('SYNC', 'Processing ${pendingOperations.length} pending operations');
       _syncStreamController.add(CartSyncStatus.syncing);
       
       // Check if we have internet connection
       final connectivityResult = await connectivity.checkConnectivity();
       if (connectivityResult == ConnectivityResult.none) {
+        CartLogger.info('SYNC', 'Device is offline, cannot process pending operations');
         _syncStreamController.add(CartSyncStatus.offline);
         return;
       }
       
+      int successCount = 0;
+      int failCount = 0;
+      
       // Process each operation in order
       for (int i = 0; i < pendingOperations.length; i++) {
+        CartLogger.info('SYNC', 'Processing operation ${i+1}/${pendingOperations.length}');
         final operation = CartOperation.fromJson(pendingOperations[i]);
         
         // Process the operation based on type
@@ -90,8 +104,12 @@ class CartSyncService {
         result.fold(
           (failure) {
             // Failed to process operation
+            CartLogger.error('SYNC', 'Failed to process operation: ${failure.message}');
+            failCount++;
+            
             if (failure is NetworkFailure) {
               // If network failure, stop processing
+              CartLogger.error('SYNC', 'Network failure, stopping sync');
               _syncStreamController.add(CartSyncStatus.offline);
               return;
             }
@@ -99,22 +117,29 @@ class CartSyncService {
           },
           (success) {
             // Operation successful, remove it from the list
+            CartLogger.success('SYNC', 'Successfully processed operation');
             pendingOperations.removeAt(i);
             i--; // Adjust index
+            successCount++;
           }
         );
       }
+      
+      CartLogger.log('SYNC', 'Processed operations - Success: $successCount, Failed: $failCount');
       
       // Save updated pending operations list
       await sharedPreferences.setStringList(_pendingOperationsKey, pendingOperations);
       
       // All operations processed successfully
       if (pendingOperations.isEmpty) {
+        CartLogger.success('SYNC', 'All pending operations processed successfully');
         _syncStreamController.add(CartSyncStatus.synced);
       } else {
+        CartLogger.info('SYNC', '${pendingOperations.length} operations still pending');
         _syncStreamController.add(CartSyncStatus.partialSync);
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
+      CartLogger.error('SYNC', 'Error processing pending operations', e, stackTrace);
       _syncStreamController.add(CartSyncStatus.error);
     }
   }
@@ -122,14 +147,19 @@ class CartSyncService {
   // Process a single operation
   Future<Either<Failure, bool>> _processOperation(CartOperation operation) async {
     try {
+      CartLogger.log('SYNC', 'Processing operation: ${operation.type}');
+      
       switch(operation.type) {
         case CartOperationType.add:
           // Check if required fields are not null
           if (operation.productId == null || operation.name == null || 
               operation.image == null || operation.price == null || 
               operation.quantity == null) {
+            CartLogger.error('SYNC', 'Missing required fields for add operation');
             return Left(ServerFailure(message: 'Missing required fields for add operation'));
           }
+          
+          CartLogger.info('SYNC', 'Adding item to cart: ${operation.name} (${operation.productId})');
           
           // Add item to cart
           await cartRepository.addToCart(
@@ -142,6 +172,7 @@ class CartSyncService {
             categoryId: operation.categoryId,
             categoryName: operation.categoryName,
           );
+          CartLogger.success('SYNC', 'Successfully added item to cart');
           return const Right(true);
           
         case CartOperationType.update:
@@ -211,7 +242,7 @@ class CartSyncService {
     required double price,
     required int quantity,
     String? categoryId,
-    String? categoryName,
+    String? categoryName, double? mrp,
   }) async {
     // Try to perform the operation directly
     final result = await cartRepository.addToCart(

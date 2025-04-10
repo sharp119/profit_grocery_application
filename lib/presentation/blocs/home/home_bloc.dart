@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:profit_grocery_application/data/models/product_model.dart';
+import 'package:profit_grocery_application/utils/cart_logger.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -135,12 +136,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final product = event.product;
     final quantity = event.quantity;
     
+    CartLogger.log('HOME_BLOC', 'Updating cart quantity for product: ${product.name} (${product.id}), new quantity: $quantity');
+    
     // Update cart quantities
     final updatedCartQuantities = Map<String, int>.from(state.cartQuantities);
     
     if (quantity <= 0) {
+      CartLogger.info('HOME_BLOC', 'Removing product from cart: ${product.id}');
       updatedCartQuantities.remove(product.id);
     } else {
+      CartLogger.info('HOME_BLOC', 'Setting product quantity in cart: ${product.id} = $quantity');
       updatedCartQuantities[product.id] = quantity;
     }
     
@@ -148,12 +153,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     final cartItemCount = updatedCartQuantities.values.fold<int>(0, (sum, qty) => sum + qty);
     final cartTotalAmount = _calculateCartTotal(updatedCartQuantities);
     
+    CartLogger.info('HOME_BLOC', 'Updated cart summary - items: $cartItemCount, total: $cartTotalAmount');
+    CartLogger.info('HOME_BLOC', 'Cart quantities: $updatedCartQuantities');
+    
     // Choose the first product in cart for preview, or null if cart empty
     String? cartPreviewImage;
     if (updatedCartQuantities.isNotEmpty) {
       final previewProductId = updatedCartQuantities.keys.first;
       // In a real app, we'd look up the product image from repository
       cartPreviewImage = '${AppConstants.assetsProductsPath}1.png';
+      CartLogger.info('HOME_BLOC', 'Cart preview image set to: $cartPreviewImage');
+    } else {
+      CartLogger.info('HOME_BLOC', 'No cart preview image (cart is empty)');
     }
     
     emit(state.copyWith(
@@ -162,6 +173,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       cartTotalAmount: cartTotalAmount,
       cartPreviewImage: cartPreviewImage,
     ));
+    
+    CartLogger.success('HOME_BLOC', 'Cart state updated successfully');
   }
   
   // Calculate total cart value

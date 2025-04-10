@@ -1,6 +1,7 @@
 import 'package:firebase_database/firebase_database.dart';
 
 import '../../../../core/errors/exceptions.dart';
+import '../../../../utils/cart_logger.dart';
 import '../../../models/cart_model.dart';
 
 abstract class CartRemoteDataSource {
@@ -55,16 +56,29 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> getCart(String userId) async {
     try {
+      CartLogger.log('REMOTE', 'Fetching cart from Firebase for user: $userId');
       final ref = database.ref().child('users/$userId/cart');
       final snapshot = await ref.get();
       
-      if (snapshot.exists) {
-        final data = Map<String, dynamic>.from(snapshot.value as Map);
-        return CartModel.fromJson(data);
+      CartLogger.info('REMOTE', 'Firebase cart snapshot exists: ${snapshot.exists}, hasValue: ${snapshot.value != null}');
+      
+      if (snapshot.exists && snapshot.value != null) {
+        try {
+          CartLogger.info('REMOTE', 'Raw Firebase data: ${snapshot.value}');
+          final data = Map<String, dynamic>.from(snapshot.value as Map);
+          CartLogger.log('REMOTE', 'Successfully parsed cart data from Firebase');
+          return CartModel.fromJson(data);
+        } catch (parsingError) {
+          // Log the error and return empty cart if data cannot be parsed
+          CartLogger.error('REMOTE', 'Error parsing cart data from Firebase', parsingError);
+          return CartModel.empty(userId);
+        }
       } else {
+        CartLogger.log('REMOTE', 'No cart data found in Firebase, returning empty cart');
         return CartModel.empty(userId);
       }
     } catch (e) {
+      CartLogger.error('REMOTE', 'Failed to fetch cart data from Firebase', e);
       throw ServerException(message: 'Failed to fetch cart data: $e');
     }
   }
@@ -73,12 +87,38 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   Future<CartModel> updateCart(CartModel cart) async {
     try {
       final userId = cart.userId;
+      CartLogger.log('REMOTE', 'Updating cart in Firebase for user: $userId');
       final ref = database.ref().child('users/$userId/cart');
       
-      await ref.set(cart.toJson());
+      // Convert cart to JSON and ensure it's properly formatted
+      final cartJson = cart.toJson();
+      CartLogger.info('REMOTE', 'Cart JSON to update: $cartJson');
       
-      return cart;
+      // Use update instead of set to ensure atomicity
+      await ref.update(cartJson);
+      CartLogger.log('REMOTE', 'Firebase update operation completed');
+      
+      // Verify the update by getting the latest data
+      final updatedSnapshot = await ref.get();
+      if (updatedSnapshot.exists && updatedSnapshot.value != null) {
+        try {
+          CartLogger.info('REMOTE', 'Raw updated Firebase data: ${updatedSnapshot.value}');
+          final data = Map<String, dynamic>.from(updatedSnapshot.value as Map);
+          final updatedCart = CartModel.fromJson(data);
+          CartLogger.success('REMOTE', 'Successfully verified updated cart in Firebase, items: ${updatedCart.items.length}');
+          return updatedCart;
+        } catch (parsingError) {
+          // Return the original cart if parsing fails
+          CartLogger.error('REMOTE', 'Error parsing updated cart data', parsingError);
+          return cart;
+        }
+      } else {
+        // Return the original cart if no data exists
+        CartLogger.error('REMOTE', 'Updated cart not found in Firebase after update');
+        return cart;
+      }
     } catch (e) {
+      CartLogger.error('REMOTE', 'Failed to update cart in Firebase', e);
       throw ServerException(message: 'Failed to update cart: $e');
     }
   }
@@ -86,8 +126,11 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
   @override
   Future<CartModel> addCartItem(String userId, CartItemModel item) async {
     try {
+      CartLogger.log('REMOTE', 'Adding item to cart in Firebase: ${item.name} (${item.productId}), quantity: ${item.quantity}');
+      
       // Get current cart
       final currentCart = await getCart(userId);
+      CartLogger.info('REMOTE', 'Current cart before adding item has ${currentCart.items.length} items');
       
       // Check if item already exists
       final existingItemIndex = currentCart.items.indexWhere(
@@ -101,11 +144,15 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
       if (existingItemIndex != -1) {
         // Update existing item quantity
         final existingItem = updatedItems[existingItemIndex];
+        final newQuantity = existingItem.quantity + item.quantity;
+        CartLogger.info('REMOTE', 'Item already exists in cart. Updating quantity from ${existingItem.quantity} to $newQuantity');
+        
         updatedItems[existingItemIndex] = existingItem.copyWith(
-          quantity: existingItem.quantity + item.quantity
+          quantity: newQuantity
         ) as CartItemModel;
       } else {
         // Add new item
+        CartLogger.info('REMOTE', 'Adding new item to cart');
         updatedItems.add(item);
       }
       
@@ -114,9 +161,12 @@ class CartRemoteDataSourceImpl implements CartRemoteDataSource {
         items: updatedItems
       ) as CartModel;
       
+      CartLogger.info('REMOTE', 'Updated cart has ${updatedCart.items.length} items, total: ${updatedCart.total}');
+      
       // Save to Firebase
       return updateCart(updatedCart);
     } catch (e) {
+      CartLogger.error('REMOTE', 'Failed to add item to cart in Firebase', e);
       throw ServerException(message: 'Failed to add item to cart: $e');
     }
   }

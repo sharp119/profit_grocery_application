@@ -9,17 +9,18 @@ import '../../../domain/entities/cart.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/cart_repository.dart';
 import '../../../services/cart/cart_sync_service.dart';
+import '../../../utils/cart_logger.dart';
 import 'cart_event.dart';
 import 'cart_state.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final CartRepository _cartRepository;
-  final CartSyncService? _cartSyncService;
+  final CartSyncService _cartSyncService;
   StreamSubscription<CartSyncStatus>? _syncSubscription;
 
   CartBloc({
     required CartRepository cartRepository,
-    CartSyncService? cartSyncService,
+    required CartSyncService cartSyncService,
   }) : _cartRepository = cartRepository,
        _cartSyncService = cartSyncService,
        super(const CartState()) {
@@ -33,12 +34,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<ForceSync>(_onForceSync);
     on<UpdateSyncStatus>(_onUpdateSyncStatus);
     
-    // Subscribe to sync status changes if sync service is available
-    if (_cartSyncService != null) {
-      _syncSubscription = _cartSyncService!.syncStream.listen((status) {
-        add(UpdateSyncStatus(status));
-      });
-    }
+    // Subscribe to sync status changes from the cart sync service
+    _syncSubscription = _cartSyncService.syncStream.listen((status) {
+      add(UpdateSyncStatus(status));
+    });
   }
   
   @override
@@ -52,13 +51,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     Emitter<CartState> emit,
   ) async {
     try {
+      CartLogger.log('BLOC', 'Loading cart...');
       emit(state.copyWith(status: CartStatus.loading));
 
       // Get user ID from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(AppConstants.userTokenKey);
+      CartLogger.info('BLOC', 'User ID for cart: $userId');
       
       if (userId == null || userId.isEmpty) {
+        CartLogger.error('BLOC', 'User not authenticated');
         emit(state.copyWith(
           status: CartStatus.error,
           errorMessage: 'User not authenticated',
@@ -67,23 +69,25 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       }
 
       // Get cart from repository
+      CartLogger.info('BLOC', 'Fetching cart from repository for user: $userId');
       final result = await _cartRepository.getCart(userId);
       
-      await result.fold(
+      result.fold(
         (failure) {
+          CartLogger.error('BLOC', 'Failed to load cart: ${failure.message}');
           emit(state.copyWith(
             status: CartStatus.error,
             errorMessage: _mapFailureToMessage(failure),
           ));
         },
         (cart) {
-          // Check sync status if sync service is available
-          if (_cartSyncService != null) {
-            _cartSyncService!.getCurrentSyncStatus().then((syncStatus) {
-              add(UpdateSyncStatus(syncStatus));
-            });
-          }
+          // Get current sync status from the sync service
+          _cartSyncService.getCurrentSyncStatus().then((syncStatus) {
+            CartLogger.info('BLOC', 'Cart sync status: $syncStatus');
+            add(UpdateSyncStatus(syncStatus));
+          });
           
+          CartLogger.success('BLOC', 'Cart loaded successfully: ${cart.items.length} items, total: ${cart.total}');
           emit(state.copyWith(
             status: CartStatus.loaded,
             items: cart.items,
@@ -97,7 +101,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           ));
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      CartLogger.error('BLOC', 'Exception loading cart', e, stackTrace);
       emit(state.copyWith(
         status: CartStatus.error,
         errorMessage: 'Failed to load cart: $e',
@@ -113,13 +118,16 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       final product = event.product;
       final quantity = event.quantity;
       
+      CartLogger.log('BLOC', 'Adding to cart: ${product.name} (${product.id}), quantity: $quantity');
       emit(state.copyWith(status: CartStatus.loading));
       
       // Get user ID from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(AppConstants.userTokenKey);
+      CartLogger.info('BLOC', 'User ID for adding to cart: $userId');
       
       if (userId == null || userId.isEmpty) {
+        CartLogger.error('BLOC', 'User not authenticated for adding to cart');
         emit(state.copyWith(
           status: CartStatus.error,
           errorMessage: 'User not authenticated',
@@ -127,38 +135,30 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use sync service if available
-      final result = _cartSyncService != null
-        ? await _cartSyncService!.addToCart(
-            userId: userId,
-            productId: product.id,
-            name: product.name,
-            image: product.image,
-            price: product.price,
-            quantity: quantity,
-            categoryId: product.categoryId,
-            categoryName: product.categoryName,
-          )
-        : await _cartRepository.addToCart(
-            userId: userId,
-            productId: product.id,
-            name: product.name,
-            image: product.image,
-            price: product.price,
-            quantity: quantity,
-            mrp: product.mrp,
-            categoryId: product.categoryId,
-            categoryName: product.categoryName,
-          );
+      // Use the cart sync service
+      CartLogger.info('BLOC', 'Adding item to cart via CartSyncService');
+      final result = await _cartSyncService.addToCart(
+        userId: userId,
+        productId: product.id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        quantity: quantity,
+        categoryId: product.categoryId,
+        categoryName: product.categoryName,
+      );
       
-      await result.fold(
+      result.fold(
         (failure) {
+          CartLogger.error('BLOC', 'Failed to add to cart: ${failure.message}');
           emit(state.copyWith(
             status: CartStatus.error,
             errorMessage: _mapFailureToMessage(failure),
           ));
         },
         (cart) {
+          CartLogger.success('BLOC', 'Item added to cart successfully. Cart now has ${cart.items.length} items, total: ${cart.total}');
+          CartLogger.info('BLOC', 'Cart items after add: ${cart.items.map((item) => "${item.name} (${item.quantity})").join(', ')}');
           emit(state.copyWith(
             status: CartStatus.loaded,
             items: cart.items,
@@ -172,7 +172,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           ));
         },
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      CartLogger.error('BLOC', 'Exception adding to cart', e, stackTrace);
       emit(state.copyWith(
         status: CartStatus.error,
         errorMessage: 'Failed to add to cart: $e',
@@ -202,20 +203,14 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use sync service if available
-      final result = _cartSyncService != null
-        ? await _cartSyncService!.updateCartItemQuantity(
-            userId: userId,
-            productId: productId,
-            quantity: quantity,
-          )
-        : await _cartRepository.updateCartItemQuantity(
-            userId: userId,
-            productId: productId,
-            quantity: quantity,
-          );
+      // Use the cart sync service
+      final result = await _cartSyncService.updateCartItemQuantity(
+        userId: userId,
+        productId: productId,
+        quantity: quantity,
+      );
       
-      await result.fold(
+      result.fold(
         (failure) {
           emit(state.copyWith(
             status: CartStatus.error,
@@ -265,18 +260,13 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use sync service if available
-      final result = _cartSyncService != null
-        ? await _cartSyncService!.removeFromCart(
-            userId: userId,
-            productId: productId,
-          )
-        : await _cartRepository.removeFromCart(
-            userId: userId,
-            productId: productId,
-          );
+      // Use the cart sync service
+      final result = await _cartSyncService.removeFromCart(
+        userId: userId,
+        productId: productId,
+      );
       
-      await result.fold(
+      result.fold(
         (failure) {
           emit(state.copyWith(
             status: CartStatus.error,
@@ -324,12 +314,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use sync service if available
-      final result = _cartSyncService != null
-        ? await _cartSyncService!.clearCart(userId)
-        : await _cartRepository.clearCart(userId);
+      // Use the cart sync service
+      final result = await _cartSyncService.clearCart(userId);
       
-      await result.fold(
+      result.fold(
         (failure) {
           emit(state.copyWith(
             status: CartStatus.error,
@@ -385,18 +373,13 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use sync service if available
-      final result = _cartSyncService != null
-        ? await _cartSyncService!.applyCoupon(
-            userId: userId,
-            couponCode: event.code,
-          )
-        : await _cartRepository.applyCoupon(
-            userId: userId,
-            couponCode: event.code,
-          );
+      // Use the cart sync service
+      final result = await _cartSyncService.applyCoupon(
+        userId: userId,
+        couponCode: event.code,
+      );
       
-      await result.fold(
+      result.fold(
         (failure) {
           if (failure is CouponFailure) {
             emit(state.copyWith(
@@ -451,12 +434,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      // Use sync service if available
-      final result = _cartSyncService != null
-        ? await _cartSyncService!.removeCoupon(userId)
-        : await _cartRepository.removeCoupon(userId);
+      // Use the cart sync service
+      final result = await _cartSyncService.removeCoupon(userId);
       
-      await result.fold(
+      result.fold(
         (failure) {
           emit(state.copyWith(
             status: CartStatus.error,
@@ -490,24 +471,19 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     Emitter<CartState> emit,
   ) async {
     try {
-      if (_cartSyncService == null) {
-        emit(state.copyWith(
-          syncStatus: CartSyncStatus.error,
-        ));
-        return;
-      }
-      
+      // Set status to syncing
       emit(state.copyWith(
         syncStatus: CartSyncStatus.syncing,
       ));
       
-      final syncStatus = await _cartSyncService!.forceSync();
+      // Force sync using the cart sync service
+      final syncStatus = await _cartSyncService.forceSync();
       
       emit(state.copyWith(
         syncStatus: syncStatus,
       ));
       
-      // Reload cart after sync
+      // Reload cart after sync to ensure latest data
       add(const LoadCart());
     } catch (e) {
       emit(state.copyWith(

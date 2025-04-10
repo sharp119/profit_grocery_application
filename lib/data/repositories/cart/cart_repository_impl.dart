@@ -91,10 +91,14 @@ class CartRepositoryImpl implements CartRepository {
       // Try to add to remote if online
       if (await networkInfo.isConnected) {
         try {
+          // Add item to remote database
           final updatedCart = await remoteDataSource.addCartItem(userId, cartItem);
           
           // Cache the updated cart locally
-          await localDataSource.cacheCart(updatedCart);
+          final cacheSuccess = await localDataSource.cacheCart(updatedCart);
+          if (!cacheSuccess) {
+            print('Warning: Failed to cache cart locally');
+          }
           
           return Right(updatedCart);
         } on ServerException catch (e) {

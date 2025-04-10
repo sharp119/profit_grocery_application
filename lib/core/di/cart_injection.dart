@@ -85,6 +85,7 @@ Future<void> initCartDependencies() async {
   sl.registerFactory(
     () => CartBloc(
       cartRepository: sl<CartRepository>(),
+      cartSyncService: sl<CartSyncService>(), // Add the cart sync service
     ),
   );
 }

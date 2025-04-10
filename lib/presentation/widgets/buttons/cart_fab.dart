@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:badges/badges.dart' as badges;
 
 import '../../../core/constants/app_theme.dart';
+import '../../../utils/cart_logger.dart';
 
 /// An enhanced floating action button for cart functionality
 /// Supports item count badge, item preview, and price display
@@ -24,7 +25,11 @@ class CartFAB extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (itemCount == 0) {
+    // Make sure we don't show the FAB when cart is empty
+    CartLogger.log('CART_FAB', 'Building CartFAB with itemCount: $itemCount, totalAmount: $totalAmount');
+    
+    if (itemCount <= 0) {
+      CartLogger.info('CART_FAB', 'Cart is empty, not showing FAB');
       return const SizedBox.shrink(); // Don't show when cart is empty
     }
     

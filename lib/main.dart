@@ -252,9 +252,18 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<CartBloc>(
           create: (context) {
-            // Load cart data when the app starts
+            // Create and initialize cart bloc
             final cartBloc = sl<CartBloc>();
-            cartBloc.add(const LoadCart());
+            
+            // Get current user ID and if valid, load cart data
+            final prefs = sl<SharedPreferences>();
+            final userId = prefs.getString(AppConstants.userTokenKey);
+            
+            if (userId != null && userId.isNotEmpty) {
+              // Load cart data when the app starts
+              cartBloc.add(const LoadCart());
+            }
+            
             return cartBloc;
           },
         ),
