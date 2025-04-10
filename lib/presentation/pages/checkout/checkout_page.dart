@@ -23,8 +23,21 @@ class CheckoutPage extends StatelessWidget {
   }
 }
 
-class _CheckoutPageContent extends StatelessWidget {
+class _CheckoutPageContent extends StatefulWidget {
   const _CheckoutPageContent();
+
+  @override
+  State<_CheckoutPageContent> createState() => _CheckoutPageContentState();
+}
+
+class _CheckoutPageContentState extends State<_CheckoutPageContent> {
+  final TextEditingController _couponController = TextEditingController();
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
 
   void _selectAddress(BuildContext context, String addressId) {
     context.read<CheckoutBloc>().add(SelectAddress(addressId));
@@ -753,6 +766,7 @@ class _CheckoutPageContent extends StatelessWidget {
                   children: [
                     Expanded(
                       child: TextField(
+                        controller: _couponController,
                         decoration: InputDecoration(
                           hintText: 'Enter coupon code',
                           hintStyle: TextStyle(
@@ -807,15 +821,9 @@ class _CheckoutPageContent extends StatelessWidget {
                     
                     ElevatedButton(
                       onPressed: () {
-                        // Get coupon code from text field
-                        final textField = context.findRenderObject() as RenderBox?;
-                        if (textField != null) {
-                          final controller = (textField.parent as EditableText).controller;
-                          final code = controller.text;
-                          
-                          if (code.isNotEmpty) {
-                            _applyCoupon(context, code);
-                          }
+                        final code = _couponController.text;
+                        if (code.isNotEmpty) {
+                          _applyCoupon(context, code);
                         }
                       },
                       style: ElevatedButton.styleFrom(

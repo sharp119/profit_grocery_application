@@ -4,10 +4,13 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_theme.dart';
+import '../../../data/samples/sample_coupons.dart';
 import '../../blocs/coupon/coupon_bloc.dart';
 import '../../blocs/coupon/coupon_event.dart';
 import '../../blocs/coupon/coupon_state.dart';
 import '../../widgets/base_layout.dart';
+import '../../widgets/coupons/coupon_card.dart';
+import '../../widgets/coupons/coupon_detail_modal.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 
 class CouponPage extends StatelessWidget {
@@ -27,8 +30,21 @@ class CouponPage extends StatelessWidget {
   }
 }
 
-class _CouponPageContent extends StatelessWidget {
+class _CouponPageContent extends StatefulWidget {
   const _CouponPageContent();
+
+  @override
+  State<_CouponPageContent> createState() => _CouponPageContentState();
+}
+
+class _CouponPageContentState extends State<_CouponPageContent> {
+  final TextEditingController _couponController = TextEditingController();
+
+  @override
+  void dispose() {
+    _couponController.dispose();
+    super.dispose();
+  }
 
   void _applyCoupon(BuildContext context, String code) {
     // Return coupon code to previous screen
@@ -60,7 +76,7 @@ class _CouponPageContent extends StatelessWidget {
         }
         
         // Auto-apply deep link coupon if valid
-        if (state.status == CouponStatus.deepLinkCouponValid) {
+        if (state.status == CouponStatus.deepLinkCouponValid && state.deepLinkCoupon != null) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _applyCoupon(context, state.deepLinkCoupon!);
           });
@@ -108,9 +124,31 @@ class _CouponPageContent extends StatelessWidget {
   }
 
   Widget _buildCouponList(BuildContext context, CouponState state) {
+    // Get sample coupons from our mock data
+    final sampleCoupons = getSampleCoupons();
+    
     // Show deep link coupon if available
-    if (state.deepLinkCoupon != null) {
-      final deepLinkCouponInfo = state.deepLinkCouponInfo;
+    if (state.deepLinkCoupon != null && state.deepLinkCouponInfo != null) {
+      // Find the sample coupon that matches the deep link code or create a new one
+      final deepLinkSampleCoupon = sampleCoupons.firstWhere(
+        (coupon) => coupon.code == state.deepLinkCoupon,
+        orElse: () => SampleCoupon(
+          id: 'deeplink_coupon',
+          code: state.deepLinkCoupon!,
+          type: 'percentage',
+          value: 10.0, // Default value
+          title: state.deepLinkCouponInfo!.discount ?? 'Special Discount',
+          description: state.deepLinkCouponInfo!.description ?? 'Special offer just for you!',
+          startDate: DateTime.now(),
+          endDate: state.deepLinkCouponInfo!.expiryDate != null
+              ? DateTime.parse(state.deepLinkCouponInfo!.expiryDate!)
+              : DateTime.now().add(const Duration(days: 30)),
+          minPurchase: state.deepLinkCouponInfo!.minOrderValue != null
+              ? double.tryParse(state.deepLinkCouponInfo!.minOrderValue!.replaceAll('₹', '')) ?? 0.0
+              : null,
+          backgroundColor: Colors.deepPurple.shade800,
+        ),
+      );
       
       return SingleChildScrollView(
         padding: EdgeInsets.all(16.w),
@@ -166,13 +204,9 @@ class _CouponPageContent extends StatelessWidget {
             SizedBox(height: 24.h),
             
             // Deep link coupon card
-            _buildCouponCard(
-              context,
-              code: state.deepLinkCoupon!,
-              discount: deepLinkCouponInfo?.discount ?? 'Special Discount',
-              minOrderValue: deepLinkCouponInfo?.minOrderValue,
-              expiryDate: deepLinkCouponInfo?.expiryDate,
-              description: deepLinkCouponInfo?.description ?? 'Special offer just for you!',
+            CouponCard(
+              coupon: deepLinkSampleCoupon,
+              onApply: (code) => _applyCoupon(context, code),
               isHighlighted: true,
             ),
             
@@ -201,7 +235,7 @@ class _CouponPageContent extends StatelessWidget {
               ),
             ),
             
-            if (state.coupons.isNotEmpty) ...[
+            if (sampleCoupons.isNotEmpty) ...[
               SizedBox(height: 32.h),
               
               Divider(color: Colors.grey.withOpacity(0.3)),
@@ -220,15 +254,11 @@ class _CouponPageContent extends StatelessWidget {
               SizedBox(height: 16.h),
               
               // List of other available coupons
-              for (final coupon in state.coupons) ...[
+              for (final coupon in sampleCoupons) ...[
                 if (coupon.code != state.deepLinkCoupon)
-                  _buildCouponCard(
-                    context,
-                    code: coupon.code,
-                    discount: coupon.discount,
-                    minOrderValue: coupon.minOrderValue,
-                    expiryDate: coupon.expiryDate,
-                    description: coupon.description,
+                  CouponCard(
+                    coupon: coupon,
+                    onApply: (code) => _applyCoupon(context, code),
                   ),
                 SizedBox(height: 16.h),
               ],
@@ -297,6 +327,7 @@ class _CouponPageContent extends StatelessWidget {
           
           // Manual coupon entry
           TextField(
+            controller: _couponController,
             decoration: InputDecoration(
               hintText: 'Enter coupon code',
               prefixIcon: Icon(
@@ -306,15 +337,9 @@ class _CouponPageContent extends StatelessWidget {
               ),
               suffixIcon: TextButton(
                 onPressed: () {
-                  // Get coupon code from text field
-                  final textField = context.findRenderObject() as RenderBox?;
-                  if (textField != null) {
-                    final controller = (textField.parent as EditableText).controller;
-                    final code = controller.text;
-                    
-                    if (code.isNotEmpty) {
-                      _applyCoupon(context, code);
-                    }
+                  final code = _couponController.text;
+                  if (code.isNotEmpty) {
+                    _applyCoupon(context, code);
                   }
                 },
                 child: Text(
@@ -370,7 +395,7 @@ class _CouponPageContent extends StatelessWidget {
           
           SizedBox(height: 16.h),
           
-          if (state.coupons.isEmpty)
+          if (sampleCoupons.isEmpty)
             Center(
               child: Padding(
                 padding: EdgeInsets.symmetric(vertical: 32.h),
@@ -395,219 +420,13 @@ class _CouponPageContent extends StatelessWidget {
             )
           else
             // List of available coupons
-            for (final coupon in state.coupons) ...[
-              _buildCouponCard(
-                context,
-                code: coupon.code,
-                discount: coupon.discount,
-                minOrderValue: coupon.minOrderValue,
-                expiryDate: coupon.expiryDate,
-                description: coupon.description,
+            for (final coupon in sampleCoupons) ...[
+              CouponCard(
+                coupon: coupon,
+                onApply: (code) => _applyCoupon(context, code),
               ),
               SizedBox(height: 16.h),
             ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCouponCard(
-    BuildContext context, {
-    required String code,
-    required String discount,
-    String? minOrderValue,
-    String? expiryDate,
-    required String description,
-    bool isHighlighted = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: isHighlighted
-            ? AppTheme.accentColor.withOpacity(0.1)
-            : AppTheme.secondaryColor,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: isHighlighted
-              ? AppTheme.accentColor
-              : Colors.transparent,
-          width: isHighlighted ? 1.5 : 0,
-        ),
-      ),
-      child: Column(
-        children: [
-          // Coupon header
-          Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: isHighlighted
-                  ? AppTheme.accentColor.withOpacity(0.2)
-                  : AppTheme.secondaryColor.withOpacity(0.5),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12.r),
-                topRight: Radius.circular(12.r),
-              ),
-              border: Border(
-                bottom: BorderSide(
-                  color: isHighlighted
-                      ? AppTheme.accentColor.withOpacity(0.5)
-                      : Colors.grey.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Coupon code
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isHighlighted
-                        ? AppTheme.accentColor
-                        : AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(4.r),
-                    border: Border.all(
-                      color: isHighlighted
-                          ? Colors.transparent
-                          : AppTheme.accentColor.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    code,
-                    style: TextStyle(
-                      color: isHighlighted
-                          ? Colors.black
-                          : AppTheme.accentColor,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-                
-                SizedBox(width: 12.w),
-                
-                // Coupon discount
-                Expanded(
-                  child: Text(
-                    discount,
-                    style: TextStyle(
-                      color: isHighlighted
-                          ? AppTheme.accentColor
-                          : Colors.white,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                
-                // Copy button
-                IconButton(
-                  onPressed: () => _copyCouponCode(context, code),
-                  icon: Icon(
-                    Icons.copy,
-                    color: Colors.grey,
-                    size: 20.sp,
-                  ),
-                  tooltip: 'Copy code',
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
-          ),
-          
-          // Coupon details
-          Padding(
-            padding: EdgeInsets.all(16.w),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Description
-                Text(
-                  description,
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                  ),
-                ),
-                
-                SizedBox(height: 12.h),
-                
-                // Minimum order value and expiry date
-                Row(
-                  children: [
-                    if (minOrderValue != null) ...[
-                      Icon(
-                        Icons.shopping_bag_outlined,
-                        color: Colors.grey,
-                        size: 16.sp,
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Min. Order: $minOrderValue',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                      SizedBox(width: 16.w),
-                    ],
-                    
-                    if (expiryDate != null) ...[
-                      Icon(
-                        Icons.access_time,
-                        color: Colors.grey,
-                        size: 16.sp,
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Valid till: $expiryDate',
-                        style: TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-                
-                SizedBox(height: 16.h),
-                
-                // Apply button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () => _applyCoupon(context, code),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isHighlighted
-                          ? AppTheme.accentColor
-                          : AppTheme.accentColor.withOpacity(0.2),
-                      foregroundColor: isHighlighted
-                          ? Colors.black
-                          : AppTheme.accentColor,
-                      padding: EdgeInsets.symmetric(
-                        vertical: 10.h,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                    ),
-                    child: Text(
-                      'APPLY',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
         ],
       ),
     );

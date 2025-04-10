@@ -13,6 +13,7 @@ import '../../presentation/pages/home/home_page.dart';
 import '../../presentation/pages/orders/orders_page.dart';
 import '../../presentation/pages/orders/order_details_page.dart';
 import '../../domain/entities/order.dart';
+import '../../presentation/pages/coupon/coupon_page.dart';
 import '../../presentation/pages/profile/addresses_page.dart';
 import '../../presentation/pages/profile/address_form_page.dart';
 import '../../presentation/pages/profile/profile_edit_page.dart';
@@ -92,6 +93,13 @@ class AppRouter {
         final order = settings.arguments as Order;
         return MaterialPageRoute(
           builder: (_) => OrderDetailsPage(order: order),
+        );
+        
+      // Coupon route
+      case AppConstants.couponRoute:
+        final deepLinkCoupon = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (_) => CouponPage(deepLinkCoupon: deepLinkCoupon),
         );
         
       // User registration route
