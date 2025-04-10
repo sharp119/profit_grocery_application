@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/product.dart';
+import '../../../services/cart/cart_sync_service.dart';
 
 abstract class CartEvent extends Equatable {
   const CartEvent();
@@ -57,4 +58,17 @@ class ApplyCoupon extends CartEvent {
 
 class RemoveCoupon extends CartEvent {
   const RemoveCoupon();
+}
+
+class ForceSync extends CartEvent {
+  const ForceSync();
+}
+
+class UpdateSyncStatus extends CartEvent {
+  final CartSyncStatus status;
+
+  const UpdateSyncStatus(this.status);
+
+  @override
+  List<Object?> get props => [status];
 }

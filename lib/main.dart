@@ -8,10 +8,13 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
+import 'core/di/cart_injection.dart';
 import 'firebase_options.dart';
 
 import 'core/constants/app_constants.dart';
@@ -104,6 +107,9 @@ Future<void> setupDependencyInjection() async {
   
   // Basic services
   sl.registerLazySingleton(() => OTPService());
+  
+  // Cart dependencies
+  await initCartDependencies();
   
   // Determine database preference from Remote Config
   final remoteConfig = FirebaseRemoteConfig.instance;
@@ -243,6 +249,14 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<OrdersBloc>(
           create: (context) => sl<OrdersBloc>(),
+        ),
+        BlocProvider<CartBloc>(
+          create: (context) {
+            // Load cart data when the app starts
+            final cartBloc = sl<CartBloc>();
+            cartBloc.add(const LoadCart());
+            return cartBloc;
+          },
         ),
       ],
       child: ScreenUtilInit(

@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/cart.dart';
+import '../../../services/cart/cart_sync_service.dart';
 
 enum CartStatus {
   initial,
@@ -23,6 +24,7 @@ class CartState extends Equatable {
   final String? couponCode;
   final bool couponApplied;
   final String? errorMessage;
+  final CartSyncStatus syncStatus;
 
   const CartState({
     this.status = CartStatus.initial,
@@ -35,6 +37,7 @@ class CartState extends Equatable {
     this.couponCode,
     this.couponApplied = false,
     this.errorMessage,
+    this.syncStatus = CartSyncStatus.synced,
   });
 
   CartState copyWith({
@@ -48,6 +51,7 @@ class CartState extends Equatable {
     String? couponCode,
     bool? couponApplied,
     String? errorMessage,
+    CartSyncStatus? syncStatus,
   }) {
     return CartState(
       status: status ?? this.status,
@@ -60,6 +64,7 @@ class CartState extends Equatable {
       couponCode: couponCode ?? this.couponCode,
       couponApplied: couponApplied ?? this.couponApplied,
       errorMessage: errorMessage ?? this.errorMessage,
+      syncStatus: syncStatus ?? this.syncStatus,
     );
   }
 
@@ -75,5 +80,6 @@ class CartState extends Equatable {
     couponCode,
     couponApplied,
     errorMessage,
+    syncStatus,
   ];
 }

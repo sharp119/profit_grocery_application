@@ -15,4 +15,11 @@ abstract class CouponRepository {
   
   /// Increment usage count for a coupon
   Future<Either<Failure, Coupon>> incrementCouponUsage(String couponId);
+  
+  /// Validate coupon based on code, cart total, and product IDs
+  Future<Either<Failure, Coupon>> validateCoupon({
+    required String code,
+    required double cartTotal,
+    required List<String> productIds,
+  });
 }

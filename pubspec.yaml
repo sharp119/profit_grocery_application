@@ -37,6 +37,7 @@ dependencies:
   rename: ^3.0.2
   sendotp_flutter_sdk: ^0.0.1
   uuid: ^4.3.3
+  connectivity_plus: ^5.0.2
   # sendotp_flutter_sdk: ^0.1.1
 
 dev_dependencies:

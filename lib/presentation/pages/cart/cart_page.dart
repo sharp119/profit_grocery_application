@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../main.dart';
 import '../../blocs/cart/cart_bloc.dart';
 import '../../blocs/cart/cart_event.dart';
 import '../../blocs/cart/cart_state.dart';
@@ -18,7 +19,7 @@ class CartPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CartBloc()..add(LoadCart()),
+      create: (context) => sl<CartBloc>()..add(const LoadCart()),
       child: const _CartPageContent(),
     );
   }
@@ -49,7 +50,7 @@ class _CartPageContentState extends State<_CartPageContent> {
   }
 
   void _clearCart() {
-    context.read<CartBloc>().add(ClearCart());
+    context.read<CartBloc>().add(const ClearCart());
   }
 
   void _applyCoupon(String code) {
@@ -60,7 +61,7 @@ class _CartPageContentState extends State<_CartPageContent> {
   }
 
   void _removeCoupon() {
-    context.read<CartBloc>().add(RemoveCoupon());
+    context.read<CartBloc>().add(const RemoveCoupon());
   }
   
   void _navigateToCheckout() {

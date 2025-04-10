@@ -15,7 +15,10 @@ abstract class CartRepository {
     required String name,
     required String image,
     required double price,
-    required int quantity,
+    required int quantity, 
+    double? mrp, 
+    required String? categoryId, 
+    String? categoryName,
   });
   
   /// Update item quantity in cart

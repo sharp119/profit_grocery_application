@@ -1,16 +1,28 @@
+import 'dart:async';
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
+import '../../../core/errors/failures.dart';
 import '../../../domain/entities/cart.dart';
+import '../../../domain/entities/product.dart';
+import '../../../domain/repositories/cart_repository.dart';
+import '../../../services/cart/cart_sync_service.dart';
 import 'cart_event.dart';
 import 'cart_state.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
-  // In a real app, we would inject repository dependencies here
-  // final CartRepository _cartRepository;
-  // final CouponRepository _couponRepository;
+  final CartRepository _cartRepository;
+  final CartSyncService? _cartSyncService;
+  StreamSubscription<CartSyncStatus>? _syncSubscription;
 
-  CartBloc() : super(const CartState()) {
+  CartBloc({
+    required CartRepository cartRepository,
+    CartSyncService? cartSyncService,
+  }) : _cartRepository = cartRepository,
+       _cartSyncService = cartSyncService,
+       super(const CartState()) {
     on<LoadCart>(_onLoadCart);
     on<AddToCart>(_onAddToCart);
     on<UpdateCartItemQuantity>(_onUpdateCartItemQuantity);
@@ -18,6 +30,21 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<ClearCart>(_onClearCart);
     on<ApplyCoupon>(_onApplyCoupon);
     on<RemoveCoupon>(_onRemoveCoupon);
+    on<ForceSync>(_onForceSync);
+    on<UpdateSyncStatus>(_onUpdateSyncStatus);
+    
+    // Subscribe to sync status changes if sync service is available
+    if (_cartSyncService != null) {
+      _syncSubscription = _cartSyncService!.syncStream.listen((status) {
+        add(UpdateSyncStatus(status));
+      });
+    }
+  }
+  
+  @override
+  Future<void> close() {
+    _syncSubscription?.cancel();
+    return super.close();
   }
 
   Future<void> _onLoadCart(
@@ -27,25 +54,49 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     try {
       emit(state.copyWith(status: CartStatus.loading));
 
-      // In a real app, we would fetch the cart from a repository
-      // For now, we'll use mock data
-      final items = _getMockCartItems();
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
       
-      // Calculate cart totals
-      final calculations = _calculateCartTotals(items, state.couponCode);
-      
-      // Simulate network delay
-      await Future.delayed(const Duration(milliseconds: 800));
+      if (userId == null || userId.isEmpty) {
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
+        ));
+        return;
+      }
 
-      emit(state.copyWith(
-        status: CartStatus.loaded,
-        items: items,
-        subtotal: calculations.subtotal,
-        discount: calculations.discount,
-        deliveryFee: calculations.deliveryFee,
-        total: calculations.total,
-        itemCount: calculations.itemCount,
-      ));
+      // Get cart from repository
+      final result = await _cartRepository.getCart(userId);
+      
+      await result.fold(
+        (failure) {
+          emit(state.copyWith(
+            status: CartStatus.error,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (cart) {
+          // Check sync status if sync service is available
+          if (_cartSyncService != null) {
+            _cartSyncService!.getCurrentSyncStatus().then((syncStatus) {
+              add(UpdateSyncStatus(syncStatus));
+            });
+          }
+          
+          emit(state.copyWith(
+            status: CartStatus.loaded,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.error,
@@ -54,54 +105,73 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  void _onAddToCart(
+  Future<void> _onAddToCart(
     AddToCart event,
     Emitter<CartState> emit,
-  ) {
+  ) async {
     try {
       final product = event.product;
       final quantity = event.quantity;
       
-      // Check if product already exists in cart
-      final existingItemIndex = state.items.indexWhere(
-        (item) => item.productId == product.id,
-      );
+      emit(state.copyWith(status: CartStatus.loading));
       
-      final updatedItems = List<CartItem>.from(state.items);
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
       
-      if (existingItemIndex != -1) {
-        // Update quantity of existing item
-        final existingItem = updatedItems[existingItemIndex];
-        updatedItems[existingItemIndex] = CartItem(
-          productId: existingItem.productId,
-          name: existingItem.name,
-          image: existingItem.image,
-          price: existingItem.price,
-          quantity: existingItem.quantity + quantity,
-        );
-      } else {
-        // Add new item to cart
-        updatedItems.add(CartItem(
-          productId: product.id,
-          name: product.name,
-          image: product.image,
-          price: product.price,
-          quantity: quantity,
+      if (userId == null || userId.isEmpty) {
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
         ));
+        return;
       }
+
+      // Use sync service if available
+      final result = _cartSyncService != null
+        ? await _cartSyncService!.addToCart(
+            userId: userId,
+            productId: product.id,
+            name: product.name,
+            image: product.image,
+            price: product.price,
+            quantity: quantity,
+            categoryId: product.categoryId,
+            categoryName: product.categoryName,
+          )
+        : await _cartRepository.addToCart(
+            userId: userId,
+            productId: product.id,
+            name: product.name,
+            image: product.image,
+            price: product.price,
+            quantity: quantity,
+            mrp: product.mrp,
+            categoryId: product.categoryId,
+            categoryName: product.categoryName,
+          );
       
-      // Calculate cart totals
-      final calculations = _calculateCartTotals(updatedItems, state.couponCode);
-      
-      emit(state.copyWith(
-        status: CartStatus.loaded,
-        items: updatedItems,
-        subtotal: calculations.subtotal,
-        discount: calculations.discount,
-        deliveryFee: calculations.deliveryFee,
-        total: calculations.total,
-        itemCount: calculations.itemCount,
-      ));
+      await result.fold(
+        (failure) {
+          emit(state.copyWith(
+            status: CartStatus.error,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (cart) {
+          emit(state.copyWith(
+            status: CartStatus.loaded,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.error,
@@ -110,56 +180,62 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  void _onUpdateCartItemQuantity(
+  Future<void> _onUpdateCartItemQuantity(
     UpdateCartItemQuantity event,
     Emitter<CartState> emit,
-  ) {
+  ) async {
     try {
       final productId = event.productId;
       final quantity = event.quantity;
       
-      // Update or remove item
-      List<CartItem> updatedItems = List<CartItem>.from(state.items);
+      emit(state.copyWith(status: CartStatus.loading));
       
-      if (quantity <= 0) {
-        // Remove item from cart
-        updatedItems.removeWhere((item) => item.productId == productId);
-      } else {
-        // Update item quantity
-        final itemIndex = updatedItems.indexWhere(
-          (item) => item.productId == productId,
-        );
-        
-        if (itemIndex != -1) {
-          final item = updatedItems[itemIndex];
-          updatedItems[itemIndex] = CartItem(
-            productId: item.productId,
-            name: item.name,
-            image: item.image,
-            price: item.price,
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
+      
+      if (userId == null || userId.isEmpty) {
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
+        ));
+        return;
+      }
+
+      // Use sync service if available
+      final result = _cartSyncService != null
+        ? await _cartSyncService!.updateCartItemQuantity(
+            userId: userId,
+            productId: productId,
+            quantity: quantity,
+          )
+        : await _cartRepository.updateCartItemQuantity(
+            userId: userId,
+            productId: productId,
             quantity: quantity,
           );
-        }
-      }
       
-      // Calculate cart totals
-      final calculations = _calculateCartTotals(updatedItems, state.couponCode);
-      
-      // Update coupon status if cart is empty
-      final couponApplied = updatedItems.isEmpty ? false : state.couponApplied;
-      final couponCode = updatedItems.isEmpty ? null : state.couponCode;
-      
-      emit(state.copyWith(
-        status: CartStatus.loaded,
-        items: updatedItems,
-        subtotal: calculations.subtotal,
-        discount: calculations.discount,
-        deliveryFee: calculations.deliveryFee,
-        total: calculations.total,
-        itemCount: calculations.itemCount,
-        couponApplied: couponApplied,
-        couponCode: couponCode,
-      ));
+      await result.fold(
+        (failure) {
+          emit(state.copyWith(
+            status: CartStatus.error,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (cart) {
+          emit(state.copyWith(
+            status: CartStatus.loaded,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.error,
@@ -168,35 +244,59 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  void _onRemoveFromCart(
+  Future<void> _onRemoveFromCart(
     RemoveFromCart event,
     Emitter<CartState> emit,
-  ) {
+  ) async {
     try {
       final productId = event.productId;
       
-      // Remove item from cart
-      final updatedItems = List<CartItem>.from(state.items)
-        ..removeWhere((item) => item.productId == productId);
+      emit(state.copyWith(status: CartStatus.loading));
       
-      // Calculate cart totals
-      final calculations = _calculateCartTotals(updatedItems, state.couponCode);
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
       
-      // Update coupon status if cart is empty
-      final couponApplied = updatedItems.isEmpty ? false : state.couponApplied;
-      final couponCode = updatedItems.isEmpty ? null : state.couponCode;
+      if (userId == null || userId.isEmpty) {
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
+        ));
+        return;
+      }
+
+      // Use sync service if available
+      final result = _cartSyncService != null
+        ? await _cartSyncService!.removeFromCart(
+            userId: userId,
+            productId: productId,
+          )
+        : await _cartRepository.removeFromCart(
+            userId: userId,
+            productId: productId,
+          );
       
-      emit(state.copyWith(
-        status: CartStatus.loaded,
-        items: updatedItems,
-        subtotal: calculations.subtotal,
-        discount: calculations.discount,
-        deliveryFee: calculations.deliveryFee,
-        total: calculations.total,
-        itemCount: calculations.itemCount,
-        couponApplied: couponApplied,
-        couponCode: couponCode,
-      ));
+      await result.fold(
+        (failure) {
+          emit(state.copyWith(
+            status: CartStatus.error,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (cart) {
+          emit(state.copyWith(
+            status: CartStatus.loaded,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.error,
@@ -205,22 +305,51 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  void _onClearCart(
+  Future<void> _onClearCart(
     ClearCart event,
     Emitter<CartState> emit,
-  ) {
+  ) async {
     try {
-      emit(state.copyWith(
-        status: CartStatus.loaded,
-        items: const [],
-        subtotal: 0.0,
-        discount: 0.0,
-        deliveryFee: 0.0,
-        total: 0.0,
-        itemCount: 0,
-        couponApplied: false,
-        couponCode: null,
-      ));
+      emit(state.copyWith(status: CartStatus.loading));
+      
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
+      
+      if (userId == null || userId.isEmpty) {
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
+        ));
+        return;
+      }
+
+      // Use sync service if available
+      final result = _cartSyncService != null
+        ? await _cartSyncService!.clearCart(userId)
+        : await _cartRepository.clearCart(userId);
+      
+      await result.fold(
+        (failure) {
+          emit(state.copyWith(
+            status: CartStatus.error,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (cart) {
+          emit(state.copyWith(
+            status: CartStatus.loaded,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.error,
@@ -244,37 +373,57 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       
       emit(state.copyWith(status: CartStatus.applyingCoupon));
       
-      // Simulate coupon validation delay
-      await Future.delayed(const Duration(seconds: 1));
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
       
-      // In a real app, we would validate the coupon with a repository
-      // For now, we'll just accept any coupon
-      final code = event.code;
-      
-      // Check if coupon is valid (mock validation)
-      final isValidCoupon = code.isNotEmpty;
-      
-      if (isValidCoupon) {
-        // Apply coupon discount (mock discount calculation)
-        final updatedCalculations = _calculateCartTotals(
-          state.items,
-          code,
-          forceCouponApply: true,
-        );
-        
+      if (userId == null || userId.isEmpty) {
         emit(state.copyWith(
-          status: CartStatus.couponApplied,
-          couponCode: code,
-          couponApplied: true,
-          discount: updatedCalculations.discount,
-          total: updatedCalculations.total,
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
         ));
-      } else {
-        emit(state.copyWith(
-          status: CartStatus.couponError,
-          errorMessage: 'Invalid coupon code',
-        ));
+        return;
       }
+
+      // Use sync service if available
+      final result = _cartSyncService != null
+        ? await _cartSyncService!.applyCoupon(
+            userId: userId,
+            couponCode: event.code,
+          )
+        : await _cartRepository.applyCoupon(
+            userId: userId,
+            couponCode: event.code,
+          );
+      
+      await result.fold(
+        (failure) {
+          if (failure is CouponFailure) {
+            emit(state.copyWith(
+              status: CartStatus.couponError,
+              errorMessage: failure.message,
+            ));
+          } else {
+            emit(state.copyWith(
+              status: CartStatus.error,
+              errorMessage: _mapFailureToMessage(failure),
+            ));
+          }
+        },
+        (cart) {
+          emit(state.copyWith(
+            status: CartStatus.couponApplied,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.couponError,
@@ -283,21 +432,51 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
 
-  void _onRemoveCoupon(
+  Future<void> _onRemoveCoupon(
     RemoveCoupon event,
     Emitter<CartState> emit,
-  ) {
+  ) async {
     try {
-      // Calculate cart totals without coupon
-      final calculations = _calculateCartTotals(state.items, null);
+      emit(state.copyWith(status: CartStatus.loading));
       
-      emit(state.copyWith(
-        status: CartStatus.loaded,
-        couponCode: null,
-        couponApplied: false,
-        discount: 0.0,
-        total: calculations.total,
-      ));
+      // Get user ID from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString(AppConstants.userTokenKey);
+      
+      if (userId == null || userId.isEmpty) {
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: 'User not authenticated',
+        ));
+        return;
+      }
+
+      // Use sync service if available
+      final result = _cartSyncService != null
+        ? await _cartSyncService!.removeCoupon(userId)
+        : await _cartRepository.removeCoupon(userId);
+      
+      await result.fold(
+        (failure) {
+          emit(state.copyWith(
+            status: CartStatus.error,
+            errorMessage: _mapFailureToMessage(failure),
+          ));
+        },
+        (cart) {
+          emit(state.copyWith(
+            status: CartStatus.loaded,
+            items: cart.items,
+            subtotal: cart.subtotal,
+            discount: cart.discount,
+            deliveryFee: cart.deliveryFee,
+            total: cart.total,
+            itemCount: cart.itemCount,
+            couponCode: cart.appliedCouponCode,
+            couponApplied: cart.appliedCouponCode != null,
+          ));
+        },
+      );
     } catch (e) {
       emit(state.copyWith(
         status: CartStatus.error,
@@ -306,95 +485,48 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
   }
   
-  // Cart calculations helper
-  _CartCalculations _calculateCartTotals(
-    List<CartItem> items,
-    String? couponCode, {
-    bool forceCouponApply = false,
-  }) {
-    // Calculate subtotal
-    final subtotal = items.fold<double>(
-      0.0,
-      (sum, item) => sum + (item.price * item.quantity),
-    );
-    
-    // Calculate item count
-    final itemCount = items.fold<int>(
-      0,
-      (sum, item) => sum + item.quantity,
-    );
-    
-    // Calculate delivery fee
-    final deliveryFee = subtotal >= 500 ? 0.0 : 40.0; // Free delivery above ₹500
-    
-    // Calculate discount
-    double discount = 0.0;
-    if ((couponCode != null && couponCode.isNotEmpty) || forceCouponApply) {
-      // Apply mock discount based on coupon code or cart value
-      if (couponCode == 'WELCOME10' || (forceCouponApply && subtotal < 300)) {
-        discount = subtotal * 0.1; // 10% discount
-      } else if (couponCode == 'SAVE15' || (forceCouponApply && subtotal >= 300 && subtotal < 500)) {
-        discount = subtotal * 0.15; // 15% discount
-      } else if (couponCode == 'FIRST20' || (forceCouponApply && subtotal >= 500)) {
-        discount = subtotal * 0.2; // 20% discount
-      } else {
-        // Default discount
-        discount = subtotal * 0.1; // 10% discount
+  Future<void> _onForceSync(
+    ForceSync event,
+    Emitter<CartState> emit,
+  ) async {
+    try {
+      if (_cartSyncService == null) {
+        emit(state.copyWith(
+          syncStatus: CartSyncStatus.error,
+        ));
+        return;
       }
+      
+      emit(state.copyWith(
+        syncStatus: CartSyncStatus.syncing,
+      ));
+      
+      final syncStatus = await _cartSyncService!.forceSync();
+      
+      emit(state.copyWith(
+        syncStatus: syncStatus,
+      ));
+      
+      // Reload cart after sync
+      add(const LoadCart());
+    } catch (e) {
+      emit(state.copyWith(
+        syncStatus: CartSyncStatus.error,
+      ));
     }
-    
-    // Calculate total
-    final total = subtotal - discount + deliveryFee;
-    
-    return _CartCalculations(
-      subtotal: subtotal,
-      discount: discount,
-      deliveryFee: deliveryFee,
-      total: total,
-      itemCount: itemCount,
-    );
   }
   
-  // Mock data methods
-  List<CartItem> _getMockCartItems() {
-    return [
-      CartItem(
-        productId: '1',
-        name: 'Fresh Organic Tomatoes',
-        price: 49.0,
-        quantity: 2,
-        image: '${AppConstants.assetsProductsPath}1.png',
-      ),
-      CartItem(
-        productId: '2',
-        name: 'Premium Basmati Rice 5kg',
-        price: 299.0,
-        quantity: 1,
-        image: '${AppConstants.assetsProductsPath}2.png',
-      ),
-      CartItem(
-        productId: '3',
-        name: 'Whole Wheat Atta 10kg',
-        price: 450.0,
-        quantity: 1,
-        image: '${AppConstants.assetsProductsPath}3.png',
-      ),
-    ];
+  void _onUpdateSyncStatus(
+    UpdateSyncStatus event,
+    Emitter<CartState> emit,
+  ) {
+    emit(state.copyWith(
+      syncStatus: event.status,
+    ));
   }
-}
 
-class _CartCalculations {
-  final double subtotal;
-  final double discount;
-  final double deliveryFee;
-  final double total;
-  final int itemCount;
-
-  _CartCalculations({
-    required this.subtotal,
-    required this.discount,
-    required this.deliveryFee,
-    required this.total,
-    required this.itemCount,
-  });
+  // Helper method to map failures to user-friendly messages
+  String _mapFailureToMessage(Failure failure) {
+    return failure.message;
+  }
 }
