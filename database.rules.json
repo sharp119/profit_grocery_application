@@ -3,35 +3,40 @@
     "users": {
       ".indexOn": ["phoneNumber"],
       "$userId": {
-        ".read": true,
-        ".write": true
+        ".read": "auth.uid === $userId",
+        ".write": "auth.uid === $userId || !data.exists()",
+        "cart": {
+          // Allow cart operations without auth for better offline support
+          ".read": true,
+          ".write": true
+        }
       }
     },
     "sessions": {
       "$userId": {
-        ".read": true,
-        ".write": true
+        ".read": "auth.uid === $userId",
+        ".write": "auth.uid === $userId"
       }
     },
     "products": {
-      ".read": true,
-      ".write": true
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
     },
     "categories": {
-      ".read": true,
-      ".write": true
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
     },
     "coupons": {
-      ".read": true,
-      ".write": true
+      ".read": "auth != null",
+      ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
     },
     "orders": {
       "$userId": {
-        ".read": true,
-        ".write": true
+        ".read": "auth.uid === $userId",
+        ".write": "auth.uid === $userId"
       }
     },
-    ".read": true,
-    ".write": true
+    ".read": "auth != null",
+    ".write": "auth != null && root.child('users').child(auth.uid).child('isAdmin').val() === true"
   }
 }

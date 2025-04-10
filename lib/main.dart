@@ -93,8 +93,8 @@ Future<void> setupRemoteConfig() async {
     AppConstants.featuredCategoriesKey: jsonEncode([]),
     AppConstants.appMaintenanceKey: false,
     AppConstants.minAppVersionKey: '1.0.0',
-    // Set database preference to use Realtime Database
-    'prefer_firestore': false,
+    // Add a new default for database preference
+    'prefer_firestore': true,
   });
   
   await remoteConfig.fetchAndActivate();
