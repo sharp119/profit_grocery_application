@@ -547,23 +547,39 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                   return Container(
                                     width: 160.w,
                                     margin: EdgeInsets.only(right: 12.w),
-                                    child: UniversalProductCard(
-                                      product: similarProduct,
-                                      onTap: () {
-                                        // Navigate to the similar product details
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ProductDetailsPage(
-                                              productId: similarProduct.id,
-                                              categoryId: similarProduct.categoryId,
-                                            ),
-                                          ),
+                                    child: BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
+                                      builder: (context, detailsState) {
+                                        // Get the quantity from the current state if available
+                                        int quantity = 0;
+                                        if (detailsState.cartItems.isNotEmpty) {
+                                          final cartItem = detailsState.cartItems
+                                              .where((item) => item.productId == similarProduct.id)
+                                              .toList();
+                                          if (cartItem.isNotEmpty) {
+                                            quantity = cartItem.first.quantity;
+                                          }
+                                        }
+                                        
+                                        return UniversalProductCard(
+                                          product: similarProduct,
+                                          onTap: () {
+                                            // Navigate to the similar product details
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (context) => ProductDetailsPage(
+                                                  productId: similarProduct.id,
+                                                  categoryId: similarProduct.categoryId,
+                                                ),
+                                              ),
+                                            );
+                                          },
+                                          // Use quantity from state if available, otherwise default to 0
+                                          quantity: quantity,
+                                          backgroundColor: categoryColor,
+                                          useBackgroundColor: true,
                                         );
                                       },
-                                      quantity: 0, // Default quantity
-                                      backgroundColor: categoryColor,
-                                      useBackgroundColor: true,
                                     ),
                                   );
                                 },

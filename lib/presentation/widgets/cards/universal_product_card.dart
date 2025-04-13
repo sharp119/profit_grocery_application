@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../domain/entities/product.dart';
 import '../../../presentation/blocs/cart/cart_bloc.dart';
+import '../../../presentation/blocs/cart/cart_state.dart';
 import '../../../presentation/blocs/category_products/category_products_bloc.dart';
 import '../../../presentation/blocs/home/home_bloc.dart';
 import '../../../presentation/blocs/product_details/product_details_bloc.dart';
@@ -82,12 +83,32 @@ class UniversalProductCard extends StatelessWidget {
       }
     }
     
+    // Get the current quantity from CartBloc if available
+    int currentQuantity = quantity; // Default to the provided quantity
+    
+    try {
+      final cartBloc = BlocProvider.of<CartBloc>(context);
+      final cartState = cartBloc.state;
+      
+      if (cartState.status == CartStatus.loaded) {
+        // Look for this product in the current cart
+        final cartItem = cartState.items.where((item) => item.productId == displayProduct.id).toList();
+        if (cartItem.isNotEmpty) {
+          // Found in cart, use the quantity from cart
+          currentQuantity = cartItem.first.quantity;
+        }
+      }
+    } catch (e) {
+      // CartBloc not available, continue with provided quantity
+      CartLogger.info('UNIVERSAL_PRODUCT_CARD', 'CartBloc not available, using provided quantity: $quantity');
+    }
+    
     // Return the ProductCard with consistent behavior
     return ProductCard.fromEntity(
       product: displayProduct,
       onTap: onTap,
       onQuantityChanged: handleQuantityChanged,
-      quantity: quantity,
+      quantity: currentQuantity,
       backgroundColor: cardBackgroundColor,
     );
   }

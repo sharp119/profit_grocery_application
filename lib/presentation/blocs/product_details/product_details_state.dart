@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
+import '../../../domain/entities/cart.dart';
 import '../../../domain/entities/product.dart';
 
 enum ProductDetailsStatus {
@@ -18,6 +19,7 @@ class ProductDetailsState extends Equatable {
   final double? cartTotalAmount;
   final Map<String, int> cartQuantities;
   final Map<String, Color> subcategoryColors;
+  final List<CartItem> cartItems;
 
   const ProductDetailsState({
     this.status = ProductDetailsStatus.initial,
@@ -27,6 +29,7 @@ class ProductDetailsState extends Equatable {
     this.cartTotalAmount,
     this.cartQuantities = const {},
     this.subcategoryColors = const {},
+    this.cartItems = const [],
   });
 
   ProductDetailsState copyWith({
@@ -37,6 +40,7 @@ class ProductDetailsState extends Equatable {
     double? cartTotalAmount,
     Map<String, int>? cartQuantities,
     Map<String, Color>? subcategoryColors,
+    List<CartItem>? cartItems,
   }) {
     return ProductDetailsState(
       status: status ?? this.status,
@@ -46,6 +50,7 @@ class ProductDetailsState extends Equatable {
       cartTotalAmount: cartTotalAmount ?? this.cartTotalAmount,
       cartQuantities: cartQuantities ?? this.cartQuantities,
       subcategoryColors: subcategoryColors ?? this.subcategoryColors,
+      cartItems: cartItems ?? this.cartItems,
     );
   }
 
@@ -58,5 +63,6 @@ class ProductDetailsState extends Equatable {
     cartTotalAmount,
     cartQuantities,
     subcategoryColors,
+    cartItems,
   ];
 }

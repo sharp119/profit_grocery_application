@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:profit_grocery_application/domain/entities/cart.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../data/inventory/bestseller_products.dart';
@@ -85,10 +86,35 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
         cartTotalAmount = product.price * quantity;
       }
       
+      // Create a new CartItem
+      final cartItem = CartItem(
+        productId: product.id,
+        name: product.name,
+        image: product.image,
+        price: product.price,
+        mrp: product.mrp,
+        quantity: (updatedCartQuantities[product.id] ?? 0),
+        categoryId: product.categoryId,
+        categoryName: product.categoryName ?? "",
+      );
+      
+      // Update cart items list
+      final updatedCartItems = List<CartItem>.from(state.cartItems);
+      final existingItemIndex = updatedCartItems.indexWhere((item) => item.productId == product.id);
+      
+      if (existingItemIndex != -1) {
+        // Replace existing item with updated quantity
+        updatedCartItems[existingItemIndex] = cartItem;
+      } else {
+        // Add new item
+        updatedCartItems.add(cartItem);
+      }
+      
       emit(state.copyWith(
         cartQuantities: updatedCartQuantities,
         cartItemCount: cartItemCount,
         cartTotalAmount: cartTotalAmount,
+        cartItems: updatedCartItems,
       ));
     } catch (e) {
       // Don't show the full exception message to the user
@@ -116,10 +142,15 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
       final cartItemCount = updatedCartQuantities.values.fold<int>(0, (sum, qty) => sum + qty);
       final cartTotalAmount = _calculateCartTotal(updatedCartQuantities);
       
+      // Remove item from cart items list
+      final updatedCartItems = List<CartItem>.from(state.cartItems);
+      updatedCartItems.removeWhere((item) => item.productId == productId);
+      
       emit(state.copyWith(
         cartQuantities: updatedCartQuantities,
         cartItemCount: cartItemCount,
         cartTotalAmount: cartTotalAmount,
+        cartItems: updatedCartItems,
       ));
     } catch (e) {
       emit(state.copyWith(
