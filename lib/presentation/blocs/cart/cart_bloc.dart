@@ -210,9 +210,20 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       );
     } catch (e, stackTrace) {
       CartLogger.error('BLOC', 'Exception adding to cart', e, stackTrace);
+      
+      // Check if the error is a format exception for better user experience
+      String errorMessage;
+      if (e.toString().contains('FormatException')) {
+        // Don't show the technical details to the user
+        errorMessage = 'Unable to add product to cart';
+      } else {
+        // For other errors, provide a generic message
+        errorMessage = 'Failed to add product to cart';
+      }
+      
       emit(state.copyWith(
         status: CartStatus.error,
-        errorMessage: 'Failed to add to cart: $e',
+        errorMessage: errorMessage,
       ));
     }
   }
@@ -539,6 +550,18 @@ class CartBloc extends Bloc<CartEvent, CartState> {
 
   // Helper method to map failures to user-friendly messages
   String _mapFailureToMessage(Failure failure) {
+    // Check if the failure message contains FormatException
+    if (failure.message.contains('FormatException')) {
+      return 'Unable to add product to cart';
+    }
+    
+    // Check for other common errors that should be user-friendly
+    if (failure.message.contains('double') || 
+        failure.message.contains('parse') ||
+        failure.message.contains('Invalid')) {
+      return 'Unable to process this product';
+    }
+    
     return failure.message;
   }
 }

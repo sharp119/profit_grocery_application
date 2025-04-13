@@ -101,10 +101,24 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
     return BlocConsumer<ProductDetailsBloc, ProductDetailsState>(
       listener: (context, state) {
         if (state.status == ProductDetailsStatus.error) {
+          // Check if the error is a FormatException
+          final errorMsg = state.errorMessage ?? 'An error occurred';
+          final isFormatException = errorMsg.contains('FormatException');
+          
+          // Only show user-friendly messages
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(state.errorMessage ?? 'An error occurred'),
+              content: Text(isFormatException 
+                  ? 'Unable to add product to cart' 
+                  : errorMsg),
               backgroundColor: Colors.red,
+              action: SnackBarAction(
+                label: 'DISMISS',
+                textColor: Colors.white,
+                onPressed: () {
+                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                },
+              ),
             ),
           );
         }

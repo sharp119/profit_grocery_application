@@ -147,12 +147,22 @@ class UniversalCartService {
         // Create specific message
         String cartMessage = "yoyo product with id ${product.id} got added in the cart";
         
-        // Write entry with specific message
+        // Handle the product.price to make sure it's a valid double
+        double safePrice = 0.0;
+        try {
+          safePrice = product.price;
+        } catch (e) {
+          CartLogger.error('UNIVERSAL_CART', 'Error parsing product price: ${e.toString()}', e);
+          // Use a default price if there's an error
+          safePrice = 0.0;
+        }
+        
+        // Write entry with specific message, ensuring all values are of the correct type
         await ref.set({
-          'product_id': product.id,
-          'product_name': product.name,
+          'product_id': product.id.toString(), // Ensure it's a string
+          'product_name': product.name.toString(), // Ensure it's a string
           'quantity': quantity,
-          'price': product.price,
+          'price': safePrice, // Use the safe price
           'timestamp': DateTime.now().millisecondsSinceEpoch,
           'message': cartMessage,
           'test_entry': true
@@ -165,7 +175,9 @@ class UniversalCartService {
         CartLogger.info('UNIVERSAL_CART', 'User ID not available for Firebase logging');
       }
     } catch (e) {
+      // Handle errors without showing the user
       CartLogger.error('UNIVERSAL_CART', 'Failed to write data to Firebase', e);
+      print('Failed to log to Firebase: ${e.toString()}');
     }
   }
   
@@ -173,19 +185,33 @@ class UniversalCartService {
   void _showSnackbarFeedback(BuildContext context, Product product, int quantity) {
     try {
       if (quantity > 0) {
-        String cartMessage = "yoyo product with id ${product.id} got added in the cart";
+        String cartMessage = "Product added to cart successfully";
         
-        // Show a snackbar message
+        // Show a snackbar message - don't include product ID as that could be related to the format error
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('✅ $cartMessage'),
+            content: Text('✅ ${product.name} added to cart'),
             backgroundColor: Colors.green,
             duration: Duration(seconds: 2),
           ),
         );
       }
     } catch (e) {
+      // Log the error but don't show it to the user
       CartLogger.error('UNIVERSAL_CART', 'Error showing snackbar', e);
+      
+      // Try to show a simpler message if the normal one fails
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Product added to cart'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      } catch (_) {
+        // Ignore if even the simple message fails
+      }
     }
   }
   

@@ -75,7 +75,15 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
       
       // Calculate new cart total and count
       final cartItemCount = updatedCartQuantities.values.fold<int>(0, (sum, qty) => sum + qty);
-      final cartTotalAmount = _calculateCartTotal(updatedCartQuantities);
+      
+      // Safely calculate cart total with error handling
+      double cartTotalAmount;
+      try {
+        cartTotalAmount = _calculateCartTotal(updatedCartQuantities);
+      } catch (e) {
+        // If calculation fails, use a default total based on product price
+        cartTotalAmount = product.price * quantity;
+      }
       
       emit(state.copyWith(
         cartQuantities: updatedCartQuantities,
@@ -83,9 +91,10 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
         cartTotalAmount: cartTotalAmount,
       ));
     } catch (e) {
+      // Don't show the full exception message to the user
       emit(state.copyWith(
         status: ProductDetailsStatus.error,
-        errorMessage: 'Failed to add to cart: $e',
+        errorMessage: 'Unable to add product to cart',
       ));
     }
   }
@@ -127,8 +136,28 @@ class ProductDetailsBloc extends Bloc<ProductDetailsEvent, ProductDetailsState> 
     // In a real app, we'd use a repository to get product prices
     // For mock data, we'll use fixed prices
     cartQuantities.forEach((productId, quantity) {
-      // Mock price calculation based on product ID
-      final price = double.parse(productId) * 50.0;
+      // Extract numeric value from product ID or use a default price
+      double price = 50.0; // Default price
+      
+      try {
+        if (productId.contains('_')) {
+          // If ID has format like "category_subcategory_123", extract the number at the end
+          final parts = productId.split('_');
+          if (parts.isNotEmpty) {
+            final lastPart = parts.last;
+            if (int.tryParse(lastPart) != null) {
+              price = int.parse(lastPart) * 50.0;
+            }
+          }
+        } else if (int.tryParse(productId) != null) {
+          // If ID is a simple number
+          price = int.parse(productId) * 50.0;
+        }
+      } catch (e) {
+        // If any error occurs, use the default price
+        price = 50.0;
+      }
+      
       total += price * quantity;
     });
     

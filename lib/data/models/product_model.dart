@@ -1,6 +1,21 @@
 import '../../domain/entities/product.dart';
 
 class ProductModel extends Product {
+  // Helper method to safely parse price values
+  static double _parsePrice(dynamic value) {
+    if (value == null) return 0.0;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      try {
+        return double.parse(value);
+      } catch (e) {
+        print('Error parsing price: $e');
+        return 0.0;
+      }
+    }
+    return 0.0;
+  }
   const ProductModel({
     required String id,
     required String name,
@@ -36,8 +51,8 @@ class ProductModel extends Product {
       name: json['name'],
       image: json['image'],
       description: json['description'],
-      price: json['price'].toDouble(),
-      mrp: json['mrp']?.toDouble(),
+      price: _parsePrice(json['price']),
+      mrp: json['mrp'] != null ? _parsePrice(json['mrp']) : null,
       inStock: json['inStock'] ?? true,
       categoryId: json['categoryId'],
       subcategoryId: json['subcategoryId'],

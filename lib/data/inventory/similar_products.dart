@@ -77,9 +77,16 @@ class SimilarProducts {
     if (product.id.contains('_')) {
       final parts = product.id.split('_');
       if (parts.length >= 2) {
-        final subcategory = parts[0];
+        // Try the first two parts together (e.g., "vegetables_fruits")
+        final subcategory = "${parts[0]}_${parts[1]}";
         if (BestsellerProducts.subcategoryColors.containsKey(subcategory)) {
           return BestsellerProducts.subcategoryColors[subcategory]!;
+        }
+        
+        // If that fails, just try the first part
+        final category = parts[0];
+        if (BestsellerProducts.subcategoryColors.containsKey(category)) {
+          return BestsellerProducts.subcategoryColors[category]!;
         }
       }
     }

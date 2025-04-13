@@ -98,15 +98,29 @@ class ProductGrid extends StatelessWidget {
         final product = products[index];
         final quantity = cartQuantities[product.id] ?? 0;
         
-        // Get the background color based on subcategory ID
+        // Get the background color based on product category or ID
         Color? backgroundColor;
         
-        // Try subcategoryId first, then fall back to categoryId if needed
+        // First try using subcategory or category ID with provided colors
         if (subCategoryColors != null) {
           if (product.subcategoryId != null && subCategoryColors!.containsKey(product.subcategoryId)) {
             backgroundColor = subCategoryColors![product.subcategoryId];
           } else if (product.categoryId != null && subCategoryColors!.containsKey(product.categoryId)) {
             backgroundColor = subCategoryColors![product.categoryId];
+          } else if (product.id.contains('_')) {
+            // Try to extract base category from product ID (e.g., "vegetables_fruits_1")
+            final parts = product.id.split('_');
+            if (parts.length >= 2) {
+              // Try first two parts combined
+              final baseCategory = "${parts[0]}_${parts[1]}";
+              if (subCategoryColors!.containsKey(baseCategory)) {
+                backgroundColor = subCategoryColors![baseCategory];
+              } 
+              // Try just the first part
+              else if (subCategoryColors!.containsKey(parts[0])) {
+                backgroundColor = subCategoryColors![parts[0]];
+              }
+            }
           }
         }
         
