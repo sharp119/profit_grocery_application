@@ -3,7 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../domain/entities/product.dart';
 import '../../../domain/entities/cart.dart';
-import '../cards/product_card.dart';
+import '../cards/universal_product_card.dart';
 
 /// A reusable grid view for displaying product cards
 class ProductGrid extends StatelessWidget {
@@ -110,12 +110,12 @@ class ProductGrid extends StatelessWidget {
           }
         }
         
-        return ProductCard.fromEntity(
+        return UniversalProductCard(
           product: product,
           onTap: () => onProductTap(product),
-          onQuantityChanged: (newQuantity) => onQuantityChanged(product, newQuantity),
           quantity: quantity,
           backgroundColor: backgroundColor,
+          useBackgroundColor: backgroundColor != null,
         );
       },
     );

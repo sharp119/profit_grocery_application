@@ -14,6 +14,7 @@ import '../../domain/repositories/coupon_repository.dart';
 import '../../presentation/blocs/cart/cart_bloc.dart';
 import '../../services/cart/cart_initializer.dart';
 import '../../services/cart/cart_sync_service.dart';
+import '../../services/cart/universal/universal_cart_service.dart';
 import '../network/network_info.dart';
 
 final sl = GetIt.instance;
@@ -81,6 +82,9 @@ Future<void> initCartDependencies() async {
   
   // Register the cart sync service
   sl.registerLazySingleton<CartSyncService>(() => cartSyncService);
+  
+  // Register the universal cart service (it's a singleton itself, but register for DI)
+  sl.registerLazySingleton<UniversalCartService>(() => UniversalCartService());
 
   // BLoC
   sl.registerFactory(

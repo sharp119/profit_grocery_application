@@ -4,7 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:profit_grocery_application/data/inventory/product_inventory.dart';
 import 'package:profit_grocery_application/data/inventory/similar_products.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
-import 'package:profit_grocery_application/presentation/widgets/cards/product_card.dart';
+import 'package:profit_grocery_application/presentation/widgets/cards/universal_product_card.dart';
+import 'package:profit_grocery_application/services/cart/universal/universal_cart_service.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -532,7 +533,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                   return Container(
                                     width: 160.w,
                                     margin: EdgeInsets.only(right: 12.w),
-                                    child: ProductCard.fromEntity(
+                                    child: UniversalProductCard(
                                       product: similarProduct,
                                       onTap: () {
                                         // Navigate to the similar product details
@@ -546,13 +547,9 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                           ),
                                         );
                                       },
-                                      onQuantityChanged: (quantity) {
-                                        // Add the similar product to cart
-                                        context.read<ProductDetailsBloc>().add(
-                                          AddToCart(similarProduct, quantity)
-                                        );
-                                      },
+                                      quantity: 0, // Default quantity
                                       backgroundColor: categoryColor,
+                                      useBackgroundColor: true,
                                     ),
                                   );
                                 },

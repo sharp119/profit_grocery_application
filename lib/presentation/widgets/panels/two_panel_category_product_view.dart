@@ -7,6 +7,7 @@ import '../../../domain/entities/product.dart';
 import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
 import '../grids/product_grid.dart';
+import '../../../services/cart/universal/universal_cart_service.dart';
 
 /// A two-panel layout with categories on the left and products on the right
 class TwoPanelCategoryProductView extends StatefulWidget {
@@ -294,10 +295,12 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                               
                               SizedBox(height: 8.h),
                               
-                              // Products grid
+                              // Products grid - Using the same grid widget with consistent behavior
                               ProductGrid(
                                 products: products,
                                 onProductTap: widget.onProductTap,
+                                // We still need to provide this for backward compatibility,
+                                // but the universal card will use the centralized service
                                 onQuantityChanged: widget.onQuantityChanged,
                                 cartQuantities: widget.cartQuantities,
                                 crossAxisCount: 2,
