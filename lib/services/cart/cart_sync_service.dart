@@ -35,9 +35,13 @@ class CartSyncService {
     required this.connectivity,
   });
   
+  // Set of paths that have been keepSynced to avoid duplicates
+  final Set<String> _syncedPaths = {};
+
   // Initialize the sync service
   Future<void> init() async {
     CartLogger.log('SYNC', 'Initializing CartSyncService');
+    
     // Listen for connectivity changes
     _connectivitySubscription = connectivity.onConnectivityChanged.listen((result) {
       CartLogger.info('SYNC', 'Connectivity changed: $result');
@@ -50,7 +54,31 @@ class CartSyncService {
     
     // Check if we have pending operations and try to process them
     await _processPendingOperations();
+    
+    // Set up persistence only once during initialization
+    try {
+      // Call without await since method returns void
+      database.setPersistenceEnabled(true);
+      CartLogger.log('SYNC', 'Firebase RTDB persistence enabled successfully');
+    } catch (e) {
+      CartLogger.info('SYNC', 'Firebase RTDB persistence already configured');
+    }
+    
     CartLogger.success('SYNC', 'CartSyncService initialized');
+  }
+  
+  // Helper to safely enable syncing on a path only once
+  Future<void> ensurePathSynced(String path) async {
+    if (!_syncedPaths.contains(path)) {
+      try {
+        final ref = database.ref().child(path);
+        await ref.keepSynced(true);
+        _syncedPaths.add(path);
+        CartLogger.info('SYNC', 'Path synced: $path');
+      } catch (e) {
+        CartLogger.error('SYNC', 'Failed to sync path: $path', e);
+      }
+    }
   }
   
   // Dispose the sync service

@@ -23,27 +23,44 @@ class CategoryProductsPage extends StatelessWidget {
     return BlocProvider(
       create: (context) => CategoryProductsBloc()
         ..add(LoadCategoryProducts(categoryId: categoryId)),
-      child: Scaffold(
-        backgroundColor: AppTheme.primaryColor,
-        appBar: AppBar(
+      child: BlocListener<CategoryProductsBloc, CategoryProductsState>(
+        listener: (context, state) {
+          // When state changes, check if a product was added to show feedback
+          if (state is CategoryProductsLoaded && state.lastAddedProduct != null) {
+            String cartMessage = "yoyo product with id ${state.lastAddedProduct!.id} got added in the cart";
+            
+            // Show a snackbar message
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('✅ $cartMessage'),
+                backgroundColor: Colors.green,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        },
+        child: Scaffold(
           backgroundColor: AppTheme.primaryColor,
-          title: _buildAppBarTitle(),
-          elevation: 0,
-          actions: _buildAppBarActions(),
-        ),
-        body: SafeArea(
-          child: BlocBuilder<CategoryProductsBloc, CategoryProductsState>(
-            builder: (context, state) {
-              if (state is CategoryProductsInitial || state is CategoryProductsLoading) {
-                return _buildLoadingState();
-              } else if (state is CategoryProductsLoaded) {
-                return _buildLoadedState(context, state);
-              } else if (state is CategoryProductsError) {
-                return _buildErrorState(context, state);
-              } else {
-                return const SizedBox.shrink();
-              }
-            },
+          appBar: AppBar(
+            backgroundColor: AppTheme.primaryColor,
+            title: _buildAppBarTitle(),
+            elevation: 0,
+            actions: _buildAppBarActions(),
+          ),
+          body: SafeArea(
+            child: BlocBuilder<CategoryProductsBloc, CategoryProductsState>(
+              builder: (context, state) {
+                if (state is CategoryProductsInitial || state is CategoryProductsLoading) {
+                  return _buildLoadingState();
+                } else if (state is CategoryProductsLoaded) {
+                  return _buildLoadedState(context, state);
+                } else if (state is CategoryProductsError) {
+                  return _buildErrorState(context, state);
+                } else {
+                  return const SizedBox.shrink();
+                }
+              },
+            ),
           ),
         ),
       ),
@@ -286,6 +303,16 @@ class CategoryProductsPage extends StatelessWidget {
                 UpdateCartQuantity(
                   product: product,
                   quantity: quantity,
+                ),
+              );
+              
+              // Show manual snackbar feedback since we don't have the BlocListener for this call
+              String cartMessage = "yoyo product with id ${product.id} got added in the cart";
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ $cartMessage'),
+                  backgroundColor: Colors.green,
+                  duration: Duration(seconds: 2),
                 ),
               );
             },

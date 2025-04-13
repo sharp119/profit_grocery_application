@@ -63,6 +63,9 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
+  // Database persistence is now handled in CartRemoteDataSourceImpl
+  // to ensure it's only called once and properly tracked
+  
   // Setup Firebase Remote Config
   await setupRemoteConfig();
   

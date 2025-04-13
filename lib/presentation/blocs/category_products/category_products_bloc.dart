@@ -3,6 +3,10 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter/foundation.dart' hide Category;
 import 'package:flutter/material.dart';
+import 'package:firebase_database/firebase_database.dart';
+import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/services/user_service_interface.dart';
+import 'package:profit_grocery_application/utils/cart_logger.dart';
 
 import '../../../data/inventory/product_mapping.dart';
 import '../../../data/models/category_model.dart';
@@ -105,17 +109,53 @@ class CategoryProductsBloc extends Bloc<CategoryProductsEvent, CategoryProductsS
     if (state is CategoryProductsLoaded) {
       final currentState = state as CategoryProductsLoaded;
       
+      // Direct test with Firebase Realtime Database
+      try {
+        final userId = GetIt.instance<IUserService>().getCurrentUserId();
+        if (userId != null) {
+          // Create a simple test path specific to this user's cart
+          final database = GetIt.instance<FirebaseDatabase>();
+          final ref = database.ref().child('carts_test/$userId');
+          
+          // Create specific message
+          String cartMessage = "yoyo product with id ${event.product.id} got added in the cart";
+          
+          // Write entry with specific message
+          ref.set({
+            'product_id': event.product.id,
+            'product_name': event.product.name,
+            'quantity': event.quantity,
+            'price': event.product.price,
+            'timestamp': DateTime.now().millisecondsSinceEpoch,
+            'message': cartMessage,
+            'test_entry': true
+          });
+          
+          // Log the specific message
+          CartLogger.success('CATEGORY_BLOC', cartMessage);
+          print('CART TEST: $cartMessage');
+        }
+      } catch (e) {
+        CartLogger.error('CATEGORY_BLOC', 'Failed to write test data to Firebase', e);
+      }
+      
       // Make a copy of the current cart quantities
       final Map<String, int> updatedQuantities = Map.from(currentState.cartQuantities);
       
       // Update the quantity for the specific product
       if (event.quantity <= 0) {
         updatedQuantities.remove(event.product.id);
+        emit(currentState.copyWith(
+          cartQuantities: updatedQuantities,
+          lastAddedProduct: null
+        ));
       } else {
         updatedQuantities[event.product.id] = event.quantity;
+        emit(currentState.copyWith(
+          cartQuantities: updatedQuantities,
+          lastAddedProduct: event.product
+        ));
       }
-      
-      emit(currentState.copyWith(cartQuantities: updatedQuantities));
     }
   }
 }

@@ -13,6 +13,7 @@ class AppConstants {
   static const String categoriesCollection = 'categories';
   static const String ordersCollection = 'orders';
   static const String couponsCollection = 'coupons';
+  static const String cartsCollection = 'carts';
   
   // Remote Config Keys
   static const String featuredCategoriesKey = 'featured_categories';

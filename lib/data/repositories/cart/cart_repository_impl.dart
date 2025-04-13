@@ -2,6 +2,7 @@ import 'package:dartz/dartz.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 
+import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/exceptions.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/network/network_info.dart';
@@ -19,6 +20,7 @@ class CartRepositoryImpl implements CartRepository {
   final CouponRepository couponRepository;
   final NetworkInfo networkInfo;
   final FirebaseRemoteConfig remoteConfig;
+  final FirebaseDatabase _firebaseDatabase;
 
   CartRepositoryImpl({
     required this.remoteDataSource,
@@ -26,7 +28,7 @@ class CartRepositoryImpl implements CartRepository {
     required this.couponRepository,
     required this.networkInfo,
     required this.remoteConfig,
-  });
+  }) : _firebaseDatabase = FirebaseDatabase.instance;
 
   @override
   Future<Either<Failure, Cart>> getCart(String userId) async {
@@ -88,13 +90,47 @@ class CartRepositoryImpl implements CartRepository {
         categoryName: categoryName,
       );
       
+      // Get current local cart first for immediate UI update
+      final localCart = await localDataSource.getLastCart(userId);
+      
+      // Check if item already exists
+      final existingItemIndex = localCart.items.indexWhere(
+        (item) => item.productId == productId
+      );
+      
+      final List<CartItemModel> updatedItems = List.from(
+        localCart.items.map((item) => item as CartItemModel)
+      );
+      
+      if (existingItemIndex != -1) {
+        // Update existing item quantity
+        final existingItem = updatedItems[existingItemIndex];
+        updatedItems[existingItemIndex] = existingItem.copyWith(
+          quantity: existingItem.quantity + quantity
+        ) as CartItemModel;
+      } else {
+        // Add new item
+        updatedItems.add(cartItem);
+      }
+      
+      // Create updated cart
+      final updatedLocalCart = localCart.copyWith(
+        items: updatedItems
+      ) as CartModel;
+      
+      // Save to local cache immediately for fast UI response
+      await localDataSource.cacheCart(updatedLocalCart);
+      
       // Try to add to remote if online
       if (await networkInfo.isConnected) {
         try {
-          // Add item to remote database
+          // First try direct update for faster response
+          await _directUpdateCart(updatedLocalCart);
+          
+          // Then use the standard data source method
           final updatedCart = await remoteDataSource.addCartItem(userId, cartItem);
           
-          // Cache the updated cart locally
+          // Cache the updated cart locally to ensure consistency
           final cacheSuccess = await localDataSource.cacheCart(updatedCart);
           if (!cacheSuccess) {
             print('Warning: Failed to cache cart locally');
@@ -102,72 +138,12 @@ class CartRepositoryImpl implements CartRepository {
           
           return Right(updatedCart);
         } on ServerException catch (e) {
-          // Fallback to local update
-          final localCart = await localDataSource.getLastCart(userId);
-          
-          // Check if item already exists
-          final existingItemIndex = localCart.items.indexWhere(
-            (item) => item.productId == productId
-          );
-          
-          final List<CartItemModel> updatedItems = List.from(
-            localCart.items.map((item) => item as CartItemModel)
-          );
-          
-          if (existingItemIndex != -1) {
-            // Update existing item quantity
-            final existingItem = updatedItems[existingItemIndex];
-            updatedItems[existingItemIndex] = existingItem.copyWith(
-              quantity: existingItem.quantity + quantity
-            );
-          } else {
-            // Add new item
-            updatedItems.add(cartItem);
-          }
-          
-          // Create updated cart
-          final updatedCart = localCart.copyWith(
-            items: updatedItems
-          );
-          
-          // Save to local cache
-          await localDataSource.cacheCart(updatedCart);
-          
-          return Right(updatedCart);
+          // Already updated locally, so just return the local cart
+          return Right(updatedLocalCart);
         }
       } else {
-        // Offline mode - update local cache only
-        final localCart = await localDataSource.getLastCart(userId);
-        
-        // Check if item already exists
-        final existingItemIndex = localCart.items.indexWhere(
-          (item) => item.productId == productId
-        );
-        
-        final List<CartItemModel> updatedItems = List.from(
-          localCart.items.map((item) => item as CartItemModel)
-        );
-        
-        if (existingItemIndex != -1) {
-          // Update existing item quantity
-          final existingItem = updatedItems[existingItemIndex];
-          updatedItems[existingItemIndex] = existingItem.copyWith(
-            quantity: existingItem.quantity + quantity
-          );
-        } else {
-          // Add new item
-          updatedItems.add(cartItem);
-        }
-        
-        // Create updated cart
-        final updatedCart = localCart.copyWith(
-          items: updatedItems
-        );
-        
-        // Save to local cache
-        await localDataSource.cacheCart(updatedCart);
-        
-        return Right(updatedCart);
+        // Already updated locally, so just return the local cart
+        return Right(updatedLocalCart);
       }
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -181,9 +157,46 @@ class CartRepositoryImpl implements CartRepository {
     required int quantity,
   }) async {
     try {
+      // First, update local cache for immediate UI feedback
+      final localCart = await localDataSource.getLastCart(userId);
+      
+      // Find item index
+      final itemIndex = localCart.items.indexWhere(
+        (item) => item.productId == productId
+      );
+      
+      if (itemIndex == -1) {
+        return Left(NotFoundFailure(message: 'Item not found in cart'));
+      }
+      
+      final List<CartItemModel> updatedItems = List.from(
+        localCart.items.map((item) => item as CartItemModel)
+      );
+      
+      if (quantity <= 0) {
+        // Remove item if quantity is 0 or negative
+        updatedItems.removeAt(itemIndex);
+      } else {
+        // Update item quantity
+        final item = updatedItems[itemIndex];
+        updatedItems[itemIndex] = item.copyWith(quantity: quantity) as CartItemModel;
+      }
+      
+      // Create updated cart
+      final updatedLocalCart = localCart.copyWith(
+        items: updatedItems
+      ) as CartModel;
+      
+      // Save to local cache immediately
+      await localDataSource.cacheCart(updatedLocalCart);
+      
       // Try to update remote if online
       if (await networkInfo.isConnected) {
         try {
+          // First try direct update for faster response
+          await _directUpdateCart(updatedLocalCart);
+          
+          // Then use standard data source
           final updatedCart = await remoteDataSource.updateCartItemQuantity(userId, productId, quantity);
           
           // Cache the updated cart locally
@@ -191,76 +204,12 @@ class CartRepositoryImpl implements CartRepository {
           
           return Right(updatedCart);
         } on ServerException catch (e) {
-          // Fallback to local update
-          final localCart = await localDataSource.getLastCart(userId);
-          
-          // Find item index
-          final itemIndex = localCart.items.indexWhere(
-            (item) => item.productId == productId
-          );
-          
-          if (itemIndex == -1) {
-            return Left(NotFoundFailure(message: 'Item not found in cart'));
-          }
-          
-          final List<CartItemModel> updatedItems = List.from(
-            localCart.items.map((item) => item as CartItemModel)
-          );
-          
-          if (quantity <= 0) {
-            // Remove item if quantity is 0 or negative
-            updatedItems.removeAt(itemIndex);
-          } else {
-            // Update item quantity
-            final item = updatedItems[itemIndex];
-            updatedItems[itemIndex] = item.copyWith(quantity: quantity);
-          }
-          
-          // Create updated cart
-          final updatedCart = localCart.copyWith(
-            items: updatedItems
-          );
-          
-          // Save to local cache
-          await localDataSource.cacheCart(updatedCart);
-          
-          return Right(updatedCart);
+          // Already updated locally, so just return the local cart
+          return Right(updatedLocalCart);
         }
       } else {
-        // Offline mode - update local cache only
-        final localCart = await localDataSource.getLastCart(userId);
-        
-        // Find item index
-        final itemIndex = localCart.items.indexWhere(
-          (item) => item.productId == productId
-        );
-        
-        if (itemIndex == -1) {
-          return Left(NotFoundFailure(message: 'Item not found in cart'));
-        }
-        
-        final List<CartItemModel> updatedItems = List.from(
-          localCart.items.map((item) => item as CartItemModel)
-        );
-        
-        if (quantity <= 0) {
-          // Remove item if quantity is 0 or negative
-          updatedItems.removeAt(itemIndex);
-        } else {
-          // Update item quantity
-          final item = updatedItems[itemIndex];
-          updatedItems[itemIndex] = item.copyWith(quantity: quantity);
-        }
-        
-        // Create updated cart
-        final updatedCart = localCart.copyWith(
-          items: updatedItems
-        );
-        
-        // Save to local cache
-        await localDataSource.cacheCart(updatedCart);
-        
-        return Right(updatedCart);
+        // Already updated locally, so just return the local cart
+        return Right(updatedLocalCart);
       }
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -273,9 +222,29 @@ class CartRepositoryImpl implements CartRepository {
     required String productId,
   }) async {
     try {
-      // Try to remove from remote if online
+      // First update locally for immediate response
+      final localCart = await localDataSource.getLastCart(userId);
+      
+      // Remove item
+      final List<CartItemModel> updatedItems = List.from(
+        localCart.items.map((item) => item as CartItemModel)
+      )..removeWhere((item) => item.productId == productId);
+      
+      // Create updated cart
+      final updatedLocalCart = localCart.copyWith(
+        items: updatedItems
+      ) as CartModel;
+      
+      // Save to local cache immediately
+      await localDataSource.cacheCart(updatedLocalCart);
+      
+      // Try to update remote if online
       if (await networkInfo.isConnected) {
         try {
+          // First try direct update for faster response
+          await _directUpdateCart(updatedLocalCart);
+          
+          // Then use standard data source
           final updatedCart = await remoteDataSource.removeCartItem(userId, productId);
           
           // Cache the updated cart locally
@@ -283,42 +252,12 @@ class CartRepositoryImpl implements CartRepository {
           
           return Right(updatedCart);
         } on ServerException catch (e) {
-          // Fallback to local update
-          final localCart = await localDataSource.getLastCart(userId);
-          
-          // Remove item
-          final List<CartItemModel> updatedItems = List.from(
-            localCart.items.map((item) => item as CartItemModel)
-          )..removeWhere((item) => item.productId == productId);
-          
-          // Create updated cart
-          final updatedCart = localCart.copyWith(
-            items: updatedItems
-          );
-          
-          // Save to local cache
-          await localDataSource.cacheCart(updatedCart);
-          
-          return Right(updatedCart);
+          // Already updated locally, so just return the local cart
+          return Right(updatedLocalCart);
         }
       } else {
-        // Offline mode - update local cache only
-        final localCart = await localDataSource.getLastCart(userId);
-        
-        // Remove item
-        final List<CartItemModel> updatedItems = List.from(
-          localCart.items.map((item) => item as CartItemModel)
-        )..removeWhere((item) => item.productId == productId);
-        
-        // Create updated cart
-        final updatedCart = localCart.copyWith(
-          items: updatedItems
-        );
-        
-        // Save to local cache
-        await localDataSource.cacheCart(updatedCart);
-        
-        return Right(updatedCart);
+        // Already updated locally, so just return the local cart
+        return Right(updatedLocalCart);
       }
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
@@ -519,5 +458,24 @@ class CartRepositoryImpl implements CartRepository {
       cartTotal: cartTotal,
       productIds: productIds,
     );
+  }
+  
+  // Helper method to directly update cart in RTDB for immediate feedback
+  Future<void> _directUpdateCart(CartModel cart) async {
+    try {
+      final userId = cart.userId;
+      
+      // Use direct Firebase reference for better performance
+      final ref = _firebaseDatabase.ref().child('${AppConstants.cartsCollection}/$userId');
+      
+      // Convert cart to JSON
+      final cartJson = cart.toJson();
+      
+      // Write to Firebase
+      await ref.set(cartJson);
+    } catch (e) {
+      // Just log the error, don't throw
+      print('Error directly updating cart: $e');
+    }
   }
 }

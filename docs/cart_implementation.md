@@ -80,39 +80,39 @@ We've redesigned the cart functionality with several important improvements:
 6. Data is pushed to Firebase when online
 7. CartSyncService handles offline operations
 
-## Firebase Realtime Database Structure (Updated)
+## Firebase Realtime Database Structure (Simplified)
 
-Cart data is now stored in the following improved structure:
+Cart data is now stored in the following simple structure:
 
 ```
 cartItems/
-  └── {sessionId}/
-      └── {userId}/
-          ├── {productId}/
-          │   ├── quantity: int
-          │   ├── addedAt: timestamp
-          │   └── updatedAt: timestamp (optional)
-          ├── {productId2}/
-          │   └── ...
-          └── coupon/
-              ├── id: string
-              ├── code: string
-              ├── discount: double
-              └── appliedAt: timestamp
+  └── {userId}/
+      ├── {productId}/
+      │   ├── quantity: int
+      │   ├── addedAt: timestamp
+      │   └── updatedAt: timestamp (optional)
+      ├── {productId2}/
+      │   └── ...
+      └── coupon/
+          ├── id: string
+          ├── code: string
+          ├── discount: double
+          └── appliedAt: timestamp
 ```
 
-### Key Benefits of New Structure
+### Key Benefits of Simplified Structure
 
-- **Session-Based**: Supports multiple sessions per user (different devices)
+- **Cleaner Paths**: Simpler paths without the need for complex path sanitization
 - **Minimal Storage**: Only stores essential cart data, not duplicating product details
-- **Scalable**: Can easily handle large numbers of users and sessions
+- **Scalable**: Can easily handle large numbers of users
 - **Performance**: Efficient for both reading and writing cart data
+- **Reduced Complexity**: No session management required
 
 ### Implementation Details
 
 - Each product is stored by its ID, containing only quantity and timestamps
 - Full product details are fetched from the products collection when needed
-- Session ID is generated using UUID v4 and stored in SharedPreferences
+- IDs are sanitized to ensure compatibility with Firebase path rules
 - Timestamps use Firebase's `ServerValue.timestamp` to ensure consistency
 
 ## Debugging

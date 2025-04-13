@@ -1,3 +1,4 @@
+import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -205,7 +206,54 @@ class _HomePageContentState extends State<_HomePageContent> {
       homeBloc: context.read<HomeBloc>(),
     );
     
-    // Use the bridge to update cart
+    // Direct test with Firebase Realtime Database
+    try {
+      final userId = GetIt.instance<IUserService>().getCurrentUserId();
+      if (userId != null) {
+        // Create a simple test path specific to this user's cart
+        final database = GetIt.instance<FirebaseDatabase>();
+        final ref = database.ref().child('carts_test/$userId');
+        
+        // Create specific message
+        String cartMessage = "yoyo product with id ${product.id} got added in the cart";
+        
+        // Write entry with specific message
+        ref.set({
+          'product_id': product.id,
+          'product_name': product.name,
+          'quantity': quantity,
+          'price': product.price,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'message': cartMessage,
+          'test_entry': true
+        });
+        
+        // Log the specific message
+        CartLogger.success('HOME_PAGE', cartMessage);
+        print('CART TEST: $cartMessage');
+        
+        // Also show a notification with the specific message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('✅ $cartMessage'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      CartLogger.error('HOME_PAGE', 'Failed to write test data to Firebase', e);
+      
+      // Show error notification
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('❌ Firebase test failed: ${e.toString().split('\n').first}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+    
+    // Use the bridge to update cart as usual
     if (quantity <= 0) {
       bridge.removeFromCart(product);
     } else {

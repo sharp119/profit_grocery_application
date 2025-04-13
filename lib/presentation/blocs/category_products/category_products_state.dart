@@ -30,6 +30,7 @@ class CategoryProductsLoaded extends CategoryProductsState {
   final Category selectedCategory;
   final Map<String, int> cartQuantities;
   final Map<String, Color> subcategoryColors;
+  final Product? lastAddedProduct; // Product that was last added to cart
   
   const CategoryProductsLoaded({
     required this.categories,
@@ -37,6 +38,7 @@ class CategoryProductsLoaded extends CategoryProductsState {
     required this.selectedCategory,
     required this.cartQuantities,
     this.subcategoryColors = const {},
+    this.lastAddedProduct,
   });
   
   /// Total number of products in the cart
@@ -70,6 +72,7 @@ class CategoryProductsLoaded extends CategoryProductsState {
     Category? selectedCategory,
     Map<String, int>? cartQuantities,
     Map<String, Color>? subcategoryColors,
+    Product? lastAddedProduct,
   }) {
     return CategoryProductsLoaded(
       categories: categories ?? this.categories,
@@ -77,16 +80,18 @@ class CategoryProductsLoaded extends CategoryProductsState {
       selectedCategory: selectedCategory ?? this.selectedCategory,
       cartQuantities: cartQuantities ?? this.cartQuantities,
       subcategoryColors: subcategoryColors ?? this.subcategoryColors,
+      lastAddedProduct: lastAddedProduct, // No default - it should be null unless specified
     );
   }
 
   @override
-  List<Object> get props => [
+  List<Object?> get props => [
     categories,
     categoryProducts,
     selectedCategory,
     cartQuantities,
     subcategoryColors,
+    lastAddedProduct,
   ];
 }
 
