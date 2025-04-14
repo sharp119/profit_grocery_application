@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../main.dart';
+import '../../../services/asset_cache_service.dart';
 import '../../blocs/cart/cart_bloc.dart';
 import '../../blocs/cart/cart_event.dart';
 import '../../blocs/cart/cart_state.dart';
@@ -36,9 +37,39 @@ class _CartPageContentState extends State<_CartPageContent> {
   final TextEditingController _couponController = TextEditingController();
   
   @override
+  void initState() {
+    super.initState();
+    // Preload cart images when the page is loaded
+    _preloadCartImages();
+  }
+  
+  @override
   void dispose() {
     _couponController.dispose();
     super.dispose();
+  }
+  
+  // Preload cart images to prevent loading errors
+  void _preloadCartImages() {
+    final cartBloc = context.read<CartBloc>();
+    
+    // Wait for cart to load, then preload images
+    cartBloc.stream.listen((state) {
+      if (state.status == CartStatus.loaded) {
+        for (final item in state.items) {
+          if (item.image.isNotEmpty) {
+            // Preload each cart item image using AssetCacheService
+            try {
+              // Import lazy-loaded to avoid circular dependencies
+              final assetCacheService = AssetCacheService();
+              assetCacheService.cacheAsset(item.image);
+            } catch (e) {
+              print('Error preloading image: $e');
+            }
+          }
+        }
+      }
+    });
   }
 
   void _updateCartItemQuantity(String productId, int quantity) {

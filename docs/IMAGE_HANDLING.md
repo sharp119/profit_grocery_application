@@ -2,6 +2,22 @@
 
 This document explains the image handling system implemented in the ProfitGrocery application and provides guidelines for future development.
 
+## Recent Fixes
+
+### Cart Page Image Loading
+
+Fixed an issue where the cart page would crash due to image loading errors. The specific error was:
+```
+_ImageState._getListener.<anonymous closure>.<anonymous closure>
+ImageStreamCompleter.reportError
+```
+
+The fix involved:
+1. Replacing direct `Image.asset` calls with our custom `ImageLoader` widget
+2. Adding proper error handling and fallback mechanisms
+3. Implementing image preloading for cart items 
+4. Adding robust path normalization to handle different asset path formats
+
 ## Common Issues Fixed
 
 1. **Image Loading Errors**: Fixed the `ImageStreamCompleter.reportError` exception that was occurring due to improper image loading.

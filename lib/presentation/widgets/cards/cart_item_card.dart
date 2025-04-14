@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/cart.dart';
+import '../image_loader.dart';
 
 /// A reusable widget for displaying cart item cards
 class CartItemCard extends StatelessWidget {
@@ -79,7 +80,7 @@ class CartItemCard extends StatelessWidget {
                 // Product image with discount badge
                 Stack(
                   children: [
-                    // Product image
+                    // Product image with our improved ImageLoader
                     Container(
                       width: 80.w,
                       height: 80.w,
@@ -88,9 +89,16 @@ class CartItemCard extends StatelessWidget {
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                       padding: EdgeInsets.all(8.w),
-                      child: Image.asset(
+                      child: ImageLoader.asset(
                         image,
                         fit: BoxFit.contain,
+                        width: 64.w,
+                        height: 64.w,
+                        errorWidget: Icon(
+                          Icons.image_not_supported,
+                          color: Colors.grey.withOpacity(0.5),
+                          size: 24.sp,
+                        ),
                       ),
                     ),
                     

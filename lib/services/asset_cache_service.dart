@@ -33,6 +33,12 @@ class AssetCacheService {
         'assets/categories/3.png',
         'assets/categories/4.png',
         'assets/categories/5.png',
+        // Add product images that are likely to be used in cart
+        'assets/products/1.png',
+        'assets/products/2.png',
+        'assets/products/3.png',
+        'assets/products/4.png',
+        'assets/products/5.png',
       ]);
       
       _isInitialized = true;
