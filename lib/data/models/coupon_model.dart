@@ -1,12 +1,14 @@
 import '../../domain/entities/coupon.dart';
+import '../../domain/entities/coupon_enums.dart';
 
 class CouponModel extends Coupon {
   const CouponModel({
     required String id,
     required String code,
-    required String type,
+    required CouponType type,
     required double value,
     double? minPurchase,
+    double? maxDiscount,
     DateTime? startDate,
     DateTime? endDate,
     bool isActive = true,
@@ -23,6 +25,7 @@ class CouponModel extends Coupon {
     type: type,
     value: value,
     minPurchase: minPurchase,
+    maxDiscount: maxDiscount,
     startDate: startDate,
     endDate: endDate,
     isActive: isActive,
@@ -37,26 +40,30 @@ class CouponModel extends Coupon {
 
   // Factory constructor to create a CouponModel from JSON
   factory CouponModel.fromJson(Map<String, dynamic> json) {
+    // Convert string type to enum
+    final CouponType couponType = _getCouponTypeFromString(json['type']?.toString() ?? 'percentage');
+    
     return CouponModel(
-      id: json['id'] ?? '',
-      code: json['code'] ?? '',
-      type: json['type'] ?? 'percentage',
+      id: json['id']?.toString() ?? '',
+      code: json['code']?.toString() ?? '',
+      type: couponType,
       value: (json['value'] ?? 0.0).toDouble(),
       minPurchase: json['minPurchase'] != null ? (json['minPurchase']).toDouble() : null,
-      startDate: json['startDate'] != null ? DateTime.fromMillisecondsSinceEpoch(json['startDate']) : null,
-      endDate: json['endDate'] != null ? DateTime.fromMillisecondsSinceEpoch(json['endDate']) : null,
+      maxDiscount: json['maxDiscount'] != null ? (json['maxDiscount']).toDouble() : null,
+      startDate: json['startDate'] != null ? DateTime.fromMillisecondsSinceEpoch(json['startDate'] as int) : null,
+      endDate: json['endDate'] != null ? DateTime.fromMillisecondsSinceEpoch(json['endDate'] as int) : null,
       isActive: json['isActive'] ?? false,
-      usageLimit: json['usageLimit'],
-      usageCount: json['usageCount'] ?? 0,
+      usageLimit: json['usageLimit'] as int?,
+      usageCount: json['usageCount'] as int? ?? 0,
       applicableProductIds: json['applicableProductIds'] != null 
-          ? List<String>.from(json['applicableProductIds']) 
+          ? List<String>.from(json['applicableProductIds'] as List) 
           : null,
       applicableCategories: json['applicableCategories'] != null 
-          ? List<String>.from(json['applicableCategories']) 
+          ? List<String>.from(json['applicableCategories'] as List) 
           : null,
-      description: json['description'],
-      freeProductId: json['freeProductId'],
-      conditions: json['conditions'],
+      description: json['description']?.toString(),
+      freeProductId: json['freeProductId']?.toString(),
+      conditions: json['conditions'] as Map<String, dynamic>?,
     );
   }
 
@@ -65,9 +72,10 @@ class CouponModel extends Coupon {
     return {
       'id': id,
       'code': code,
-      'type': type,
+      'type': _typeToString(type),
       'value': value,
       'minPurchase': minPurchase,
+      'maxDiscount': maxDiscount,
       'startDate': startDate?.millisecondsSinceEpoch,
       'endDate': endDate?.millisecondsSinceEpoch,
       'isActive': isActive,
@@ -85,9 +93,10 @@ class CouponModel extends Coupon {
   CouponModel copyWith({
     String? id,
     String? code,
-    String? type,
+    CouponType? type,
     double? value,
     double? minPurchase,
+    double? maxDiscount,
     DateTime? startDate,
     DateTime? endDate,
     bool? isActive,
@@ -105,6 +114,7 @@ class CouponModel extends Coupon {
       type: type ?? this.type,
       value: value ?? this.value,
       minPurchase: minPurchase ?? this.minPurchase,
+      maxDiscount: maxDiscount ?? this.maxDiscount,
       startDate: startDate ?? this.startDate,
       endDate: endDate ?? this.endDate,
       isActive: isActive ?? this.isActive,
@@ -116,5 +126,48 @@ class CouponModel extends Coupon {
       freeProductId: freeProductId ?? this.freeProductId,
       conditions: conditions ?? this.conditions,
     );
+  }
+  
+  // Helper method to convert string to CouponType enum
+  static CouponType _getCouponTypeFromString(String typeString) {
+    switch (typeString.toLowerCase()) {
+      case 'percentage':
+        return CouponType.percentage;
+      case 'fixed_amount':
+      case 'fixedamount':
+        return CouponType.fixedAmount;
+      case 'free_delivery':
+      case 'freedelivery':
+        return CouponType.freeDelivery;
+      case 'buy_one_get_one':
+      case 'buyonegetone':
+      case 'bogo':
+        return CouponType.buyOneGetOne;
+      case 'free_product':
+      case 'freeproduct':
+        return CouponType.freeProduct;
+      case 'conditional':
+        return CouponType.conditional;
+      default:
+        return CouponType.percentage;
+    }
+  }
+  
+  // Helper method to convert CouponType enum to string
+  static String _typeToString(CouponType type) {
+    switch (type) {
+      case CouponType.percentage:
+        return 'percentage';
+      case CouponType.fixedAmount:
+        return 'fixed_amount';
+      case CouponType.freeDelivery:
+        return 'free_delivery';
+      case CouponType.buyOneGetOne:
+        return 'buy_one_get_one';
+      case CouponType.freeProduct:
+        return 'free_product';
+      case CouponType.conditional:
+        return 'conditional';
+    }
   }
 }

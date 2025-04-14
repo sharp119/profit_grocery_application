@@ -1,11 +1,14 @@
 import 'package:equatable/equatable.dart';
 
+import 'coupon_enums.dart';
+
 class Coupon extends Equatable {
   final String id;
   final String code;
-  final String type; // 'percentage', 'fixed', 'free_product', 'conditional'
+  final CouponType type;
   final double value; // Discount value or percentage
   final double? minPurchase; // Minimum purchase requirement
+  final double? maxDiscount; // Maximum discount amount (for percentage coupons)
   final DateTime? startDate;
   final DateTime? endDate;
   final bool isActive;
@@ -23,6 +26,7 @@ class Coupon extends Equatable {
     required this.type,
     required this.value,
     this.minPurchase,
+    this.maxDiscount,
     this.startDate,
     this.endDate,
     this.isActive = true,
@@ -81,6 +85,7 @@ class Coupon extends Equatable {
     type,
     value,
     minPurchase,
+    maxDiscount,
     startDate,
     endDate,
     isActive,

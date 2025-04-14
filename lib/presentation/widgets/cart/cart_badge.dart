@@ -2,6 +2,7 @@ import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:profit_grocery_application/domain/entities/cart_enums.dart';
 import 'package:profit_grocery_application/services/cart/cart_sync_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
 
@@ -151,7 +152,7 @@ class FloatingCartBadge extends StatelessWidget {
                             fontSize: smallFontSize,
                           ),
                         ),
-                        if (state.syncStatus == CartSyncStatus.pendingSync ||
+                        if (state.syncStatus == CartSyncStatus.pending ||
                             state.syncStatus == CartSyncStatus.syncing)
                           Row(
                             mainAxisSize: MainAxisSize.min,
@@ -243,15 +244,10 @@ class CartSyncIndicator extends StatelessWidget {
             icon = Icons.sync;
             message = 'Syncing cart...';
             break;
-          case CartSyncStatus.pendingSync:
+          case CartSyncStatus.pending:
             color = Colors.orange;
             icon = Icons.sync_problem;
             message = 'Cart will sync when online';
-            break;
-          case CartSyncStatus.partialSync:
-            color = Colors.orange;
-            icon = Icons.sync_problem;
-            message = 'Some cart items not synced';
             break;
           case CartSyncStatus.offline:
             color = Colors.red.shade300;
@@ -263,6 +259,7 @@ class CartSyncIndicator extends StatelessWidget {
             icon = Icons.error_outline;
             message = 'Sync error';
             break;
+          case CartSyncStatus.synced:
           default:
             return const SizedBox.shrink();
         }
@@ -289,8 +286,7 @@ class CartSyncIndicator extends StatelessWidget {
                   fontSize: 12.sp,
                 ),
               ),
-              if (state.syncStatus == CartSyncStatus.pendingSync ||
-                  state.syncStatus == CartSyncStatus.partialSync ||
+              if (state.syncStatus == CartSyncStatus.pending ||
                   state.syncStatus == CartSyncStatus.error)
                 IconButton(
                   iconSize: 14.r,

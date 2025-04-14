@@ -1,7 +1,8 @@
 import 'package:equatable/equatable.dart';
 
+import '../../../domain/entities/cart.dart';
+import '../../../domain/entities/cart_enums.dart';
 import '../../../domain/entities/product.dart';
-import '../../../services/cart/cart_sync_service.dart';
 
 abstract class CartEvent extends Equatable {
   const CartEvent();
@@ -71,4 +72,15 @@ class UpdateSyncStatus extends CartEvent {
 
   @override
   List<Object?> get props => [status];
+}
+
+/// Event to directly update cart items from an external source
+/// This helps ensure consistent cart state across all screens
+class UpdateCartItems extends CartEvent {
+  final List<CartItem> items;
+
+  const UpdateCartItems(this.items);
+
+  @override
+  List<Object?> get props => [items];
 }

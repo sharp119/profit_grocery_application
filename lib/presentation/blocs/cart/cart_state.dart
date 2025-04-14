@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/cart.dart';
-import '../../../services/cart/cart_sync_service.dart';
+import '../../../domain/entities/cart_enums.dart';
 
 enum CartStatus {
   initial,
