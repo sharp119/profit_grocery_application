@@ -1,11 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
 
 import '../../../core/constants/app_theme.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
+import '../../../domain/repositories/cart_repository.dart';
+import '../../../services/cart/cart_sync_service.dart';
 import '../product_details/product_details_page.dart';
+import '../../blocs/cart/cart_bloc.dart';
+import '../../blocs/cart/cart_event.dart';
 import '../../blocs/category_products/category_products_bloc.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/panels/two_panel_category_product_view.dart';
@@ -20,6 +27,28 @@ class CategoryProductsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Try to access the CartBloc - if not available, provide it
+    CartBloc? cartBloc;
+    try {
+      cartBloc = BlocProvider.of<CartBloc>(context, listen: false);
+    } catch (_) {
+      // No CartBloc found
+    }
+    
+    if (cartBloc == null) {
+      return BlocProvider(
+        create: (context) => CartBloc(
+          cartRepository: GetIt.instance<CartRepository>(),
+          cartSyncService: GetIt.instance<CartSyncService>(),
+        )..add(const LoadCart()),
+        child: _buildMainContent(context),
+      );
+    } else {
+      return _buildMainContent(context);
+    }
+  }
+  
+  Widget _buildMainContent(BuildContext context) {
     return BlocProvider(
       create: (context) => CategoryProductsBloc()
         ..add(LoadCategoryProducts(categoryId: categoryId)),
@@ -280,53 +309,65 @@ class CategoryProductsPage extends StatelessWidget {
         
         // Category-Product two panel view
         Expanded(
-          child: TwoPanelCategoryProductView(
-            categories: state.categories,
-            categoryProducts: state.categoryProducts,
-            onCategoryTap: (category) {
-              context.read<CategoryProductsBloc>().add(SelectCategory(category));
-            },
-            onProductTap: (product) {
-              // Navigate to product details
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => ProductDetailsPage(
-                    productId: product.id,
-                    categoryId: product.categoryId, // Use product's categoryId to preserve color
-                  ),
-                ),
+          child: BlocBuilder<CartBloc, CartState>(
+            builder: (context, cartState) {
+              return TwoPanelCategoryProductView(
+                categories: state.categories,
+                categoryProducts: state.categoryProducts,
+                onCategoryTap: (category) {
+                  context.read<CategoryProductsBloc>().add(SelectCategory(category));
+                },
+                onProductTap: (product) {
+                  // Navigate to product details
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ProductDetailsPage(
+                        productId: product.id,
+                        categoryId: product.categoryId, // Use product's categoryId to preserve color
+                      ),
+                    ),
+                  );
+                },
+                onQuantityChanged: (product, quantity) {
+                  // Add to CategoryProductsBloc for local state
+                  context.read<CategoryProductsBloc>().add(
+                    UpdateCartQuantity(
+                      product: product,
+                      quantity: quantity,
+                    ),
+                  );
+                  
+                  // Also add to CartBloc for global cart state
+                  if (quantity > 0) {
+                    context.read<CartBloc>().add(AddToCart(product, quantity));
+                  } else {
+                    context.read<CartBloc>().add(RemoveFromCart(product.id));
+                  }
+                  
+                  // Show manual snackbar feedback
+                  String cartMessage = "Product '${product.name}' added to cart";
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('✅ $cartMessage'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                },
+                cartQuantities: state.cartQuantities,
+                cartItemCount: cartState.itemCount ?? 0, // Use the CartBloc's item count with null safety
+                totalAmount: cartState.total ?? 0.0, // Use the CartBloc's total with null safety
+                onCartTap: () {
+                  // Navigate to cart using proper route constant
+                  Navigator.pushNamed(context, AppConstants.cartRoute);
+                },
+                cartPreviewImage: (cartState.itemCount ?? 0) > 0 && state.categoryProducts.isNotEmpty
+                    ? _getCartPreviewImage(state)
+                    : null,
+                subcategoryColors: state.subcategoryColors,
               );
             },
-            onQuantityChanged: (product, quantity) {
-              context.read<CategoryProductsBloc>().add(
-                UpdateCartQuantity(
-                  product: product,
-                  quantity: quantity,
-                ),
-              );
-              
-              // Show manual snackbar feedback since we don't have the BlocListener for this call
-              String cartMessage = "yoyo product with id ${product.id} got added in the cart";
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('✅ $cartMessage'),
-                  backgroundColor: Colors.green,
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            },
-            cartQuantities: state.cartQuantities,
-            cartItemCount: state.cartItemCount,
-            totalAmount: state.cartTotal,
-            onCartTap: () {
-              // Navigate to cart
-              Navigator.pushNamed(context, '/cart');
-            },
-            cartPreviewImage: state.cartItemCount > 0 && state.categoryProducts.isNotEmpty
-                ? _getCartPreviewImage(state)
-                : null,
-            subcategoryColors: state.subcategoryColors,
           ),
         ),
       ],

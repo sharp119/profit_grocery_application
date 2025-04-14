@@ -32,11 +32,13 @@ class CartFAB extends StatelessWidget {
     CartLogger.info('CART_FAB', 'CartFAB build details - itemCount type: ${itemCount.runtimeType}, value: $itemCount');
     CartLogger.info('CART_FAB', 'CartFAB build details - totalAmount type: ${totalAmount?.runtimeType}, value: $totalAmount');
     
-    // Triple-check to ensure we don't show an empty cart
+    // Check if cart has items
     if (itemCount <= 0) {
       CartLogger.info('CART_FAB', 'Cart is empty, not showing FAB');
       return const SizedBox.shrink(); // Don't show when cart is empty
     }
+    
+    CartLogger.info('CART_FAB', 'Building cart FAB with $itemCount items and ₹$totalAmount');
     
     return GestureDetector(
       onTap: onTap,

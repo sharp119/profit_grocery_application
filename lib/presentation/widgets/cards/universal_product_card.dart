@@ -183,16 +183,9 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
         _currentQuantity = newQuantity;
       });
       
-      // Update cart using the unified cart service
-      _cartService.updateCartQuantity(
-        context: context,
-        userId: _userId!,
-        product: _displayProduct,
-        quantity: newQuantity,
-      );
-      
-      // Also update CartBloc directly if available
+      // Use EITHER CartBloc OR UnifiedCartService, not both (which causes double updates)
       try {
+        // Try to use CartBloc first
         final cartBloc = BlocProvider.of<CartBloc>(context);
         
         if (newQuantity <= 0) {
@@ -212,7 +205,13 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
           }
         }
       } catch (_) {
-        // CartBloc not available, already handled by unified cart service
+        // CartBloc not available, use unified cart service instead
+        _cartService.updateCartQuantity(
+          context: context,
+          userId: _userId!,
+          product: _displayProduct,
+          quantity: newQuantity,
+        );
       }
     } catch (e) {
       CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'Error handling quantity change', e);

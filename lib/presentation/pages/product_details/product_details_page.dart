@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/data/inventory/product_inventory.dart';
 import 'package:profit_grocery_application/data/inventory/similar_products.dart';
+import 'package:profit_grocery_application/domain/repositories/cart_repository.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart' as cart_events;
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/universal_product_card.dart';
+import 'package:profit_grocery_application/services/cart/cart_sync_service.dart';
 import 'package:profit_grocery_application/services/cart/universal/universal_cart_service.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -15,7 +20,6 @@ import '../../../domain/entities/product.dart';
 import '../../blocs/product_details/product_details_bloc.dart';
 import '../../blocs/product_details/product_details_event.dart';
 import '../../blocs/product_details/product_details_state.dart';
-import '../../widgets/base_layout.dart';
 import '../../widgets/buttons/cart_fab.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../cart/cart_page.dart';
@@ -32,20 +36,34 @@ class ProductDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use BlocProvider.value to avoid creating a new bloc if it exists in parent context
+    // If there's no CartBloc, wrap the page with one
+    CartBloc? existingCartBloc;
     try {
-      // Check if CartBloc already exists in the context
-      final cartBloc = BlocProvider.of<CartBloc>(context, listen: false);
-      
-      // If found, use existing bloc
+      existingCartBloc = BlocProvider.of<CartBloc>(context, listen: false);
+    } catch (_) {
+      // No CartBloc found
+    }
+    
+    if (existingCartBloc != null) {
+      // Use existing CartBloc
       return BlocProvider(
         create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
         child: _ProductDetailsContent(categoryId: categoryId),
       );
-    } catch (_) {
-      // If not found, create a new bloc
-      return BlocProvider(
-        create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+    } else {
+      // Create new CartBloc
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider(
+            create: (context) => CartBloc(
+              cartRepository: GetIt.instance<CartRepository>(),
+              cartSyncService: GetIt.instance<CartSyncService>(),
+            )..add(const cart_events.LoadCart()),
+          ),
+          BlocProvider(
+            create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+          ),
+        ],
         child: _ProductDetailsContent(categoryId: categoryId),
       );
     }
@@ -87,7 +105,11 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
   }
 
   void _addToCart(Product product) {
+    // Add to ProductDetailsBloc for local state
     context.read<ProductDetailsBloc>().add(AddToCart(product, _quantity));
+    
+    // Also add to CartBloc for global state
+    context.read<CartBloc>().add(cart_events.AddToCart(product, _quantity));
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -112,91 +134,98 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ProductDetailsBloc, ProductDetailsState>(
-      listener: (context, state) {
-        if (state.status == ProductDetailsStatus.error) {
-          // Check if the error is a FormatException
-          final errorMsg = state.errorMessage ?? 'An error occurred';
-          final isFormatException = errorMsg.contains('FormatException');
-          
-          // Only show user-friendly messages
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(isFormatException 
-                  ? 'Unable to add product to cart' 
-                  : errorMsg),
-              backgroundColor: Colors.red,
-              action: SnackBarAction(
-                label: 'DISMISS',
-                textColor: Colors.white,
-                onPressed: () {
-                  ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                },
-              ),
-            ),
-          );
-        }
-      },
-      builder: (context, state) {
-        final cartItemCount = state.cartItemCount;
-        
-        return Scaffold(
-          backgroundColor: AppTheme.backgroundColor,
-          appBar: AppBar(
-            title: const Text('Product Details'),
-          actions: [
-            if (widget.categoryId != null)
-              TextButton.icon(
-                onPressed: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => CategoryProductsPage(categoryId: widget.categoryId),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.grid_view, color: AppTheme.accentColor),
-                label: Text(
-                  'View All',
-                  style: TextStyle(
-                    color: AppTheme.accentColor,
-                    fontSize: 14.sp,
+    // Get the actual cart data from CartBloc
+    return BlocBuilder<CartBloc, CartState>(
+      builder: (context, cartState) {
+        return BlocConsumer<ProductDetailsBloc, ProductDetailsState>(
+          listener: (context, state) {
+            if (state.status == ProductDetailsStatus.error) {
+              // Check if the error is a FormatException
+              final errorMsg = state.errorMessage ?? 'An error occurred';
+              final isFormatException = errorMsg.contains('FormatException');
+              
+              // Only show user-friendly messages
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(isFormatException 
+                      ? 'Unable to add product to cart' 
+                      : errorMsg),
+                  backgroundColor: Colors.red,
+                  action: SnackBarAction(
+                    label: 'DISMISS',
+                    textColor: Colors.white,
+                    onPressed: () {
+                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
+                    },
                   ),
                 ),
+              );
+            }
+          },
+          builder: (context, state) {
+            // Use the cart data from CartBloc instead of product details bloc
+            final cartItemCount = cartState.itemCount;
+            final cartTotalAmount = cartState.total;
+            
+            return Scaffold(
+              backgroundColor: AppTheme.backgroundColor,
+              appBar: AppBar(
+                title: const Text('Product Details'),
+              actions: [
+                if (widget.categoryId != null)
+                  TextButton.icon(
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => CategoryProductsPage(categoryId: widget.categoryId),
+                        ),
+                      );
+                    },
+                    icon: const Icon(Icons.grid_view, color: AppTheme.accentColor),
+                    label: Text(
+                      'View All',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.share_outlined),
+                    onPressed: () {
+                      // Share product
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.favorite_border_outlined),
+                    onPressed: () {
+                      // Add to wishlist
+                    },
+                  ),
+                  SizedBox(width: 8.w),
+                ],
               ),
-              IconButton(
-                icon: const Icon(Icons.share_outlined),
-                onPressed: () {
-                  // Share product
-                },
+              body: state.status == ProductDetailsStatus.loading
+                  ? _buildLoadingState()
+                  : state.product == null
+                      ? Center(child: Text('Product not found', style: TextStyle(color: Colors.white)))
+                      : _buildProductDetails(state.product!),
+              bottomNavigationBar: state.product != null && state.product!.inStock
+                  ? _buildBottomActionBar(state.product!)
+                  : null,
+              // The CartFAB itself checks item count
+              floatingActionButton: CartFAB(
+                itemCount: cartItemCount,
+                totalAmount: cartTotalAmount,
+                onTap: _navigateToCart,
+                previewImagePath: state.product?.image,
               ),
-              IconButton(
-                icon: const Icon(Icons.favorite_border_outlined),
-                onPressed: () {
-                  // Add to wishlist
-                },
-              ),
-              SizedBox(width: 8.w),
-            ],
-          ),
-          body: state.status == ProductDetailsStatus.loading
-              ? _buildLoadingState()
-              : state.product == null
-                  ? Center(child: Text('Product not found', style: TextStyle(color: Colors.white)))
-                  : _buildProductDetails(state.product!),
-          bottomNavigationBar: state.product != null && state.product!.inStock
-              ? _buildBottomActionBar(state.product!)
-              : null,
-          // Only show FAB if cart has items - The CartFAB itself also checks item count
-          floatingActionButton: CartFAB(
-            itemCount: cartItemCount,
-            totalAmount: state.cartTotalAmount,
-            onTap: _navigateToCart,
-            previewImagePath: state.product?.image,
-          ),
-          floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+              floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+            );
+          },
         );
-      },
+      }
     );
   }
 
@@ -560,12 +589,12 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                   return Container(
                                     width: 160.w,
                                     margin: EdgeInsets.only(right: 12.w),
-                                    child: BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
-                                      builder: (context, detailsState) {
-                                        // Get the quantity from the current state if available
+                                    child: BlocBuilder<CartBloc, CartState>(
+                                      builder: (context, cartState) {
+                                        // Get the quantity from cart state
                                         int quantity = 0;
-                                        if (detailsState.cartItems.isNotEmpty) {
-                                          final cartItem = detailsState.cartItems
+                                        if (cartState.items.isNotEmpty) {
+                                          final cartItem = cartState.items
                                               .where((item) => item.productId == similarProduct.id)
                                               .toList();
                                           if (cartItem.isNotEmpty) {
