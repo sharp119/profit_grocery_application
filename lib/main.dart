@@ -8,6 +8,7 @@ import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get_it/get_it.dart';
+import 'services/asset_cache_service.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
@@ -77,6 +78,9 @@ void main() async {
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
   ]);
+  
+  // Initialize asset cache service
+  await AssetCacheService().initialize();
   
   // Run the cart initializer to ensure cart is loaded at startup
   await sl<CartInitializer>().initialize();

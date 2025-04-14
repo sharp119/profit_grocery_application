@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
+import '../../widgets/image_loader.dart';
 
 /// A reusable widget for displaying product cards
 class ProductCard extends StatelessWidget {
@@ -117,34 +118,40 @@ class ProductCard extends StatelessWidget {
                           color: backgroundColor ?? AppTheme.secondaryColor,
                           padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding/2),
                           child: inStock
-                              ? Image.asset(
-                                  image,
-                                  fit: BoxFit.contain,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    // Return a placeholder if image fails to load
-                                    return Icon(
+                              ? Container(
+                                  color: backgroundColor ?? AppTheme.secondaryColor,
+                                  child: ImageLoader.asset(
+                                    image,
+                                    fit: BoxFit.contain,
+                                    width: double.infinity,
+                                    height: imageHeight,
+                                    borderRadius: 4.0,
+                                    errorWidget: Icon(
                                       Icons.image_not_supported,
                                       color: Colors.grey.withOpacity(0.5),
                                       size: imageHeight * 0.5,
-                                    );
-                                  },
+                                    ),
+                                  ),
                                 )
                               : Stack(
                                   alignment: Alignment.center,
                                   children: [
-                                    Image.asset(
-                                      image,
-                                      fit: BoxFit.contain,
-                                      color: Colors.grey.withOpacity(0.5),
-                                      colorBlendMode: BlendMode.saturation,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        // Return a placeholder if image fails to load
-                                        return Icon(
+                                    Container(
+                                      color: backgroundColor ?? AppTheme.secondaryColor,
+                                      child: ImageLoader.asset(
+                                        image,
+                                        fit: BoxFit.contain,
+                                        width: double.infinity,
+                                        height: imageHeight,
+                                        borderRadius: 4.0,
+                                        color: Colors.grey.withOpacity(0.5),
+                                        colorBlendMode: BlendMode.saturation,
+                                        errorWidget: Icon(
                                           Icons.image_not_supported,
                                           color: Colors.grey.withOpacity(0.3),
                                           size: imageHeight * 0.5,
-                                        );
-                                      },
+                                        ),
+                                      ),
                                     ),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
