@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:profit_grocery_application/data/inventory/product_inventory.dart';
 import 'package:profit_grocery_application/data/inventory/similar_products.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/universal_product_card.dart';
 import 'package:profit_grocery_application/services/cart/universal/universal_cart_service.dart';
@@ -31,10 +32,23 @@ class ProductDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
-      child: _ProductDetailsContent(categoryId: categoryId),
-    );
+    // Use BlocProvider.value to avoid creating a new bloc if it exists in parent context
+    try {
+      // Check if CartBloc already exists in the context
+      final cartBloc = BlocProvider.of<CartBloc>(context, listen: false);
+      
+      // If found, use existing bloc
+      return BlocProvider(
+        create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+        child: _ProductDetailsContent(categoryId: categoryId),
+      );
+    } catch (_) {
+      // If not found, create a new bloc
+      return BlocProvider(
+        create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+        child: _ProductDetailsContent(categoryId: categoryId),
+      );
+    }
   }
 }
 
@@ -173,14 +187,13 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
           bottomNavigationBar: state.product != null && state.product!.inStock
               ? _buildBottomActionBar(state.product!)
               : null,
-          floatingActionButton: cartItemCount > 0
-              ? CartFAB(
-                  itemCount: cartItemCount,
-                  totalAmount: state.cartTotalAmount,
-                  onTap: _navigateToCart,
-                  previewImagePath: state.product?.image,
-                )
-              : null,
+          // Only show FAB if cart has items - The CartFAB itself also checks item count
+          floatingActionButton: CartFAB(
+            itemCount: cartItemCount,
+            totalAmount: state.cartTotalAmount,
+            onTap: _navigateToCart,
+            previewImagePath: state.product?.image,
+          ),
           floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         );
       },
@@ -560,8 +573,9 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                           }
                                         }
                                         
-                                        return UniversalProductCard(
-                                          product: similarProduct,
+                                        // Stop event propagation by using a GestureDetector with behavior: HitTestBehavior.opaque
+                                        return GestureDetector(
+                                          behavior: HitTestBehavior.opaque,
                                           onTap: () {
                                             // Navigate to the similar product details
                                             Navigator.push(
@@ -574,10 +588,25 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                               ),
                                             );
                                           },
-                                          // Use quantity from state if available, otherwise default to 0
-                                          quantity: quantity,
-                                          backgroundColor: categoryColor,
-                                          useBackgroundColor: true,
+                                          child: UniversalProductCard(
+                                            product: similarProduct,
+                                            onTap: () {
+                                              // Navigate to the similar product details
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) => ProductDetailsPage(
+                                                    productId: similarProduct.id,
+                                                    categoryId: similarProduct.categoryId,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            // Use quantity from state if available, otherwise default to 0
+                                            quantity: quantity,
+                                            backgroundColor: categoryColor,
+                                            useBackgroundColor: true,
+                                          ),
                                         );
                                       },
                                     ),

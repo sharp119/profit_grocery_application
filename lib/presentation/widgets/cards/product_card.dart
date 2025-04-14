@@ -322,16 +322,16 @@ class ProductCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         mainAxisSize: MainAxisSize.max,
         children: [
-          // Decrease quantity
+          // Decrease quantity - allow decreasing to 0 to remove from cart
           SizedBox(
             width: buttonMinWidth,
             child: InkWell(
-              onTap: inStock && quantity > 1 ? () => onQuantityChanged(quantity - 1) : null,
+              onTap: inStock ? () => onQuantityChanged(quantity - 1) : null,
               child: Center(
                 child: Icon(
                   Icons.remove,
                   size: iconSize,
-                  color: inStock && quantity > 1 ? Colors.white : Colors.grey,
+                  color: inStock ? Colors.white : Colors.grey,
                 ),
               ),
             ),
