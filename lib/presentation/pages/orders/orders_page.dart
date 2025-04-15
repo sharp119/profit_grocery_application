@@ -22,12 +22,19 @@ class OrdersPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => OrdersBloc(
-        orderRepository: OrderRepositoryImpl(),
-      ),
-      child: OrdersView(initialTab: initialTab),
-    );
+    // Try to use existing OrdersBloc from parent provider if available
+    try {
+      BlocProvider.of<OrdersBloc>(context, listen: false);
+      return OrdersView(initialTab: initialTab);
+    } catch (e) {
+      // If OrdersBloc is not available in the widget tree, create a new one
+      return BlocProvider(
+        create: (context) => OrdersBloc(
+          orderRepository: OrderRepositoryImpl(),
+        ),
+        child: OrdersView(initialTab: initialTab),
+      );
+    }
   }
 }
 

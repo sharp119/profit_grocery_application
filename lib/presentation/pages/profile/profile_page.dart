@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import '../../../main.dart'; // For GetIt singleton (sl)
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,14 +15,36 @@ import '../../blocs/user/user_state.dart';
 import '../../widgets/base_layout.dart';
 import '../../widgets/profile/profile_summary_card.dart';
 
-class ProfilePage extends StatefulWidget {
+class ProfilePage extends StatelessWidget {
   const ProfilePage({Key? key}) : super(key: key);
 
   @override
-  State<ProfilePage> createState() => _ProfilePageState();
+  Widget build(BuildContext context) {
+    // For consistency with bottom navigation, ensure we're using the BlocProvider
+    // that may already exist in the widget tree
+    try {
+      // Check if UserBloc is already available in context
+      BlocProvider.of<UserBloc>(context, listen: false);
+      // If available, use existing UserBloc
+      return const _ProfilePageContent();
+    } catch (e) {
+      // If not available, create a new one
+      return BlocProvider(
+        create: (context) => sl<UserBloc>(),
+        child: const _ProfilePageContent(),
+      );
+    }
+  }
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _ProfilePageContent extends StatefulWidget {
+  const _ProfilePageContent({Key? key}) : super(key: key);
+
+  @override
+  State<_ProfilePageContent> createState() => _ProfilePageContentState();
+}
+
+class _ProfilePageContentState extends State<_ProfilePageContent> {
   bool _isDarkMode = true; // Default to dark mode
 
   @override

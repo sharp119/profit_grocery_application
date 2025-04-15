@@ -44,6 +44,7 @@ import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
 import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/user/user_bloc.dart';
+import 'presentation/blocs/navigation/navigation_bloc.dart';
 import 'presentation/blocs/orders/orders_bloc.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
 
@@ -85,6 +86,7 @@ void main() async {
   // Run the cart initializer to ensure cart is loaded at startup
   await sl<CartInitializer>().initialize();
   
+  print('App initialized - starting with MyApp');
   runApp(const MyApp());
 }
 
@@ -230,6 +232,10 @@ Future<void> setupDependencyInjection() async {
   sl.registerFactory(
     () => OrdersBloc(orderRepository: sl<OrderRepository>()),
   );
+
+  sl.registerFactory(
+    () => NavigationBloc(),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -261,6 +267,9 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<OrdersBloc>(
           create: (context) => sl<OrdersBloc>(),
+        ),
+        BlocProvider<NavigationBloc>(
+          create: (context) => sl<NavigationBloc>(),
         ),
         BlocProvider<CartBloc>(
           create: (context) {

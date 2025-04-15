@@ -19,10 +19,19 @@ class CartPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => sl<CartBloc>()..add(const LoadCart()),
-      child: const _CartPageContent(),
-    );
+    // Check if we already have CartBloc in context - this happens when rendered through navigation
+    // This helps maintain cart state when navigating through bottom bar tabs
+    try {
+      final existingCartBloc = BlocProvider.of<CartBloc>(context, listen: false);
+      // If CartBloc exists in context, use it directly
+      return const _CartPageContent();
+    } catch (e) {
+      // If not (direct navigation to cart), create a new CartBloc
+      return BlocProvider(
+        create: (context) => sl<CartBloc>()..add(const LoadCart()),
+        child: const _CartPageContent(),
+      );
+    }
   }
 }
 

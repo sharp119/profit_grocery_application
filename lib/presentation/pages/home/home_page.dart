@@ -477,9 +477,10 @@ class _HomePageContentState extends State<_HomePageContent> {
         return Scaffold(
           backgroundColor: AppTheme.backgroundColor,
           appBar: AppBar(
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+          automaticallyImplyLeading: false, // Disable back button since we're using bottom nav
+          title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                 Text(AppConstants.appName),
                 if (_currentUser?.name != null)
                   Text(

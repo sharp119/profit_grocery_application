@@ -9,6 +9,7 @@ import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
 import '../home/home_page.dart';
+import '../main_navigation.dart';
 import 'phone_entry_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -74,9 +75,10 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       listener: (context, state) {
         // Handle authentication state changes
         if (state.status == AuthStatus.authenticated) {
-          // User is authenticated, navigate to home page
-          Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const HomePage()),
+          // User is authenticated, navigate to main navigation with bottom bar
+          Navigator.of(context).pushNamedAndRemoveUntil(
+            AppConstants.homeRoute,
+            (route) => false,
           );
         } else if (state.status == AuthStatus.unauthenticated) {
           // User is not authenticated, navigate to login page

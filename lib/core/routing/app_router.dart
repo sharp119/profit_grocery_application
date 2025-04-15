@@ -18,6 +18,7 @@ import '../../presentation/pages/profile/addresses_page.dart';
 import '../../presentation/pages/profile/address_form_page.dart';
 import '../../presentation/pages/profile/profile_edit_page.dart';
 import '../../presentation/pages/profile/profile_page.dart';
+import '../../presentation/pages/main_navigation.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -40,7 +41,7 @@ class AppRouter {
         
       // Home and main navigation routes
       case AppConstants.homeRoute:
-        return MaterialPageRoute(builder: (_) => const HomePage());
+        return MaterialPageRoute(builder: (_) => const MainNavigation());
         
       // Profile routes
       case AppConstants.profileRoute:
