@@ -1,8 +1,11 @@
 import 'package:firebase_database/firebase_database.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../models/coupon_model.dart';
+import '../../../samples/sample_coupons.dart';
+import '../../../../domain/entities/coupon_enums.dart';
 
 abstract class CouponRemoteDataSource {
   /// Get coupon by code from Firebase Realtime Database.
@@ -24,15 +27,27 @@ abstract class CouponRemoteDataSource {
   ///
   /// Throws a [ServerException] for all error codes.
   Future<CouponModel> incrementCouponUsage(String couponId);
+  
+  /// Upload sample coupons to Firebase Realtime Database.
+  ///
+  /// Throws a [ServerException] for all error codes.
+  Future<bool> uploadSampleCoupons();
+  
+  /// Upload sample coupons to Firestore.
+  ///
+  /// Throws a [ServerException] for all error codes.
+  Future<bool> uploadSampleCouponsToFirestore();
 }
 
 class CouponRemoteDataSourceImpl implements CouponRemoteDataSource {
   final FirebaseDatabase database;
   final FirebaseRemoteConfig remoteConfig;
+  final FirebaseFirestore? firestore;
 
   CouponRemoteDataSourceImpl({
     required this.database,
     required this.remoteConfig,
+    this.firestore,
   });
 
   @override
@@ -131,6 +146,117 @@ class CouponRemoteDataSourceImpl implements CouponRemoteDataSource {
     } catch (e) {
       if (e is NotFoundException) rethrow;
       throw ServerException(message: 'Failed to increment coupon usage: $e');
+    }
+  }
+  
+  @override
+  Future<bool> uploadSampleCoupons() async {
+    try {
+      // Import the sample coupons
+      final sampleCoupons = getSampleCoupons();
+      
+      // Reference to the coupons node in Firebase
+      final ref = database.ref().child('coupons');
+      
+      // Convert sample coupons to CouponModel and upload them
+      for (final sample in sampleCoupons) {
+        // Create a coupon model from the sample
+        final couponModel = CouponModel(
+          id: sample.id,
+          code: sample.code,
+          type: _getCouponTypeFromString(sample.type),
+          value: sample.value,
+          minPurchase: sample.minPurchase,
+          startDate: sample.startDate,
+          endDate: sample.endDate,
+          isActive: sample.isActive,
+          usageLimit: sample.usageLimit,
+          usageCount: 0,
+          applicableProductIds: sample.applicableProductIds,
+          applicableCategories: sample.applicableCategories,
+          description: sample.description,
+          freeProductId: sample.freeProductId,
+          conditions: sample.conditions,
+        );
+        
+        // Upload to Firebase
+        await ref.child(sample.id).set(couponModel.toJson());
+      }
+      
+      return true;
+    } catch (e) {
+      throw ServerException(message: 'Failed to upload sample coupons to RTD: $e');
+    }
+  }
+  
+  @override
+  Future<bool> uploadSampleCouponsToFirestore() async {
+    try {
+      // Check if Firestore is available
+      if (firestore == null) {
+        throw ServerException(message: 'Firestore instance not provided');
+      }
+      
+      // Import the sample coupons
+      final sampleCoupons = getSampleCoupons();
+      
+      // Reference to the coupons collection in Firestore
+      final collectionRef = firestore!.collection('coupons');
+      
+      // Convert sample coupons to CouponModel and upload them
+      for (final sample in sampleCoupons) {
+        // Create a coupon model from the sample
+        final couponModel = CouponModel(
+          id: sample.id,
+          code: sample.code,
+          type: _getCouponTypeFromString(sample.type),
+          value: sample.value,
+          minPurchase: sample.minPurchase,
+          startDate: sample.startDate,
+          endDate: sample.endDate,
+          isActive: sample.isActive,
+          usageLimit: sample.usageLimit,
+          usageCount: 0,
+          applicableProductIds: sample.applicableProductIds,
+          applicableCategories: sample.applicableCategories,
+          description: sample.description,
+          freeProductId: sample.freeProductId,
+          conditions: sample.conditions,
+        );
+        
+        // Upload to Firestore - use the ID as the document ID
+        await collectionRef.doc(sample.id).set(couponModel.toJson());
+      }
+      
+      return true;
+    } catch (e) {
+      throw ServerException(message: 'Failed to upload sample coupons to Firestore: $e');
+    }
+  }
+  
+  // Helper method to convert string to CouponType enum
+  CouponType _getCouponTypeFromString(String typeString) {
+    switch (typeString.toLowerCase()) {
+      case 'percentage':
+        return CouponType.percentage;
+      case 'fixed':
+      case 'fixed_amount':
+      case 'fixedamount':
+        return CouponType.fixedAmount;
+      case 'free_delivery':
+      case 'freedelivery':
+        return CouponType.freeDelivery;
+      case 'buy_one_get_one':
+      case 'buyonegetone':
+      case 'bogo':
+        return CouponType.buyOneGetOne;
+      case 'free_product':
+      case 'freeproduct':
+        return CouponType.freeProduct;
+      case 'conditional':
+        return CouponType.conditional;
+      default:
+        return CouponType.percentage;
     }
   }
 }

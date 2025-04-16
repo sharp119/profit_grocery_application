@@ -1,17 +1,19 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../domain/repositories/coupon_repository.dart';
 import 'coupon_event.dart';
 import 'coupon_state.dart';
 
 class CouponBloc extends Bloc<CouponEvent, CouponState> {
-  // In a real app, we would inject repository dependencies here
-  // final CouponRepository _couponRepository;
+  final CouponRepository? couponRepository;
 
-  CouponBloc() : super(const CouponState()) {
+  CouponBloc({this.couponRepository}) : super(const CouponState()) {
     on<LoadCoupons>(_onLoadCoupons);
     on<ValidateCoupon>(_onValidateCoupon);
     on<ValidateDeepLinkCoupon>(_onValidateDeepLinkCoupon);
     on<ClearDeepLinkCoupon>(_onClearDeepLinkCoupon);
+    on<UploadSampleCoupons>(_onUploadSampleCoupons);
+    on<UploadSampleCouponsToFirestore>(_onUploadSampleCouponsToFirestore);
   }
 
   Future<void> _onLoadCoupons(
@@ -136,6 +138,72 @@ class CouponBloc extends Bloc<CouponEvent, CouponState> {
       deepLinkCoupon: null,
       deepLinkCouponInfo: null,
     ));
+  }
+  
+  Future<void> _onUploadSampleCoupons(
+    UploadSampleCoupons event,
+    Emitter<CouponState> emit,
+  ) async {
+    try {
+      // If we have a repository, use it to upload sample coupons
+      if (couponRepository != null) {
+        emit(state.copyWith(status: CouponStatus.uploading));
+        
+        final result = await couponRepository!.uploadSampleCoupons();
+        
+        result.fold(
+          (failure) => emit(state.copyWith(
+            status: CouponStatus.uploadFailure,
+            errorMessage: failure.message,
+          )),
+          (success) => emit(state.copyWith(status: CouponStatus.uploadSuccess)),
+        );
+      } else {
+        // No repository available
+        emit(state.copyWith(
+          status: CouponStatus.uploadFailure,
+          errorMessage: 'Repository not available',
+        ));
+      }
+    } catch (e) {
+      emit(state.copyWith(
+        status: CouponStatus.uploadFailure,
+        errorMessage: 'Failed to upload coupons: $e',
+      ));
+    }
+  }
+  
+  Future<void> _onUploadSampleCouponsToFirestore(
+    UploadSampleCouponsToFirestore event,
+    Emitter<CouponState> emit,
+  ) async {
+    try {
+      // If we have a repository, use it to upload sample coupons
+      if (couponRepository != null) {
+        emit(state.copyWith(status: CouponStatus.uploading));
+        
+        final result = await couponRepository!.uploadSampleCouponsToFirestore();
+        
+        result.fold(
+          (failure) => emit(state.copyWith(
+            status: CouponStatus.uploadFailure,
+            errorMessage: failure.message,
+          )),
+          (success) => emit(state.copyWith(status: CouponStatus.uploadSuccess)),
+        );
+      } else {
+        // No repository available
+        emit(state.copyWith(
+          status: CouponStatus.uploadFailure,
+          errorMessage: 'Repository not available',
+        ));
+      }
+    } catch (e) {
+      emit(state.copyWith(
+        status: CouponStatus.uploadFailure,
+        errorMessage: 'Failed to upload coupons to Firestore: $e',
+      ));
+    }
   }
   
   // Mock data methods

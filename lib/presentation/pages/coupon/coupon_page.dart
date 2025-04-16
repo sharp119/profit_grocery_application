@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../core/constants/app_theme.dart';
 import '../../../data/samples/sample_coupons.dart';
+import '../../../domain/repositories/coupon_repository.dart';
 import '../../blocs/coupon/coupon_bloc.dart';
 import '../../blocs/coupon/coupon_event.dart';
 import '../../blocs/coupon/coupon_state.dart';
@@ -24,7 +26,9 @@ class CouponPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => CouponBloc()..add(LoadCoupons(deepLinkCoupon)),
+      create: (context) => CouponBloc(
+        couponRepository: GetIt.I<CouponRepository>(),
+      )..add(LoadCoupons(deepLinkCoupon)),
       child: const _CouponPageContent(),
     );
   }
@@ -80,6 +84,23 @@ class _CouponPageContentState extends State<_CouponPageContent> {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             _applyCoupon(context, state.deepLinkCoupon!);
           });
+        }
+        
+        // Show feedback for sample coupon upload
+        if (state.status == CouponStatus.uploadSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Sample coupons uploaded successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        } else if (state.status == CouponStatus.uploadFailure) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(state.errorMessage ?? 'Failed to upload sample coupons'),
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       },
       builder: (context, state) {
@@ -317,6 +338,107 @@ class _CouponPageContentState extends State<_CouponPageContent> {
                         ),
                       ),
                     ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Admin button to upload sample coupons to Firebase
+          Container(
+            margin: EdgeInsets.only(top: 16.h),
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade800.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(
+                color: Colors.grey.shade700,
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.admin_panel_settings,
+                      color: Colors.amber,
+                      size: 18.sp,
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      'Admin Actions',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Text(
+                  'Upload all sample coupons to different databases',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 12.sp,
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      context.read<CouponBloc>().add(const UploadSampleCoupons());
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade700,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: BlocBuilder<CouponBloc, CouponState>(
+                      builder: (context, state) {
+                        if (state.status == CouponStatus.uploading) {
+                          return const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.amber,
+                            ),
+                          );
+                        }
+                        return const Text('Upload to Realtime DB');
+                      },
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      context.read<CouponBloc>().add(const UploadSampleCouponsToFirestore());
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey.shade800,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: BlocBuilder<CouponBloc, CouponState>(
+                      builder: (context, state) {
+                        if (state.status == CouponStatus.uploading) {
+                          return const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.amber,
+                            ),
+                          );
+                        }
+                        return const Text('Upload to Firestore');
+                      },
+                    ),
                   ),
                 ),
               ],

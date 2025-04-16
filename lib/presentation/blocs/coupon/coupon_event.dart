@@ -37,3 +37,11 @@ class ValidateDeepLinkCoupon extends CouponEvent {
 class ClearDeepLinkCoupon extends CouponEvent {
   const ClearDeepLinkCoupon();
 }
+
+class UploadSampleCoupons extends CouponEvent {
+  const UploadSampleCoupons();
+}
+
+class UploadSampleCouponsToFirestore extends CouponEvent {
+  const UploadSampleCouponsToFirestore();
+}

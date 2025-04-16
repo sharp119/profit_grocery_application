@@ -17,6 +17,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
 import 'core/di/cart_injection.dart';
+import 'core/network/network_info.dart';
+import 'data/datasources/firebase/coupon/coupon_remote_datasource.dart';
+import 'data/repositories/coupon/coupon_repository_impl.dart';
+import 'domain/repositories/coupon_repository.dart';
 import 'firebase_options.dart';
 
 import 'core/constants/app_constants.dart';
@@ -50,6 +54,32 @@ import 'presentation/pages/authentication/splash_screen.dart';
 
 // GetIt instance for dependency injection
 final GetIt sl = GetIt.instance;
+
+// Coupon dependencies initialization
+Future<void> initCouponDependencies() async {
+  // Network info
+  if (!sl.isRegistered<NetworkInfo>()) {
+    sl.registerLazySingleton<NetworkInfo>(() => NetworkInfoImpl());
+  }
+  
+  // Data source
+  sl.registerLazySingleton<CouponRemoteDataSource>(
+    () => CouponRemoteDataSourceImpl(
+      database: sl<FirebaseDatabase>(),
+      remoteConfig: sl<FirebaseRemoteConfig>(),
+      firestore: sl<FirebaseFirestore>(),
+    ),
+  );
+
+  // Repository
+  sl.registerLazySingleton<CouponRepository>(
+    () => CouponRepositoryImpl(
+      remoteDataSource: sl<CouponRemoteDataSource>(),
+      networkInfo: sl<NetworkInfo>(),
+      remoteConfig: sl<FirebaseRemoteConfig>(),
+    ),
+  );
+}
 
 // Convenience method to get the current user ID
 Future<String?> getCurrentUserId() async {
@@ -124,6 +154,9 @@ Future<void> setupDependencyInjection() async {
   
   // Cart dependencies
   await initCartDependencies();
+  
+  // Coupon dependencies
+  await initCouponDependencies();
   
   // Determine database preference from Remote Config
   final remoteConfig = FirebaseRemoteConfig.instance;
@@ -219,6 +252,8 @@ Future<void> setupDependencyInjection() async {
   sl.registerLazySingleton<OrderRepository>(
     () => OrderRepositoryImpl(),
   );
+  
+  // Coupon dependencies are already initialized earlier
   
   // BLoCs
   sl.registerFactory(

@@ -22,4 +22,10 @@ abstract class CouponRepository {
     required double cartTotal,
     required List<String> productIds,
   });
+  
+  /// Upload sample coupons to Firebase
+  Future<Either<Failure, bool>> uploadSampleCoupons();
+  
+  /// Upload sample coupons to Firestore
+  Future<Either<Failure, bool>> uploadSampleCouponsToFirestore();
 }

@@ -1,5 +1,6 @@
 import 'package:dartz/dartz.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../../../core/errors/exceptions.dart';
 import '../../../core/errors/failures.dart';
@@ -148,6 +149,34 @@ class CouponRepositoryImpl implements CouponRepository {
         return Left(ServerFailure(message: e.message));
       } on NotFoundException catch (e) {
         return Left(CouponFailure(message: 'Coupon not found.'));
+      }
+    } else {
+      return Left(NetworkFailure());
+    }
+  }
+  
+  @override
+  Future<Either<Failure, bool>> uploadSampleCoupons() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.uploadSampleCoupons();
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message));
+      }
+    } else {
+      return Left(NetworkFailure());
+    }
+  }
+  
+  @override
+  Future<Either<Failure, bool>> uploadSampleCouponsToFirestore() async {
+    if (await networkInfo.isConnected) {
+      try {
+        final result = await remoteDataSource.uploadSampleCouponsToFirestore();
+        return Right(result);
+      } on ServerException catch (e) {
+        return Left(ServerFailure(message: e.message));
       }
     } else {
       return Left(NetworkFailure());

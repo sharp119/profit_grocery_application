@@ -7,6 +7,9 @@ enum CouponStatus {
   error,
   deepLinkCouponValid,
   deepLinkCouponInvalid,
+  uploading,
+  uploadSuccess,
+  uploadFailure,
 }
 
 class CouponInfo {
