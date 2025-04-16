@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:profit_grocery_application/presentation/widgets/coupons/animated_coupon_error.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -696,39 +697,11 @@ class _CartPageContentState extends State<_CartPageContent> {
           
           // Show coupon validation error message
           if (state.status == CartStatus.couponError && state.errorMessage != null) 
-            Padding(
-              padding: EdgeInsets.only(top: spacing),
-              child: Container(
-                padding: EdgeInsets.all(spacing / 2),
-                decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: Colors.red.withOpacity(0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Icon(
-                      Icons.error_outline,
-                      color: Colors.red,
-                      size: iconSize * 0.8,
-                    ),
-                    SizedBox(width: spacing / 2),
-                    Expanded(
-                      child: Text(
-                        state.errorMessage!,
-                        style: TextStyle(
-                          color: Colors.red.shade300,
-                          fontSize: smallFontSize * 0.9,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            AnimatedCouponError(
+              errorMessage: state.errorMessage!,
+              spacing: spacing,
+              smallFontSize: smallFontSize,
+              iconSize: iconSize,
             ),
             
           // Show missing requirements section if applicable
