@@ -25,6 +25,7 @@ class CartState extends Equatable {
   final bool couponApplied;
   final String? errorMessage;
   final CartSyncStatus syncStatus;
+  final Map<String, dynamic>? couponRequirements;
 
   const CartState({
     this.status = CartStatus.initial,
@@ -38,6 +39,7 @@ class CartState extends Equatable {
     this.couponApplied = false,
     this.errorMessage,
     this.syncStatus = CartSyncStatus.synced,
+    this.couponRequirements,
   });
 
   CartState copyWith({
@@ -52,6 +54,7 @@ class CartState extends Equatable {
     bool? couponApplied,
     String? errorMessage,
     CartSyncStatus? syncStatus,
+    Map<String, dynamic>? couponRequirements,
   }) {
     return CartState(
       status: status ?? this.status,
@@ -65,6 +68,7 @@ class CartState extends Equatable {
       couponApplied: couponApplied ?? this.couponApplied,
       errorMessage: errorMessage ?? this.errorMessage,
       syncStatus: syncStatus ?? this.syncStatus,
+      couponRequirements: couponRequirements ?? this.couponRequirements,
     );
   }
 
@@ -81,5 +85,6 @@ class CartState extends Equatable {
     couponApplied,
     errorMessage,
     syncStatus,
+    couponRequirements,
   ];
 }

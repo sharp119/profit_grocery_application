@@ -39,7 +39,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     
     // Subscribe to sync status changes from the cart sync service
     _syncSubscription = _cartSyncService.syncStream.listen((status) {
-      add(UpdateSyncStatus(status));
+      this.add(UpdateSyncStatus(status));
     });
   }
   
@@ -87,7 +87,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           // Get current sync status from the sync service
           _cartSyncService.getCurrentSyncStatus().then((syncStatus) {
             CartLogger.info('BLOC', 'Cart sync status: $syncStatus');
-            add(UpdateSyncStatus(syncStatus));
+            this.add(UpdateSyncStatus(syncStatus));
           });
           
           CartLogger.success('BLOC', 'Cart loaded successfully: ${cart.items.length} items, total: ${cart.total}');
@@ -507,19 +507,36 @@ class CartBloc extends Bloc<CartEvent, CartState> {
         return;
       }
 
-      final result = await _cartRepository.applyCoupon(
-        userId: userId,
+      // First validate the coupon to check requirements
+      final validationResult = await _cartRepository.validateCoupon(
         couponCode: event.code,
+        cartTotal: state.subtotal,
+        productIds: state.items.map((item) => item.productId).toList(),
       );
       
-      result.fold(
+      return validationResult.fold(
         (failure) {
           if (failure is CouponFailure) {
             CartLogger.error('BLOC', 'Coupon error: ${failure.message}');
-            emit(state.copyWith(
-              status: CartStatus.couponError,
-              errorMessage: failure.message,
-            ));
+            
+            // Try to check if this is a requirement failure that can be resolved
+            // Simulate coupon requirements - In a real app, this would come from a service
+            final couponRequirements = _generateCouponRequirements(event.code, state);
+            
+            if (couponRequirements != null && !couponRequirements['isValid']) {
+              // The coupon is valid but has unmet requirements
+              emit(state.copyWith(
+                status: CartStatus.couponError,
+                errorMessage: failure.message,
+                couponRequirements: couponRequirements,
+              ));
+            } else {
+              // The coupon is completely invalid
+              emit(state.copyWith(
+                status: CartStatus.couponError,
+                errorMessage: failure.message,
+              ));
+            }
           } else {
             CartLogger.error('BLOC', 'Failed to apply coupon: ${failure.message}');
             emit(state.copyWith(
@@ -528,19 +545,37 @@ class CartBloc extends Bloc<CartEvent, CartState> {
             ));
           }
         },
-        (cart) {
-          CartLogger.success('BLOC', 'Successfully applied coupon. Discount: ${cart.discount}');
-          emit(state.copyWith(
-            status: CartStatus.couponApplied,
-            items: cart.items,
-            subtotal: cart.subtotal,
-            discount: cart.discount,
-            deliveryFee: cart.deliveryFee,
-            total: cart.total,
-            itemCount: cart.itemCount,
-            couponCode: cart.appliedCouponCode,
-            couponApplied: cart.appliedCouponCode != null,
-          ));
+        (coupon) async {
+          // Coupon is valid, now apply it
+          final result = await _cartRepository.applyCoupon(
+            userId: userId,
+            couponCode: event.code,
+          );
+          
+          result.fold(
+            (failure) {
+              CartLogger.error('BLOC', 'Failed to apply coupon: ${failure.message}');
+              emit(state.copyWith(
+                status: CartStatus.error,
+                errorMessage: _mapFailureToMessage(failure),
+              ));
+            },
+            (cart) {
+              CartLogger.success('BLOC', 'Successfully applied coupon. Discount: ${cart.discount}');
+              emit(state.copyWith(
+                status: CartStatus.couponApplied,
+                items: cart.items,
+                subtotal: cart.subtotal,
+                discount: cart.discount,
+                deliveryFee: cart.deliveryFee,
+                total: cart.total,
+                itemCount: cart.itemCount,
+                couponCode: cart.appliedCouponCode,
+                couponApplied: cart.appliedCouponCode != null,
+                couponRequirements: null, // Clear requirements when successfully applied
+              ));
+            },
+          );
         },
       );
     } catch (e) {
@@ -558,7 +593,10 @@ class CartBloc extends Bloc<CartEvent, CartState> {
   ) async {
     try {
       CartLogger.log('BLOC', 'Removing coupon');
-      emit(state.copyWith(status: CartStatus.loading));
+      emit(state.copyWith(
+        status: CartStatus.loading,
+        couponRequirements: null, // Clear any coupon requirements
+      ));
       
       // Get user ID from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
@@ -595,6 +633,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
             itemCount: cart.itemCount,
             couponCode: cart.appliedCouponCode,
             couponApplied: cart.appliedCouponCode != null,
+            couponRequirements: null, // Ensure coupon requirements are cleared
           ));
         },
       );
@@ -720,5 +759,198 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     }
     
     return failure.message;
+  }
+  
+  // Helper method to generate coupon requirements for demonstration purposes
+  // In a real app, this would be provided by a proper coupon validation service
+  Map<String, dynamic>? _generateCouponRequirements(String couponCode, CartState state) {
+    // Create a base result structure
+    final result = {
+      'isValid': false,
+      'missingRequirements': <Map<String, dynamic>>[],
+      'errorMessage': '',
+    };
+    
+    // Uppercase coupon code for matching
+    final code = couponCode.toUpperCase();
+    
+    // Handle different coupon types based on coupon code
+    if (code.startsWith('MIN')) {
+      // Minimum purchase requirement coupon (e.g., MIN500)
+      try {
+        final requiredAmount = double.parse(code.substring(3));
+        
+        if (state.subtotal < requiredAmount) {
+          result['errorMessage'] = 'This coupon requires a minimum purchase of ₹${requiredAmount.toStringAsFixed(0)}.';
+          final missingRequirementsList = result['missingRequirements'] as List<Map<String, dynamic>>;
+          missingRequirementsList.add({
+            'type': 'minimum_purchase',
+            'required': requiredAmount,
+            'current': state.subtotal,
+            'missing': requiredAmount - state.subtotal,
+          });
+          return result;
+        }
+      } catch (e) {
+        // Invalid format, no specific requirements
+        return null;
+      }
+    }
+    
+    // Buy X Get Y (e.g., BUY2GET1)
+    else if (code.startsWith('BUY') && code.contains('GET')) {
+      try {
+        final parts = code.split('GET');
+        final buyQuantity = int.parse(parts[0].substring(3));
+        final getQuantity = int.parse(parts[1]);
+        
+        // Count total items in cart
+        final totalItems = state.items.fold<int>(0, (sum, item) => sum + item.quantity);
+        
+        if (totalItems < buyQuantity) {
+          result['errorMessage'] = 'You need to buy $buyQuantity items to get $getQuantity free.';
+          final missingRequirementsList = result['missingRequirements'] as List<Map<String, dynamic>>;
+          missingRequirementsList.add({
+            'type': 'buy_quantity',
+            'required': buyQuantity,
+            'current': totalItems,
+            'missing': buyQuantity - totalItems,
+          });
+          return result;
+        }
+      } catch (e) {
+        // Invalid format
+        return null;
+      }
+    }
+    
+    // Product combination coupon (e.g., COMBO50)
+    else if (code == 'COMBO50') {
+      // Simulate required products
+      final requiredProducts = ['prod_rice_01', 'prod_dal_01'];
+      final requiredQuantities = [1, 1];
+      
+      final cartProductIds = state.items.map((item) => item.productId).toList();
+      final cartProductQuantities = {
+        for (var item in state.items) item.productId: item.quantity
+      };
+      
+      final missingProducts = <Map<String, dynamic>>[];
+      
+      for (int i = 0; i < requiredProducts.length; i++) {
+        final productId = requiredProducts[i];
+        final requiredQuantity = requiredQuantities[i];
+        
+        if (!cartProductIds.contains(productId)) {
+          // Product not in cart
+          missingProducts.add({
+            'productId': productId,
+            'requiredQuantity': requiredQuantity,
+            'name': _getProductName(productId),
+          });
+        } else if (cartProductQuantities[productId]! < requiredQuantity) {
+          // Product in cart but not enough quantity
+          missingProducts.add({
+            'productId': productId,
+            'requiredQuantity': requiredQuantity,
+            'currentQuantity': cartProductQuantities[productId],
+            'missingQuantity': requiredQuantity - cartProductQuantities[productId]!,
+            'name': _getProductName(productId),
+          });
+        }
+      }
+      
+      if (missingProducts.isNotEmpty) {
+        result['errorMessage'] = 'Add the required products to avail this offer.';
+        final missingRequirementsList = result['missingRequirements'] as List<Map<String, dynamic>>;
+        missingRequirementsList.add({
+          'type': 'required_products',
+          'missingProducts': missingProducts,
+        });
+        return result;
+      }
+    }
+    
+    // Trigger & discount combo coupon (e.g., BREADBUTTER)
+    else if (code == 'BREADBUTTER') {
+      final triggerProductId = 'prod_butter_01';
+      final discountProductId = 'prod_bread_01';
+      
+      final hasTriggerProduct = state.items.any((item) => item.productId == triggerProductId);
+      final hasDiscountProduct = state.items.any((item) => item.productId == discountProductId);
+      
+      if (!hasTriggerProduct || !hasDiscountProduct) {
+        result['errorMessage'] = !hasTriggerProduct
+            ? 'Add butter to your cart to get discount on bread.'
+            : 'Add bread to your cart to avail this discount.';
+        
+        final missingItems = <Map<String, dynamic>>[];
+        
+        if (!hasTriggerProduct) {
+          missingItems.add({
+            'type': 'trigger_product',
+            'productId': triggerProductId,
+            'name': 'Butter',
+          });
+        }
+        
+        if (!hasDiscountProduct) {
+          missingItems.add({
+            'type': 'discount_product',
+            'productId': discountProductId,
+            'name': 'Bread',
+          });
+        }
+        
+        final missingRequirementsList = result['missingRequirements'] as List<Map<String, dynamic>>;
+        missingRequirementsList.add({
+          'type': 'trigger_discount_combo',
+          'missingItems': missingItems,
+        });
+        return result;
+      }
+    }
+    
+    // BOGO coupon (e.g., BOGO)
+    else if (code == 'BOGO') {
+      // Simulate category restriction for this BOGO offer
+      final eligibleCategoryIds = ['beverages'];
+      
+      final eligibleItems = state.items.where((item) => 
+          eligibleCategoryIds.contains(item.categoryId)).toList();
+      
+      if (eligibleItems.isEmpty) {
+        result['errorMessage'] = 'Add beverages to your cart to avail the buy-one-get-one offer.';
+        final missingRequirementsList = result['missingRequirements'] as List<Map<String, dynamic>>;
+        missingRequirementsList.add({
+          'type': 'bogo_eligible_products',
+        });
+        return result;
+      }
+    }
+    
+    // No specific requirements found or all requirements met
+    return null;
+  }
+  
+  // Helper to get product name - in a real app this would come from a repository
+  String _getProductName(String productId) {
+    switch (productId) {
+      case 'prod_rice_01':
+        return 'Basmati Rice (1kg)';
+      case 'prod_dal_01':
+        return 'Yellow Dal (1kg)';
+      case 'prod_butter_01':
+        return 'Butter (500g)';
+      case 'prod_bread_01':
+        return 'Bread (400g)';
+      default:
+        // Try to extract a readable name from the product ID
+        final parts = productId.split('_');
+        if (parts.length > 1) {
+          return parts[1].substring(0, 1).toUpperCase() + parts[1].substring(1);
+        }
+        return productId;
+    }
   }
 }
