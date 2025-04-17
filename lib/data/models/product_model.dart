@@ -95,7 +95,7 @@ class ProductModel extends Product {
     String? subcategoryId,
     List<String>? tags,
     bool? isFeatured,
-    bool? isActive,
+    bool? isActive, required String weight, required String brand, required double rating, required int reviewCount,
   }) {
     return ProductModel(
       id: id ?? this.id,

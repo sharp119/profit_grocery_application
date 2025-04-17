@@ -14,6 +14,8 @@ import 'package:profit_grocery_application/presentation/widgets/profile/profile_
 import 'package:profit_grocery_application/services/cart/home_cart_bridge.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
+import 'package:profit_grocery_application/presentation/widgets/buttons/setup_data_button.dart';
+import 'package:profit_grocery_application/presentation/widgets/buttons/setup_data_button.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -618,6 +620,11 @@ class _HomePageContentState extends State<_HomePageContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Admin data setup button (only visible for admin users)
+          SetupDataButton(
+            isAdmin: true, // In a real app, you would check if the user is admin
+          ),
+
           // Profile completion banner if user profile is incomplete
           if (_currentUser != null) ...[  
             SizedBox(height: 16.h),

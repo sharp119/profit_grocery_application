@@ -7,6 +7,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get_it/get_it.dart';
 import 'services/asset_cache_service.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
@@ -15,6 +16,9 @@ import 'package:profit_grocery_application/presentation/blocs/user/user_event.da
 import 'package:profit_grocery_application/services/session_manager_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
+import 'services/firebase/data_setup_service.dart';
+import 'services/firebase/firestore_service.dart';
+import 'services/firebase/firebase_storage_service.dart';
 
 import 'core/di/cart_injection.dart';
 import 'core/network/network_info.dart';
@@ -148,6 +152,12 @@ Future<void> setupDependencyInjection() async {
   sl.registerLazySingleton(() => FirebaseDatabase.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseRemoteConfig.instance);
+  sl.registerLazySingleton(() => FirebaseStorage.instance);
+  
+  // Register Firebase services
+  sl.registerLazySingleton(() => DataSetupService());
+  sl.registerLazySingleton(() => FirestoreService());
+  sl.registerLazySingleton(() => FirebaseStorageService());
   
   // Basic services
   sl.registerLazySingleton(() => OTPService());
