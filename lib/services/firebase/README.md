@@ -1,74 +1,127 @@
-# Firebase Data Setup
+# Firebase Services
 
-This module provides functionality to set up products and categories in Firebase Firestore and Storage.
+This directory contains all Firebase-related services for the ProfitGrocery application.
 
-## Overview
+## Services Overview
 
-The implementation includes:
-
-1. **Firebase Storage Service** (`firebase_storage_service.dart`)
-   - Handles uploading images from assets to Firebase Storage
-   - Creates organized folder structure for products and categories
-   - Returns download URLs for the uploaded images
-
-2. **Firestore Service** (`firestore_service.dart`)
-   - Manages database operations for products and categories
-   - Creates proper document structure in Firestore
-   - Handles CRUD operations for products and categories
-
-3. **Data Setup Service** (`data_setup_service.dart`)
-   - Orchestrates the setup process
-   - Creates all category groups and items
-   - Creates sample products for each category
-   - Updates image paths with Firebase Storage URLs
-   - Provides progress tracking and callbacks
-
-4. **UI Components**
-   - `SetupDataButton` - A button for the home screen to trigger the setup process
-   - `DataSetupDialog` - A dialog showing setup progress and results
-
-## Usage
-
-The setup process is triggered by the "Initialize Firebase Data" button on the home screen. This button is only visible to admin users.
-
-When clicked, it will:
-
-1. Show a confirmation dialog
-2. Start the setup process
-3. Display progress in a dialog
-4. Notify completion or failure
+- **FirestoreService**: Handles all interactions with Cloud Firestore.
+- **FirebaseStorageService**: Manages file uploads and downloads with Firebase Storage.
+- **DataSetupService**: Handles initialization of data in Firebase (categories, products, etc.).
+- **DataMigrationService**: Provides functionality to migrate data between different Firebase structures.
+- **MigrationRunner**: Utility to run migrations with UI feedback.
 
 ## Data Structure
 
-### Firestore Collections
+### Categories and Products Structure
 
-- **categories/**
-  - `{categoryGroupId}/`
-    - id, title, backgroundColor, itemBackgroundColor
-    - **items/**
-      - `{categoryItemId}/`
-        - id, label, imagePath, description
+The application uses a nested data structure for categories and products:
 
-- **products/**
-  - `{productId}/`
-    - id, name, image, description, price, mrp, inStock, categoryId, subcategoryId, tags, isFeatured, isActive, weight, brand, rating, reviewCount
+```
+/categories/{categoryGroupId}/                 # Category Group (e.g., "fruits_vegetables")
+    - id: string
+    - title: string
+    - backgroundColor: number
+    - itemBackgroundColor: number
+    
+    /items/{categoryItemId}/                   # Category Item (e.g., "fresh_fruits")
+        - id: string
+        - label: string
+        - imagePath: string
+        - description: string
 
-### Firebase Storage Structure
+/products/{categoryGroupId}/                   # Products organized by Category Group
+    /{categoryItemId}/                         # Products organized by Category Item
+        /products/                             # Products collection
+            /items/                            # Items collection
+                /{productId}/                  # Individual Product
+                    - id: string
+                    - name: string
+                    - description: string
+                    - price: number
+                    - mrp: number
+                    - inStock: boolean
+                    - ...other product fields
+```
 
-- **categories/**
-  - `{categoryGroupId}/`
-    - `{categoryItemId}/`
-      - category_image.png
+For faster queries, products are also stored in a flat collection:
 
-- **products/**
-  - `{categoryId}/`
-    - `{productId}/`
-      - product_image.png
+```
+/products/{productId}/
+    - id: string
+    - name: string
+    - description: string
+    - price: number
+    - mrp: number
+    - inStock: boolean
+    - categoryId: string
+    - subcategoryId: string
+    - ...other product fields
+```
 
-## Notes
+### Storage Structure
 
-- The setup process should only be run once during initial app setup.
-- It creates 6 sample products for each category item.
-- All category groups from the `CategoryGroups` class are included.
-- Random product images are selected from the assets/products folder.
-- Category images are taken from the assets/subcategories folder based on the paths in the CategoryItem model.
+Images are stored in Firebase Storage with the following path structure:
+
+```
+/categories/{categoryGroupId}/{categoryItemId}/category_image.png
+/products/{categoryGroupId}/{categoryItemId}/{productId}/product_image.png
+```
+
+This structure ensures that:
+1. Category images are organized by category group and item
+2. Product images are organized in the same hierarchy as product data
+3. All paths follow a consistent pattern for easy retrieval
+
+## Migration
+
+The application includes tools to migrate between different data structures:
+
+1. **Database Migration**: Migrates data between Realtime Database and Firestore.
+2. **Product Structure Migration**: Reorganizes products to be properly nested under category items.
+
+### Running a Migration
+
+Migrations can be run from the admin interface at:
+
+```
+Admin > Database Migration
+```
+
+There are two migration options:
+
+1. **Realtime Database to Firestore**: Migrates all data from RTDB to Firestore
+2. **Product Structure Migration**: Reorganizes existing products to the correct nested structure
+
+## Usage
+
+Example code to store a product:
+
+```dart
+final FirestoreService firestoreService = FirestoreService();
+final FirebaseStorageService storageService = FirebaseStorageService();
+
+// Upload a product image
+final String imageUrl = await storageService.uploadRandomProductImage(
+  productId: 'product123',
+  categoryId: 'fruits_vegetables',
+  subcategoryId: 'fresh_fruits',
+);
+
+// Create a product model
+final product = ProductModel(
+  id: 'product123',
+  name: 'Organic Apple',
+  image: imageUrl,
+  description: 'Fresh organic apples',
+  price: 99.0,
+  mrp: 120.0,
+  inStock: true,
+  categoryId: 'fruits_vegetables',
+  subcategoryId: 'fresh_fruits',
+  tags: ['fruits', 'organic'],
+  isFeatured: true,
+);
+
+// Add the product
+await firestoreService.addProduct(product);
+```

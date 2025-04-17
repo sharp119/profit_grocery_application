@@ -262,6 +262,7 @@ class DataSetupService {
           final imageUrl = await _storageService.uploadRandomProductImage(
             productId: productId,
             categoryId: categoryGroup.id,
+            subcategoryId: categoryItem.id,
           );
           
           // Update the product with the image URL and additional fields

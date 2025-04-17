@@ -68,10 +68,21 @@ class FirestoreService {
   /// Adds a product to Firestore
   Future<String> addProduct(ProductModel product) async {
     try {
+      // If subcategoryId is not provided, use a default value
+      String subcategoryId = product.subcategoryId ?? 'unknown';
+      
+      // Determine document reference path - place product under the proper subcategory collection
+      // Format: /products/{categoryId}/{subcategoryId}/products/{productId}
+      final CollectionReference productsSubcollection = productsCollection
+          .doc(product.categoryId)
+          .collection(subcategoryId)
+          .doc('products')
+          .collection('items');
+      
       // Use the productId if provided, otherwise auto-generate one
       final DocumentReference docRef = product.id.isNotEmpty
-          ? productsCollection.doc(product.id)
-          : productsCollection.doc();
+          ? productsSubcollection.doc(product.id)
+          : productsSubcollection.doc();
       
       // Get the auto-generated ID if one wasn't provided
       final String productId = product.id.isNotEmpty ? product.id : docRef.id;
@@ -79,10 +90,13 @@ class FirestoreService {
       // Create a copy of the product with the ID if it wasn't provided
       final ProductModel productWithId = product.id.isNotEmpty
           ? product
-          : product.copyWith(id: productId, weight: '', rating: 0.0 , brand: '', reviewCount: 0);
+          : product.copyWith(id: productId, weight: '', rating: 0.0, brand: '', reviewCount: 0);
       
-      // Add the product document
+      // Add the product document under the subcategory
       await docRef.set(productWithId.toJson());
+      
+      // Also add to main products collection for easier querying across all products
+      await productsCollection.doc(productId).set(productWithId.toJson());
       
       return productId;
     } catch (e) {
@@ -142,6 +156,28 @@ class FirestoreService {
           .toList();
     } catch (e) {
       debugPrint('Error getting products by category ID: $e');
+      return [];
+    }
+  }
+  
+  /// Gets products by subcategory ID from Firestore
+  Future<List<ProductModel>> getProductsBySubcategoryId(String categoryId, String subcategoryId) async {
+    try {
+      // Get products from the nested structure under products collection
+      // Format: /products/{categoryId}/{subcategoryId}/products/items/{productId}
+      final querySnapshot = await productsCollection
+          .doc(categoryId)
+          .collection(subcategoryId)
+          .doc('products')
+          .collection('items')
+          .get();
+      
+      return querySnapshot.docs
+          .map((doc) => ProductModel.fromJson(
+                {...(doc.data() as Map<String, dynamic>), 'id': doc.id}))
+          .toList();
+    } catch (e) {
+      debugPrint('Error getting products by subcategory ID: $e');
       return [];
     }
   }

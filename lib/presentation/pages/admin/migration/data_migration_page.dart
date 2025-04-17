@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../../core/constants/app_theme.dart';
+import '../../../../services/firebase/migration_runner.dart';
 import '../../../../utils/migration/database_migrator.dart';
 import '../../../widgets/base_layout.dart';
 
@@ -213,6 +214,73 @@ class _DataMigrationPageState extends State<DataMigrationPage> {
                 ],
               ),
             ),
+            SizedBox(height: 24.h),
+            
+            // Product Structure Migration Section
+            Text(
+              'Product Structure Migration',
+              style: TextStyle(
+                fontSize: 24.sp,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.accentColor,
+              ),
+            ),
+            SizedBox(height: 16.h),
+            Container(
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: AppTheme.secondaryColor,
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Migrate product structure',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'This will reorganize existing products to correct the structure. '
+                    'Products will be moved to be nested under their respective category items '
+                    'rather than directly under category groups. '
+                    'Images will also be reorganized in Firebase Storage.',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _isMigrating 
+                        ? null 
+                        : () => MigrationRunner.showMigrationDialog(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.amber,
+                        foregroundColor: AppTheme.primaryColor,
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                      child: Text(
+                        'Start Product Structure Migration',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
             SizedBox(height: 24.h),
             if (_migrationResults.isNotEmpty) ...[
               Text(

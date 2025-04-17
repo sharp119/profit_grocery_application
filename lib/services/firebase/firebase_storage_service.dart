@@ -56,14 +56,15 @@ class FirebaseStorageService {
   Future<String> uploadRandomProductImage({
     required String productId,
     required String categoryId,
+    required String subcategoryId,
   }) async {
     try {
       // Choose a random product image from 1-10
       final int randomIndex = DateTime.now().millisecondsSinceEpoch % 10 + 1;
       final String assetPath = 'assets/products/$randomIndex.png';
       
-      // Create storage path based on category and product ID
-      final String storagePath = 'products/$categoryId/$productId';
+      // Create storage path based on category group, category item, and product ID
+      final String storagePath = 'products/$categoryId/$subcategoryId/$productId';
       
       // Upload the image
       return await uploadAssetImage(
