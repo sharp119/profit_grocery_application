@@ -1,0 +1,341 @@
+=== FIRESTORE STRUCTURE EXPLORER ===
+Export started at: 2025-04-19T19:34:27.847Z
+
+Categories Collection:
+=====================
+
+Category Document: bakeries_biscuits
+  backgroundColor: 4280163870
+  itemBackgroundColor: 4294962355
+  title: Bakery & Biscuits
+  id: bakeries_biscuits
+  Subcollection: items
+    Document ID: bakery_snacks
+      id: bakery_snacks
+      description: null
+      label: Bakery Snacks
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Fbakery_snacks%2Fcategory_image.png?alt=media&token=48f929b8-02b1-4c86-8ee3-30ec1795a9bb
+
+    Document ID: buns_pavs
+      id: buns_pavs
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Fbuns_pavs%2Fcategory_image.png?alt=media&token=eba8e159-ce82-4cf6-9a44-69f41ba89f39
+      label: Buns & Pavs
+      description: null
+
+    Document ID: cakes_pastries
+      id: cakes_pastries
+      description: null
+      label: Cakes & Pastries
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Fcakes_pastries%2Fcategory_image.png?alt=media&token=ad789587-50e5-42db-aa2b-f48dc188b94c
+
+    Document ID: cookies
+      label: Cookies
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Fcookies%2Fcategory_image.png?alt=media&token=09afcb8f-8768-430b-bcd3-9ad3d6bdaf3a
+      id: cookies
+      description: null
+
+    Document ID: cream_biscuits
+      label: Cream Biscuits
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Fcream_biscuits%2Fcategory_image.png?alt=media&token=ffb80655-b352-4dee-9bd6-4f3fb6997c28
+      id: cream_biscuits
+
+    Document ID: premium_cookies
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Fpremium_cookies%2Fcategory_image.png?alt=media&token=3184f756-e26e-49fa-a3cf-abc804f37150
+      description: null
+      label: Premium Cookies
+      id: premium_cookies
+
+    Document ID: rusk_khari
+      label: Rusk & Khari
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Frusk_khari%2Fcategory_image.png?alt=media&token=fe4e1984-bb82-4211-a2cc-5e2ab5ce5921
+      id: rusk_khari
+      description: null
+
+    Document ID: tea_time
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbakeries_biscuits%2Ftea_time%2Fcategory_image.png?alt=media&token=e25a3b68-33c6-4215-a510-28a2d5a785b9
+      id: tea_time
+      label: Tea Time Biscuits
+      description: null
+
+
+
+Category Document: beauty_personal_care
+  itemBackgroundColor: 4294174197
+  backgroundColor: 4280163870
+  id: beauty_personal_care
+  title: Beauty & Personal Care
+  Subcollection: items
+    Document ID: bath_body
+      id: bath_body
+      description: null
+      label: Bath & Body
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Fbath_body%2Fcategory_image.png?alt=media&token=9ad79854-744a-486b-acf7-9d5e1369c9cb
+
+    Document ID: feminine_hygiene
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Ffeminine_hygiene%2Fcategory_image.png?alt=media&token=670ab099-c064-4e49-a30d-4aecc6e9bb1d
+      id: feminine_hygiene
+      label: Feminine Hygiene
+
+    Document ID: fragrances
+      description: null
+      id: fragrances
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Ffragrances%2Fcategory_image.png?alt=media&token=12369c5f-8a4e-47f5-beb6-0c4094560c36
+      label: Fragrances
+
+    Document ID: hair_care
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Fhair_care%2Fcategory_image.png?alt=media&token=91fc9925-765a-4eb7-8088-6c50d2db83af
+      description: null
+      id: hair_care
+      label: Hair Care
+
+    Document ID: makeup
+      label: Makeup
+      id: makeup
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Fmakeup%2Fcategory_image.png?alt=media&token=1844317d-8efd-42be-807a-60d2b51577ba
+      description: null
+
+    Document ID: men_grooming
+      id: men_grooming
+      label: Men's Grooming
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Fmen_grooming%2Fcategory_image.png?alt=media&token=71aa8986-bcde-4610-9b29-0758458f462c
+
+    Document ID: personal_care
+      id: personal_care
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Fpersonal_care%2Fcategory_image.png?alt=media&token=2e1bfd41-5c80-439d-ae14-00bc30fd8fb7
+      label: Personal Care
+
+    Document ID: skin_care
+      id: skin_care
+      label: Skin Care
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fbeauty_personal_care%2Fskin_care%2Fcategory_image.png?alt=media&token=63f42856-ca6d-4961-95e2-bd445e9626e0
+
+
+
+Category Document: dairy_bread
+  id: dairy_bread
+  backgroundColor: 4280163870
+  title: Dairy, Bread & Eggs
+  itemBackgroundColor: 4294965473
+  Subcollection: items
+    Document ID: bread
+      label: Bread
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fbread%2Fcategory_image.png?alt=media&token=a5cbf167-ef0d-4458-a4d3-5b9e33d961d3
+      id: bread
+
+    Document ID: butter_cheese
+      label: Butter & Cheese
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fbutter_cheese%2Fcategory_image.png?alt=media&token=fff8ad2a-718e-456c-b0c5-a8df984c6289
+      id: butter_cheese
+      description: null
+
+    Document ID: condensed_milk
+      description: null
+      label: Condensed Milk
+      id: condensed_milk
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fcondensed_milk%2Fcategory_image.png?alt=media&token=1dfe2818-97ec-4ee2-9bb3-a384e1121c43
+
+    Document ID: cream_whitener
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fcream_whitener%2Fcategory_image.png?alt=media&token=68ac5bdb-ffcd-4c37-a5ca-af64250a4020
+      label: Cream & Whitener
+      id: cream_whitener
+      description: null
+
+    Document ID: curd_yogurt
+      id: curd_yogurt
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fcurd_yogurt%2Fcategory_image.png?alt=media&token=42d188cf-323d-46ae-a825-63668a5832c8
+      description: null
+      label: Curd & Yogurt
+
+    Document ID: eggs
+      id: eggs
+      label: Eggs
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Feggs%2Fcategory_image.png?alt=media&token=9901216a-1f6c-4a71-8958-9e8e939c41a3
+      description: null
+
+    Document ID: milk
+      label: Milk
+      id: milk
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fmilk%2Fcategory_image.png?alt=media&token=22717bc1-0c61-46c7-aede-0f159ecd9640
+      description: null
+
+    Document ID: paneer_tofu
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fdairy_bread%2Fpaneer_tofu%2Fcategory_image.png?alt=media&token=dc7dd9fb-8561-44c8-a608-bd0925592d03
+      id: paneer_tofu
+      description: null
+      label: Paneer & Tofu
+
+
+
+Category Document: fruits_vegetables
+  id: fruits_vegetables
+  title: Fruits & Vegetables
+  itemBackgroundColor: 4293457385
+  backgroundColor: 4280163870
+  Subcollection: items
+    Document ID: cut_fruits
+      id: cut_fruits
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Fcut_fruits%2Fcategory_image.png?alt=media&token=75afbc85-95ac-4ad6-a18f-24a5443cb58c
+      label: Cut & Peeled Fruits
+
+    Document ID: cut_vegetables
+      label: Cut & Peeled Vegetables
+      id: cut_vegetables
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Fcut_vegetables%2Fcategory_image.png?alt=media&token=6085ebcd-3bc5-445f-8055-bfde711ddbad
+      description: null
+
+    Document ID: exotic_fruits
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Fexotic_fruits%2Fcategory_image.png?alt=media&token=0dfef799-20c8-4c9e-bbfa-66ac894f03cf
+      id: exotic_fruits
+      label: Exotic Fruits
+
+    Document ID: exotic_vegetables
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Fexotic_vegetables%2Fcategory_image.png?alt=media&token=57331cfb-81c4-411c-9123-31e48b4de14f
+      description: null
+      id: exotic_vegetables
+      label: Exotic Vegetables
+
+    Document ID: fresh_fruits
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Ffresh_fruits%2Fcategory_image.png?alt=media&token=e8f7c4ed-405a-4ed1-9fef-6641a4ae49df
+      id: fresh_fruits
+      label: Fresh Fruits
+
+    Document ID: fresh_vegetables
+      label: Fresh Vegetables
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Ffresh_vegetables%2Fcategory_image.png?alt=media&token=7c1b015d-4338-4169-b1e9-058042880f99
+      id: fresh_vegetables
+      description: null
+
+    Document ID: herbs_seasonings
+      description: null
+      id: herbs_seasonings
+      label: Herbs & Seasonings
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Fherbs_seasonings%2Fcategory_image.png?alt=media&token=e1a16c13-c621-4448-9a2d-c435fbf6f22d
+
+    Document ID: organic
+      description: null
+      label: Organic
+      id: organic
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Ffruits_vegetables%2Forganic%2Fcategory_image.png?alt=media&token=143c017d-acc8-4baf-bd9b-858cfd8918fb
+
+
+
+Category Document: grocery_kitchen
+  backgroundColor: 4280163870
+  title: Grocery & Kitchen testing
+  id: grocery_kitchen
+  itemBackgroundColor: 4292998633
+  Subcollection: items
+    Document ID: atta_rice_dal
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Fatta_rice_dal%2Fcategory_image.png?alt=media&token=7efba677-57fa-4484-b323-09e9410b4f54
+      id: atta_rice_dal
+      description: null
+      label: Atta, Rice & Dal
+
+    Document ID: cleaning_household
+      id: cleaning_household
+      label: Cleaning & Household
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Fcleaning_household%2Fcategory_image.png?alt=media&token=ba71f647-5326-4711-8330-4d587de1d2cf
+
+    Document ID: dry_fruits_cereals
+      description: null
+      id: dry_fruits_cereals
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Fdry_fruits_cereals%2Fcategory_image.png?alt=media&token=082471a5-a507-48ee-8d7d-820e1a18fd9f
+      label: Dry Fruits & Cereals
+
+    Document ID: instant_food
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Finstant_food%2Fcategory_image.png?alt=media&token=72b0d648-40d7-4c8c-b5d0-e137e04941a4
+      id: instant_food
+      label: Instant Food
+      description: null
+
+    Document ID: kitchenware
+      label: Kitchenware & Appliances
+      id: kitchenware
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Fkitchenware%2Fcategory_image.png?alt=media&token=b48668c7-3c0e-4617-bb73-626985be259c
+      description: null
+
+    Document ID: oil_ghee_masala
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Foil_ghee_masala%2Fcategory_image.png?alt=media&token=26520078-8834-4f28-b5fd-432e3f0673e8
+      id: oil_ghee_masala
+      label: Oil, Ghee & Masala
+      description: null
+
+    Document ID: sauces_spreads
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Fsauces_spreads%2Fcategory_image.png?alt=media&token=92494315-4521-4053-bdbd-0741a0c6bd41
+      id: sauces_spreads
+      label: Sauces & Spreads
+      description: null
+
+    Document ID: vegetables_fruits
+      label: Vegetables & Fruits
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fgrocery_kitchen%2Fvegetables_fruits%2Fcategory_image.png?alt=media&token=29e74f28-25df-418e-8ff0-edad62a49633
+      id: vegetables_fruits
+      description: null
+
+
+
+Category Document: snacks_drinks
+  title: Snacks & Drinks
+  id: snacks_drinks
+  backgroundColor: 4280163870
+  itemBackgroundColor: 4292998654
+  Subcollection: items
+    Document ID: chips_namkeen
+      description: null
+      label: Chips & Namkeen
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fchips_namkeen%2Fcategory_image.png?alt=media&token=e1f79d9e-b2c0-4df0-acfe-5a55f17b12ff
+      id: chips_namkeen
+
+    Document ID: drinks_juices
+      description: null
+      id: drinks_juices
+      label: Drinks & Juices
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fdrinks_juices%2Fcategory_image.png?alt=media&token=a96f9b47-b2a1-4406-8e1d-e7a4ccb7570e
+
+    Document ID: energy_drinks
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fenergy_drinks%2Fcategory_image.png?alt=media&token=078d888d-d171-4604-9b74-201801a3dc4f
+      id: energy_drinks
+      label: Energy Drinks
+      description: null
+
+    Document ID: ice_cream
+      id: ice_cream
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fice_cream%2Fcategory_image.png?alt=media&token=1609e7f6-2438-4ea0-9b15-3c0290f5559d
+      description: null
+      label: Ice Creams & More
+
+    Document ID: paan_corner
+      description: null
+      label: Paan Corner
+      id: paan_corner
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fpaan_corner%2Fcategory_image.png?alt=media&token=1476b41e-c632-4bb0-a965-d266eeaa0046
+
+    Document ID: soft_drinks
+      id: soft_drinks
+      label: Soft Drinks
+      description: null
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fsoft_drinks%2Fcategory_image.png?alt=media&token=0dcddbe0-48f8-4c86-8c97-e9b0d22f47b4
+
+    Document ID: sweets_chocolates
+      label: Sweets & Chocolates
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Fsweets_chocolates%2Fcategory_image.png?alt=media&token=3b5cb4fb-aa10-460e-a012-7125f1701d11
+      id: sweets_chocolates
+      description: null
+
+    Document ID: tea_coffee_milk
+      label: Tea, Coffee & Milk Drinks
+      description: null
+      id: tea_coffee_milk
+      imagePath: https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/categories%2Fsnacks_drinks%2Ftea_coffee_milk%2Fcategory_image.png?alt=media&token=9f9a7605-7f8d-4f8a-895c-a067cd099dc1
+
+
