@@ -39,15 +39,26 @@ import '../../widgets/tabs/horizontal_category_tabs.dart';
 import '../cart/cart_page.dart';
 import '../category_products/category_products_page.dart';
 import '../product_details/product_details_page.dart';
+import '../../blocs/categories/categories_bloc.dart';
+import '../../../data/repositories/category_repository.dart';
+import '../../../data/models/firestore/category_group_firestore_model.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    // Keep existing UserBloc from navigation and add HomeBloc
-    return BlocProvider(
-      create: (context) => HomeBloc()..add(const LoadHomeData()),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (context) => HomeBloc()..add(const LoadHomeData()),
+        ),
+        BlocProvider(
+          create: (context) => CategoriesBloc(
+            repository: CategoryRepository(),
+          )..add(LoadCategories()),
+        ),
+      ],
       child: const _HomePageContent(),
     );
   }
@@ -178,7 +189,7 @@ class _HomePageContentState extends State<_HomePageContent> {
       context,
       MaterialPageRoute(
         builder: (context) => CategoryProductsPage(
-          categoryId: category.id.split('_').first, // Use first part before underscore as category group ID
+          categoryId: category.id,
         ),
       ),
     );
@@ -539,7 +550,7 @@ class _HomePageContentState extends State<_HomePageContent> {
                       onRefresh: _refreshData,
                       color: AppTheme.accentColor,
                       child: state.status == HomeStatus.initial || 
-                             (state.status == HomeStatus.loading && state.categories.isEmpty)
+                             (state.status == HomeStatus.loading && state.categoryGroups.isEmpty)
                           ? _buildLoadingState()
                           : _buildContent(state),
                     ),
@@ -651,7 +662,7 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
             
             SizedBox(
-              height: 150.h, // Further reduced height
+              height: 150.h,
               child: ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: state.featuredPromotions.length,
@@ -659,11 +670,11 @@ class _HomePageContentState extends State<_HomePageContent> {
                 itemBuilder: (context, index) {
                   final promotion = state.featuredPromotions[index];
                   return Container(
-                    width: 160.w, // Reduced width
+                    width: 160.w,
                     margin: EdgeInsets.symmetric(horizontal: 8.w),
                     child: PromotionalCategoryCard(
                       category: promotion,
-                      height: 150.h, // Reduced height to prevent overflow
+                      height: 150.h,
                       onTap: () => _onCategoryTap(promotion),
                     ),
                   );
@@ -672,56 +683,22 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
           ],
       
-          // CategoryGrid4x2 Sections
-          if (state.categoryGroups.isNotEmpty) ...
-            state.categoryGroups.map((group) => CategoryGrid4x2(
-              title: group.title,
-              images: group.images,
-              labels: group.labels,
-              backgroundColor: group.backgroundColor,
-              itemBackgroundColor: group.itemBackgroundColor,
-              onItemTap: (index) {
-                final category = state.mainCategories.firstWhere(
-                  (c) => c.name == group.items[index].label,
-                  orElse: () => state.mainCategories.first,
+          // Category Groups Section
+          if (state.categoryGroups.isNotEmpty)
+            ...state.categoryGroups.map((group) => CategoryGrid4x2(
+              categoryGroup: group,
+              onItemTap: (item) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => CategoryProductsPage(
+                      categoryId: item.id,
+                    ),
+                  ),
                 );
-                _onCategoryTap(category);
               },
             )).toList(),
             
-          // Legacy Categories Sections (hidden)
-          if (false && state.mainCategories.isNotEmpty) ...[
-            DenseCategoryGrid.withHeader(
-              title: 'Grocery & Kitchen',
-              categories: state.mainCategories,
-              onCategoryTap: _onCategoryTap,
-              crossAxisCount: 2,
-              spacing: 16.0,
-            ),
-          ],
-          
-          // Shop by Category Section (Snacks & Drinks) - Hidden
-          if (false && state.snacksCategories.isNotEmpty) ...[
-            DenseCategoryGrid.withHeader(
-              title: 'Snacks & Drinks',
-              categories: state.snacksCategories,
-              onCategoryTap: _onCategoryTap,
-              crossAxisCount: 2,
-              spacing: 16.0,
-            ),
-          ],
-          
-          // Shop by Store Section - Hidden
-          if (false && state.storeCategories.isNotEmpty) ...[
-            DenseCategoryGrid.withHeader(
-              title: 'Shop by store',
-              categories: state.storeCategories,
-              onCategoryTap: _onCategoryTap,
-              crossAxisCount: 2,
-              spacing: 16.0,
-            ),
-          ],
-          
           // Bestsellers Section
           if (state.bestSellers.isNotEmpty) ...[
             SectionHeader(
@@ -742,7 +719,7 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
           ],
           
-          SizedBox(height: 100.h), // Extra space for the floating action button
+          SizedBox(height: 100.h),
         ],
       ),
     );

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import '../../../data/models/firestore/category_group_firestore_model.dart';
 
 import '../../../core/constants/app_theme.dart';
-import '../../../data/models/category_group_model.dart';
 import '../section_header.dart';
 
 /// A 4x2 grid widget for displaying categories
@@ -12,37 +13,27 @@ import '../section_header.dart';
 /// 
 /// The grid is wrapped in a container with a customizable background color.
 class CategoryGrid4x2 extends StatelessWidget {
-  final String title;
-  final List<String> images;
-  final List<String> labels;
-  final Color backgroundColor;
-  final Color itemBackgroundColor; // Add color for all items
-  final Function(int) onItemTap;
+  final CategoryGroupFirestore categoryGroup;
+  final Function(CategoryItemFirestore) onItemTap;
   final double spacing;
 
   const CategoryGrid4x2({
     Key? key,
-    required this.title,
-    required this.images,
-    required this.labels,
-    required this.backgroundColor,
-    required this.itemBackgroundColor,
+    required this.categoryGroup,
     required this.onItemTap,
     this.spacing = 8.0,
-  }) : assert(images.length == 8, 'Must provide exactly 8 images'),
-       assert(labels.length == 8, 'Must provide exactly 8 labels'),
-       super(key: key);
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Section header - match reference style
+        // Section header
         Padding(
           padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
           child: Text(
-            title,
+            categoryGroup.title,
             style: TextStyle(
               color: Colors.white,
               fontSize: 18.sp,
@@ -56,8 +47,8 @@ class CategoryGrid4x2 extends StatelessWidget {
           margin: EdgeInsets.symmetric(horizontal: 16.w, vertical: 4.h),
           padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 8.h),
           decoration: BoxDecoration(
-            color: backgroundColor.withOpacity(0), // Transparent background as shown in reference
-            borderRadius: BorderRadius.circular(0), // No border radius
+            color: categoryGroup.backgroundColor.withOpacity(0),
+            borderRadius: BorderRadius.circular(0),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -68,9 +59,9 @@ class CategoryGrid4x2 extends StatelessWidget {
                 mainAxisSpacing: spacing,
                 crossAxisSpacing: spacing,
                 shrinkWrap: true,
-                childAspectRatio: 0.7, // Decreased aspect ratio to allow more vertical space
+                childAspectRatio: 0.7,
                 physics: const NeverScrollableScrollPhysics(),
-                children: List.generate(8, (index) => _buildGridItem(index)),
+                children: categoryGroup.items.map((item) => _buildGridItem(item)).toList(),
               ),
             ],
           ),
@@ -79,67 +70,51 @@ class CategoryGrid4x2 extends StatelessWidget {
     );
   }
 
-  /// Builds an individual grid item
-  // Return the consistent category color for all items
-  Color _getCategoryColor(int index) {
-    return itemBackgroundColor;
-  }
-  
-  Widget _buildGridItem(int index) {
-  return GestureDetector(
-  onTap: () => onItemTap(index),
-  child: Column(
-  mainAxisSize: MainAxisSize.min, // Use minimum space needed
-  children: [
-  // Image container
-  Flexible(
-  child: AspectRatio(
-  aspectRatio: 1.0, // Square aspect ratio
-  child: Container(
-  decoration: BoxDecoration(
-      color: _getCategoryColor(index),
-      borderRadius: BorderRadius.circular(8.r),
-    ),
-  padding: EdgeInsets.all(10.w),
-  child: Image.asset(
-    images[index],
-  fit: BoxFit.contain,
-  errorBuilder: (context, error, stackTrace) {
-  // Try alternative path or show placeholder on error
-  return Image.asset(
-    images[index].replaceFirst('assets/images/categories/', 'assets/categories/'),
-  fit: BoxFit.contain,
-  errorBuilder: (context, error, stackTrace) {
-  // If both paths fail, show a placeholder
-  return Container(
-  color: Colors.transparent,
-  child: Icon(
-    Icons.image_not_supported,
-      color: Colors.white,
-        size: 24.sp,
-        ),
-        );
-        },
-        );
-        },
-        ),
-      ),
-    ),
-  ),
-  SizedBox(height: 4.h), // Reduced vertical spacing
-  
-  // Label - Contained in a SizedBox to constrain height
-  Container(
-  height: 32.h, // Fixed height for text
-  alignment: Alignment.center,
-  child: Text(
-    labels[index],
-    style: TextStyle(
-      color: Colors.white,
-        fontSize: 11.sp,
-          fontWeight: FontWeight.w500,
+  Widget _buildGridItem(CategoryItemFirestore item) {
+    return GestureDetector(
+      onTap: () => onItemTap(item),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Image container
+          Flexible(
+            child: AspectRatio(
+              aspectRatio: 1.0,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: categoryGroup.itemBackgroundColor,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                padding: EdgeInsets.all(10.w),
+                child: CachedNetworkImage(
+                  imageUrl: item.imagePath,
+                  fit: BoxFit.contain,
+                  placeholder: (context, url) => const Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Icon(
+                    Icons.image_not_supported,
+                    color: Colors.white,
+                    size: 24.sp,
+                  ),
+                ),
+              ),
+            ),
           ),
-            textAlign: TextAlign.center,
+          SizedBox(height: 4.h),
+          
+          // Label
+          Container(
+            height: 32.h,
+            alignment: Alignment.center,
+            child: Text(
+              item.label,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),

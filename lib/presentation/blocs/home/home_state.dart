@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
+import '../../../data/models/firestore/category_group_firestore_model.dart';
 
 enum HomeStatus {
   initial,
@@ -14,116 +15,96 @@ enum HomeStatus {
 
 class HomeState extends Equatable {
   final HomeStatus status;
-  final int selectedTabIndex;
-  final List<String> tabs;
   final List<String> banners;
-  final List<Category> categories;
   final List<Category> mainCategories;
   final List<Category> snacksCategories;
-  final List<Category> beautyCategories;
   final List<Category> storeCategories;
-  final List<CategoryGroup> categoryGroups;
   final List<Category> featuredPromotions;
-  final List<Product> featuredProducts;
-  final List<Product> newArrivals;
   final List<Product> bestSellers;
-  final String? errorMessage;
-  final int cartItemCount;
-  final String? cartPreviewImage;
-  final double? cartTotalAmount;
   final Map<String, int> cartQuantities;
   final Map<String, Color> subcategoryColors;
+  final int cartItemCount;
+  final double cartTotalAmount;
+  final String? cartPreviewImage;
+  final String? errorMessage;
+  final List<String> tabs;
+  final int selectedTabIndex;
+  final List<CategoryGroupFirestore> categoryGroups;
 
   const HomeState({
     this.status = HomeStatus.initial,
-    this.selectedTabIndex = 0,
-    this.tabs = const [],
     this.banners = const [],
-    this.categories = const [],
     this.mainCategories = const [],
     this.snacksCategories = const [],
-    this.beautyCategories = const [],
     this.storeCategories = const [],
-    this.categoryGroups = const [],
     this.featuredPromotions = const [],
-    this.featuredProducts = const [],
-    this.newArrivals = const [],
     this.bestSellers = const [],
-    this.errorMessage,
-    this.cartItemCount = 0,
-    this.cartPreviewImage,
-    this.cartTotalAmount,
     this.cartQuantities = const {},
     this.subcategoryColors = const {},
+    this.cartItemCount = 0,
+    this.cartTotalAmount = 0.0,
+    this.cartPreviewImage,
+    this.errorMessage,
+    this.tabs = const ['All', 'Electronics', 'Beauty', 'Kids', 'Gifting'],
+    this.selectedTabIndex = 0,
+    this.categoryGroups = const [],
   });
 
   HomeState copyWith({
     HomeStatus? status,
-    int? selectedTabIndex,
-    List<String>? tabs,
     List<String>? banners,
-    List<Category>? categories,
     List<Category>? mainCategories,
     List<Category>? snacksCategories,
-    List<Category>? beautyCategories,
     List<Category>? storeCategories,
-    List<CategoryGroup>? categoryGroups,
     List<Category>? featuredPromotions,
-    List<Product>? featuredProducts,
-    List<Product>? newArrivals,
     List<Product>? bestSellers,
-    String? errorMessage,
-    int? cartItemCount,
-    String? cartPreviewImage,
-    double? cartTotalAmount,
     Map<String, int>? cartQuantities,
     Map<String, Color>? subcategoryColors,
+    int? cartItemCount,
+    double? cartTotalAmount,
+    String? cartPreviewImage,
+    String? errorMessage,
+    List<String>? tabs,
+    int? selectedTabIndex,
+    List<CategoryGroupFirestore>? categoryGroups,
   }) {
     return HomeState(
       status: status ?? this.status,
-      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
-      tabs: tabs ?? this.tabs,
       banners: banners ?? this.banners,
-      categories: categories ?? this.categories,
       mainCategories: mainCategories ?? this.mainCategories,
       snacksCategories: snacksCategories ?? this.snacksCategories,
-      beautyCategories: beautyCategories ?? this.beautyCategories,
       storeCategories: storeCategories ?? this.storeCategories,
-      categoryGroups: categoryGroups ?? this.categoryGroups,
       featuredPromotions: featuredPromotions ?? this.featuredPromotions,
-      featuredProducts: featuredProducts ?? this.featuredProducts,
-      newArrivals: newArrivals ?? this.newArrivals,
       bestSellers: bestSellers ?? this.bestSellers,
-      errorMessage: errorMessage ?? this.errorMessage,
-      cartItemCount: cartItemCount ?? this.cartItemCount,
-      cartPreviewImage: cartPreviewImage ?? this.cartPreviewImage,
-      cartTotalAmount: cartTotalAmount ?? this.cartTotalAmount,
       cartQuantities: cartQuantities ?? this.cartQuantities,
       subcategoryColors: subcategoryColors ?? this.subcategoryColors,
+      cartItemCount: cartItemCount ?? this.cartItemCount,
+      cartTotalAmount: cartTotalAmount ?? this.cartTotalAmount,
+      cartPreviewImage: cartPreviewImage ?? this.cartPreviewImage,
+      errorMessage: errorMessage ?? this.errorMessage,
+      tabs: tabs ?? this.tabs,
+      selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
+      categoryGroups: categoryGroups ?? this.categoryGroups,
     );
   }
 
   @override
   List<Object?> get props => [
     status,
-    selectedTabIndex,
-    tabs,
     banners,
-    categories,
     mainCategories,
     snacksCategories,
-    beautyCategories,
     storeCategories,
-    categoryGroups,
     featuredPromotions,
-    featuredProducts,
-    newArrivals,
     bestSellers,
-    errorMessage,
-    cartItemCount,
-    cartPreviewImage,
-    cartTotalAmount,
     cartQuantities,
     subcategoryColors,
+    cartItemCount,
+    cartTotalAmount,
+    cartPreviewImage,
+    errorMessage,
+    tabs,
+    selectedTabIndex,
+    categoryGroups,
   ];
 }

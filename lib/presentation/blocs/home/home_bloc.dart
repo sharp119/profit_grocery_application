@@ -13,14 +13,14 @@ import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import 'home_event.dart';
 import 'home_state.dart';
+import '../../../data/repositories/category_repository.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
-  // In a real app, we would inject repository dependencies here
-  // final CategoryRepository _categoryRepository;
-  // final ProductRepository _productRepository;
-  // final CartRepository _cartRepository;
+  final CategoryRepository _categoryRepository;
 
-  HomeBloc() : super(const HomeState()) {
+  HomeBloc({CategoryRepository? categoryRepository}) 
+      : _categoryRepository = categoryRepository ?? CategoryRepository(),
+        super(const HomeState()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<RefreshHomeData>(_onRefreshHomeData);
     on<SelectCategoryTab>(_onSelectCategoryTab);
@@ -49,8 +49,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           c.id.startsWith('grocery_') || c.id.startsWith('kitchen_')).toList();
       final snacksCategories = allCategories.where((c) => 
           c.id.startsWith('snacks_')).toList();
-      final beautyCategories = allCategories.where((c) => 
-          c.id.startsWith('beauty_')).toList();
       final storeCategories = allCategories.where((c) => 
           c.type == AppConstants.storeCategoryType).toList();
       final featuredPromotions = allCategories.where((c) => 
@@ -68,7 +66,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final cartTotalAmount = _calculateCartTotal(cartQuantities);
 
       // Get category groups for 4x2 grid widget
-      final categoryGroups = _getMockCategoryGroups();
+      final categoryGroups = await _categoryRepository.fetchCategories();
       
       // Simulate network delay
       await Future.delayed(const Duration(seconds: 1));
@@ -77,14 +75,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         status: HomeStatus.loaded,
         tabs: tabs,
         banners: banners,
-        categories: allCategories,
         mainCategories: mainCategories,
         snacksCategories: snacksCategories,
-        beautyCategories: beautyCategories,
         storeCategories: storeCategories,
         featuredPromotions: featuredPromotions,
-        featuredProducts: featuredProducts,
-        newArrivals: newArrivals,
         bestSellers: bestSellers,
         cartItemCount: cartItemCount,
         cartPreviewImage: cartPreviewImage,
@@ -106,15 +100,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     try {
-      // Keep current data while refreshing
-      emit(state.copyWith(status: HomeStatus.loading));
+      // Load categories from Firestore
+      final categoryGroups = await _categoryRepository.fetchCategories();
 
-      // Simulate fetch of fresh data
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // In a real app, we'd get fresh data from repositories
-      // Reuse the load data logic for our demo
-      add(const LoadHomeData());
+      emit(state.copyWith(
+        status: HomeStatus.loaded,
+        categoryGroups: categoryGroups,
+      ));
     } catch (e) {
       emit(state.copyWith(
         status: HomeStatus.error,
@@ -549,12 +541,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     // Return empty cart (no mock data) for production
     CartLogger.log('HOME_BLOC', 'Returning empty cart for initialization');
     return {};
-  }
-  
-  // Get random category groups for home screen
-  List<CategoryGroup> _getMockCategoryGroups() {
-    // Get 4 random category groups from our pre-defined list
-    return CategoryGroups.getRandomGroups(4);
   }
   
   // Generate subcategory colors for products
