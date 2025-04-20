@@ -94,7 +94,7 @@ class FloatingCartBadge extends StatelessWidget {
           padding: EdgeInsets.all(16.r),
           child: Material(
             elevation: 8,
-            borderRadius: BorderRadius.circular(16.r),
+            borderRadius: BorderRadius.circular(24.r),
             color: AppTheme.secondaryColor,
             clipBehavior: Clip.antiAlias,
             child: InkWell(
@@ -108,14 +108,21 @@ class FloatingCartBadge extends StatelessWidget {
               child: Container(
                 width: screenWidth,
                 padding: EdgeInsets.symmetric(
-                  horizontal: 16.r,
-                  vertical: 12.r,
+                  horizontal: 18.r,
+                  vertical: 14.r,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: AppTheme.accentColor.withOpacity(0.3),
+                    width: 1,
+                  ),
+                  borderRadius: BorderRadius.circular(24.r),
                 ),
                 child: Row(
                   children: [
-                    // Cart icon with badge
+                    // Cart icon with badge - improved circular container
                     badges.Badge(
-                      position: badges.BadgePosition.topEnd(top: -8, end: -8),
+                      position: badges.BadgePosition.topEnd(top: -6, end: -6),
                       showBadge: state.itemCount > 0,
                       badgeContent: Text(
                         state.itemCount > 99 ? '99+' : '${state.itemCount}',
@@ -131,10 +138,31 @@ class FloatingCartBadge extends StatelessWidget {
                         padding: EdgeInsets.all(4.r),
                         elevation: 3,
                       ),
-                      child: Icon(
-                        Icons.shopping_cart_outlined,
-                        color: Colors.white,
-                        size: badgeSize,
+                      child: Container(
+                        width: badgeSize * 1.5,
+                        height: badgeSize * 1.5,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: AppTheme.accentColor.withOpacity(0.3),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.2),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Center(
+                          child: Icon(
+                            Icons.shopping_cart_outlined,
+                            color: Colors.white,
+                            size: badgeSize,
+                          ),
+                        ),
                       ),
                     ),
                     

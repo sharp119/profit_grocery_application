@@ -40,6 +40,9 @@ class CartFAB extends StatelessWidget {
     
     CartLogger.info('CART_FAB', 'Building cart FAB with $itemCount items and ₹$totalAmount');
     
+    // Calculate proper image size - slightly bigger than before
+    final imageSize = 48.w;
+    
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -64,7 +67,7 @@ class CartFAB extends StatelessWidget {
             // Item preview with badge
             if (showPreview && previewImagePath != null)
               badges.Badge(
-                position: badges.BadgePosition.topEnd(top: -8, end: -8),
+                position: badges.BadgePosition.topEnd(top: -6, end: -6),
                 badgeAnimation: const badges.BadgeAnimation.slide(),
                 badgeStyle: badges.BadgeStyle(
                   badgeColor: Colors.white,
@@ -79,8 +82,8 @@ class CartFAB extends StatelessWidget {
                   ),
                 ),
                 child: Container(
-                  width: 40.w,
-                  height: 40.w,
+                  width: imageSize,
+                  height: imageSize,
                   decoration: BoxDecoration(
                     color: Colors.white,
                     shape: BoxShape.circle,
@@ -88,13 +91,21 @@ class CartFAB extends StatelessWidget {
                       color: Colors.black,
                       width: 1,
                     ),
+                    // Add slight shadow for depth
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: ClipOval(
                     child: Padding(
-                      padding: EdgeInsets.all(4.w),
+                      padding: EdgeInsets.all(3.w), // Reduced padding for bigger image
                       child: Image.asset(
                         previewImagePath!,
-                        fit: BoxFit.contain,
+                        fit: BoxFit.cover, // Changed to cover for better display
                         errorBuilder: (context, error, stackTrace) {
                           // Return a fallback icon if image fails to load
                           return Icon(
@@ -110,7 +121,7 @@ class CartFAB extends StatelessWidget {
               )
             else
               badges.Badge(
-                position: badges.BadgePosition.topEnd(top: -8, end: -8),
+                position: badges.BadgePosition.topEnd(top: -6, end: -6),
                 badgeAnimation: const badges.BadgeAnimation.slide(),
                 badgeStyle: badges.BadgeStyle(
                   badgeColor: Colors.white,
@@ -124,10 +135,25 @@ class CartFAB extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: Icon(
-                  Icons.shopping_cart,
-                  color: Colors.black,
-                  size: 28.sp,
+                child: Container(
+                  width: imageSize,
+                  height: imageSize,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Icon(
+                    Icons.shopping_cart,
+                    color: Colors.black,
+                    size: 28.sp,
+                  ),
                 ),
               ),
             
@@ -147,26 +173,26 @@ class CartFAB extends StatelessWidget {
                   ),
                 ),
                 
-                // Show total amount if available
+                // Show total amount if available with improved styling
                 if (totalAmount != null)
                   Text(
                     '₹${totalAmount!.toStringAsFixed(2)}',
                     style: TextStyle(
-                      color: Colors.black.withOpacity(0.7),
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
               ],
             ),
             
-            SizedBox(width: 6.w),
+            SizedBox(width: 8.w),
             
             // Arrow icon
             Icon(
               Icons.arrow_forward_ios,
               color: Colors.black,
-              size: 14.sp,
+              size: 16.sp,
             ),
           ],
         ),
