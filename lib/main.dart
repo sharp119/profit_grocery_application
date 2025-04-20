@@ -11,6 +11,10 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/presentation/blocs/products/products_event.dart';
 import 'package:profit_grocery_application/services/product/product_service.dart';
+import 'package:profit_grocery_application/services/service_locator.dart';
+import 'package:profit_grocery_application/services/product/shared_product_service.dart';
+import 'package:profit_grocery_application/services/category/shared_category_service.dart';
+import 'package:profit_grocery_application/data/repositories/bestseller_repository.dart';
 import 'services/asset_cache_service.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
@@ -119,6 +123,9 @@ void main() async {
   // Initialize asset cache service
   await AssetCacheService().initialize();
   
+  // Initialize service locator for shared services
+  setupServiceLocator();
+  
   // Run the cart initializer to ensure cart is loaded at startup
   await sl<CartInitializer>().initialize();
   
@@ -158,6 +165,8 @@ Future<void> setupDependencyInjection() async {
   
   // Basic services
   sl.registerLazySingleton(() => OTPService());
+  
+  // Shared services will be registered by setupServiceLocator()
   
   // Cart dependencies
   await initCartDependencies();
@@ -286,7 +295,11 @@ Future<void> setupDependencyInjection() async {
   );
   
   sl.registerFactory(
-    () => ProductsBloc(productService: sl<ProductService>()),
+    () => ProductsBloc(
+      productService: sl<ProductService>(),
+      sharedProductService: sl<SharedProductService>(),
+      bestsellerRepository: sl<BestsellerRepository>(),
+    ),
   );
 }
 
@@ -346,7 +359,7 @@ class MyApp extends StatelessWidget {
             final productsBloc = sl<ProductsBloc>();
             
             // Load bestseller products when the app starts
-            productsBloc.add(const LoadBestsellerProducts());
+            productsBloc.add(const LoadBestsellerProducts(limit: 6, ranked: true));
             
             return productsBloc;
           },

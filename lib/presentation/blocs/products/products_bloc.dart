@@ -2,16 +2,25 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../services/product/product_service.dart';
+import '../../../services/product/shared_product_service.dart';
+import '../../../data/repositories/bestseller_repository.dart';
 import '../../../services/logging_service.dart';
 import 'products_event.dart';
 import 'products_state.dart';
 
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   final ProductService _productService;
+  final SharedProductService _sharedProductService;
+  final BestsellerRepository _bestsellerRepository;
 
-  ProductsBloc({ProductService? productService})
-      : _productService = productService ?? GetIt.instance<ProductService>(),
-        super(const ProductsState()) {
+  ProductsBloc({
+    ProductService? productService,
+    SharedProductService? sharedProductService,
+    BestsellerRepository? bestsellerRepository,
+  }) : _productService = productService ?? GetIt.instance<ProductService>(),
+       _sharedProductService = sharedProductService ?? GetIt.instance<SharedProductService>(),
+       _bestsellerRepository = bestsellerRepository ?? GetIt.instance<BestsellerRepository>(),
+       super(const ProductsState()) {
     on<LoadBestsellerProducts>(_onLoadBestsellerProducts);
     on<LoadProductsByCategory>(_onLoadProductsByCategory);
     on<LoadProductsBySubcategory>(_onLoadProductsBySubcategory);
@@ -29,7 +38,11 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       if (!state.areBestsellersLoaded) {
         emit(state.copyWith(status: ProductsStatus.loading));
         
-        final products = await _productService.getBestsellerProducts();
+        // Use the enhanced bestseller repository with options
+        final products = await _bestsellerRepository.getBestsellerProducts(
+          limit: event.limit ?? 6,
+          ranked: event.ranked ?? true,
+        );
         
         emit(state.copyWith(
           status: ProductsStatus.loaded,

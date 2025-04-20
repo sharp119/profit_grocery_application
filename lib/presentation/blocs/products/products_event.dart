@@ -8,7 +8,13 @@ abstract class ProductsEvent extends Equatable {
 }
 
 class LoadBestsellerProducts extends ProductsEvent {
-  const LoadBestsellerProducts();
+  final int? limit;
+  final bool? ranked;
+  
+  const LoadBestsellerProducts({this.limit = 6, this.ranked = true});
+  
+  @override
+  List<Object> get props => [limit ?? 6, ranked ?? true];
 }
 
 class LoadProductsByCategory extends ProductsEvent {

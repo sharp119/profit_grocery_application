@@ -1,0 +1,261 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
+import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/data/models/product_model.dart';
+import 'package:profit_grocery_application/domain/entities/product.dart';
+import 'package:profit_grocery_application/services/logging_service.dart';
+
+/// A centralized service for product data access
+/// This service provides cached product data and handles Firestore queries efficiently
+class SharedProductService {
+  // Singleton pattern
+  static final SharedProductService _instance = SharedProductService._internal();
+  
+  factory SharedProductService() => _instance;
+  
+  SharedProductService._internal() {
+    _initializeCache();
+  }
+
+  // Firebase instances
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+  
+  // Cache for products
+  final Map<String, ProductModel> _productCache = {};
+  bool _isCacheInitialized = false;
+
+  // Cache initialization
+  Future<void> _initializeCache() async {
+    if (_isCacheInitialized) return;
+    
+    LoggingService.logFirestore('SharedProductService: Initializing product cache');
+    _isCacheInitialized = true;
+  }
+
+  /// Get a product by ID with caching
+  /// This is the main method for getting product details anywhere in the app
+  Future<Product?> getProductById(String productId) async {
+    try {
+      // Check cache first
+      if (_productCache.containsKey(productId)) {
+        LoggingService.logFirestore('SharedProductService: Cache hit for product $productId');
+        return _productCache[productId]!;
+      }
+      
+      LoggingService.logFirestore('SharedProductService: Cache miss for product $productId, fetching from Firestore');
+      
+      // Find the product in Firestore
+      ProductModel? product = await _findProductInFirestore(productId);
+      
+      // Cache the result (even if null, to prevent repeated failed lookups)
+      if (product != null) {
+        _productCache[productId] = product;
+      }
+      
+      return product;
+    } catch (e) {
+      LoggingService.logError('SharedProductService', 'Error getting product $productId: $e');
+      return null;
+    }
+  }
+
+  /// Find a product in Firestore by searching all categories and subcategories
+  Future<ProductModel?> _findProductInFirestore(String productId) async {
+    try {
+      // Method 1: Direct query if we know the path
+      try {
+        // Check in bestsellers collection first for direct reference
+        final bestsellerDoc = await _firestore.collection('bestsellers')
+            .where('productId', isEqualTo: productId)
+            .limit(1)
+            .get();
+        
+        if (bestsellerDoc.docs.isNotEmpty) {
+          final data = bestsellerDoc.docs.first.data();
+          final ref = data['ref'] as String?;
+          
+          if (ref != null) {
+            // Format: "products/fruits_vegetables/items/exotic_vegetables/products/fjVKtTrytyzem9yK5qVK"
+            final pathParts = ref.split('/');
+            if (pathParts.length >= 6) {
+              final categoryId = pathParts[1]; 
+              final subcategoryId = pathParts[3];
+              final prodId = pathParts[5];
+              
+              // Get the product from the exact path
+              final productDoc = await _firestore.collection('products')
+                  .doc(categoryId)
+                  .collection('items')
+                  .doc(subcategoryId)
+                  .collection('products')
+                  .doc(prodId)
+                  .get();
+              
+              if (productDoc.exists) {
+                return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        LoggingService.logError('SharedProductService', 'Error checking bestsellers: $e');
+        // Continue with general search
+      }
+      
+      // Method 2: Search across all categories and subcategories
+      final categoriesSnapshot = await _firestore.collection('products').get();
+      
+      for (final categoryDoc in categoriesSnapshot.docs) {
+        final categoryId = categoryDoc.id;
+        
+        // Get subcategories in this category
+        final subcategoriesSnapshot = await _firestore.collection('products')
+            .doc(categoryId)
+            .collection('items')
+            .get();
+        
+        for (final subcategoryDoc in subcategoriesSnapshot.docs) {
+          final subcategoryId = subcategoryDoc.id;
+          
+          // Try to find the product in this subcategory
+          try {
+            final productDoc = await _firestore.collection('products')
+                .doc(categoryId)
+                .collection('items')
+                .doc(subcategoryId)
+                .collection('products')
+                .doc(productId)
+                .get();
+            
+            if (productDoc.exists) {
+              return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
+            }
+          } catch (e) {
+            // Continue searching in other subcategories
+            LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
+          }
+        }
+      }
+      
+      // If we get here, the product was not found
+      return null;
+    } catch (e) {
+      LoggingService.logError('SharedProductService', 'Error finding product in Firestore: $e');
+      return null;
+    }
+  }
+  
+  /// Create a ProductModel from a DocumentSnapshot, handling image URL resolution
+  Future<ProductModel> _createProductModelFromDoc(
+    DocumentSnapshot doc, 
+    String categoryId, 
+    String subcategoryId
+  ) async {
+    final data = doc.data() as Map<String, dynamic>;
+    
+    // Find image path in different possible field names
+    final imagePath = data['imagePath'] ??
+        data['image'] ??
+        data['imageUrl'] ??
+        data['photo'] ??
+        data['downloadURL'] ??
+        '';
+    
+    // Resolve image URL
+    final imageUrl = await _getImageUrl(imagePath, doc.id);
+    
+    return ProductModel(
+      id: doc.id,
+      name: data['name'] ?? '',
+      description: data['description'] ?? '',
+      price: (data['price'] is int)
+          ? (data['price'] as int).toDouble()
+          : (data['price'] as num?)?.toDouble() ?? 0.0,
+      mrp: (data['mrp'] is int)
+          ? (data['mrp'] as int).toDouble()
+          : (data['mrp'] as num?)?.toDouble() ?? 0.0,
+      image: imageUrl,
+      inStock: data['inStock'] ?? true,
+      categoryId: data['categoryItem'] ?? subcategoryId,
+      categoryName: data['categoryGroup'] ?? categoryId,
+      subcategoryId: subcategoryId,
+      brand: data['brand'] as String?,
+      weight: data['weight'] as String?,
+      rating: data['rating'] != null ? (data['rating'] as num).toDouble() : null,
+      reviewCount: data['reviewCount'] as int?,
+    );
+  }
+  
+  /// Get a properly formatted image URL from various possible formats
+  Future<String> _getImageUrl(String? imagePath, String productId) async {
+    // If there's no path, just return empty string
+    if (imagePath == null || imagePath.isEmpty) {
+      return '';
+    }
+
+    // Promote to non-nullable local variable
+    final nonNullPath = imagePath;
+
+    // If the image path is already a full Firebase Storage URL
+    if (nonNullPath.startsWith('https://firebasestorage.googleapis.com')) {
+      // Already has a token, return as is
+      if (nonNullPath.contains('token=')) {
+        return nonNullPath;
+      }
+
+      // Has alt=media but no token: try to refresh the URL
+      if (nonNullPath.contains('alt=media') && !nonNullPath.contains('token=')) {
+        try {
+          final uri = Uri.parse(nonNullPath);
+          final segments = uri.pathSegments;
+          if (segments.contains('o') && segments.length > segments.indexOf('o') + 1) {
+            final objectPath = Uri.decodeFull(segments[segments.indexOf('o') + 1]);
+            final ref = _storage.ref().child(objectPath);
+            return await ref.getDownloadURL();
+          }
+        } catch (e) {
+          LoggingService.logError('SharedProductService', 'Error getting fresh download URL for $productId: $e');
+          // fall through and return the original
+        }
+      }
+
+      return nonNullPath;
+    }
+
+    // Otherwise treat it as a storage path
+    try {
+      var storagePath = nonNullPath;
+      if (storagePath.startsWith('/')) {
+        storagePath = storagePath.substring(1);
+      }
+      final ref = _storage.ref().child(storagePath);
+      return await ref.getDownloadURL();
+    } catch (e) {
+      LoggingService.logError('SharedProductService', 'Error getting download URL for product $productId: $e');
+      // Always return a non-null string
+      return nonNullPath;
+    }
+  }
+  
+  /// Fetch multiple products by IDs at once
+  Future<List<Product>> getProductsByIds(List<String> productIds) async {
+    final List<Product> products = [];
+    
+    for (final productId in productIds) {
+      final product = await getProductById(productId);
+      if (product != null) {
+        products.add(product);
+      }
+    }
+    
+    return products;
+  }
+
+  /// Clear the product cache
+  void clearCache() {
+    _productCache.clear();
+    LoggingService.logFirestore('SharedProductService: Product cache cleared');
+  }
+}

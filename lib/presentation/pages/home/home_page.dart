@@ -15,6 +15,8 @@ import 'package:profit_grocery_application/presentation/widgets/profile/profile_
 import 'package:profit_grocery_application/services/cart/home_cart_bridge.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
+import 'package:profit_grocery_application/presentation/widgets/grids/smart_bestseller_grid.dart';
+import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -86,6 +88,8 @@ class _HomePageContentState extends State<_HomePageContent> {
   User? _currentUser;
   late IUserService _userService;
   late final Stream<User?> _userStream;
+  late final SharedCategoryService _sharedCategoryService;
+  Map<String, Color> _subcategoryColors = {};
   
   @override
   void initState() {
@@ -93,6 +97,10 @@ class _HomePageContentState extends State<_HomePageContent> {
     _userService = GetIt.instance<IUserService>();
     _currentUser = _userService.getCurrentUser();
     _userStream = _userService.userStream;
+    _sharedCategoryService = GetIt.instance<SharedCategoryService>();
+    
+    // Load subcategory colors
+    _loadSubcategoryColors();
     
     // Listen to user changes from UserService
     _userStream.listen((user) {
@@ -181,6 +189,21 @@ class _HomePageContentState extends State<_HomePageContent> {
         LoggingService.logFirestore('HomePage: User data loaded: ${_currentUser?.name}');
       }
     });
+  }
+
+  // Load subcategory colors from SharedCategoryService
+  Future<void> _loadSubcategoryColors() async {
+    try {
+      final colors = await _sharedCategoryService.getSubcategoryColors();
+      if (mounted) {
+        setState(() {
+          _subcategoryColors = colors;
+        });
+        LoggingService.logFirestore('HomePage: Loaded ${colors.length} subcategory colors');
+      }
+    } catch (e) {
+      LoggingService.logError('HomePage', 'Error loading subcategory colors: $e');
+    }
   }
 
   @override
@@ -1158,97 +1181,26 @@ class _HomePageContentState extends State<_HomePageContent> {
               },
             )).toList(),
             
-          // Bestsellers Section - Firebase version
-          BlocBuilder<ProductsBloc, ProductsState>(
-            builder: (context, productsState) {
-              if (productsState.status == ProductsStatus.loading) {
-                return Column(
-                  children: [
-                    SectionHeader(
-                      title: 'Bestsellers',
-                      viewAllText: 'View All',
-                      onViewAllTap: () {
-                        // Navigate to all bestsellers
-                      },
-                    ),
-                    ShimmerLoader.productGrid(),
-                  ],
-                );
-              } else if (productsState.status == ProductsStatus.loaded && 
-                       productsState.bestsellerProducts.isNotEmpty) {
-                return Column(
-                  children: [
-                    SectionHeader(
-                      title: 'Bestsellers',
-                      viewAllText: 'View All',
-                      onViewAllTap: () {
-                        // Navigate to all bestsellers
-                      },
-                    ),
-                    FirebaseProductGrid(
-                      products: productsState.bestsellerProducts,
-                      onProductTap: _onProductTap,
-                      onQuantityChanged: _onProductQuantityChanged,
-                      cartQuantities: state.cartQuantities,
-                      crossAxisCount: 2,
-                      subCategoryColors: state.subcategoryColors,
-                    ),
-                  ],
-                );
-              } else if (productsState.status == ProductsStatus.error) {
-                return Padding(
-                  padding: EdgeInsets.all(16.r),
-                  child: Center(
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          color: Colors.red,
-                          size: 48.sp,
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          productsState.errorMessage ?? 'Error loading bestsellers',
-                          style: TextStyle(color: Colors.white),
-                          textAlign: TextAlign.center,
-                        ),
-                        SizedBox(height: 16.h),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<ProductsBloc>().add(const LoadBestsellerProducts());
-                          },
-                          child: Text('Retry'),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              } else if (state.bestSellers.isNotEmpty) {
-                // Fallback to local data if Firebase data is not available
-                return Column(
-                  children: [
-                    SectionHeader(
-                      title: 'Bestsellers',
-                      viewAllText: 'View All',
-                      onViewAllTap: () {
-                        // Navigate to all bestsellers
-                      },
-                    ),
-                    ProductGrid(
-                      products: state.bestSellers,
-                      onProductTap: _onProductTap,
-                      onQuantityChanged: _onProductQuantityChanged,
-                      cartQuantities: state.cartQuantities,
-                      crossAxisCount: 2,
-                      subCategoryColors: state.subcategoryColors,
-                    ),
-                  ],
-                );
-              }
-              
-              // Return empty container if no bestseller products
-              return SizedBox();
-            },
+          // Bestsellers Section - Using Smart Bestseller Grid
+          Column(
+            children: [
+              SectionHeader(
+                title: 'Bestsellers',
+                viewAllText: 'View All',
+                onViewAllTap: () {
+                  // Navigate to all bestsellers
+                },
+              ),
+              SmartBestsellerGrid(
+                onProductTap: _onProductTap,
+                onQuantityChanged: _onProductQuantityChanged,
+                cartQuantities: state.cartQuantities,
+                limit: 6,  // Show 6 bestsellers
+                ranked: true,  // Sort by rank
+                crossAxisCount: 2,  // 2 products per row
+                subcategoryColors: _subcategoryColors,
+              ),
+            ],
           ),
           
           SizedBox(height: 24.h),
