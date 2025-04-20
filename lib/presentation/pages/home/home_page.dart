@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:profit_grocery_application/core/errors/global_error_handler.dart';
 import 'package:profit_grocery_application/main.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
@@ -27,6 +28,7 @@ import '../../blocs/home/home_bloc.dart';
 import '../../blocs/home/home_event.dart';
 import '../../blocs/home/home_state.dart';
 import '../../blocs/products/products_bloc.dart';
+import '../../../data/models/product_model.dart';
 import '../../blocs/products/products_event.dart';
 import '../../blocs/products/products_state.dart';
 import '../../widgets/banners/promotional_banner.dart';
@@ -45,6 +47,7 @@ import '../category_products/category_products_page.dart';
 import '../product_details/product_details_page.dart';
 import '../../blocs/categories/categories_bloc.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/product/firestore_product_repository.dart';
 import '../../../data/models/firestore/category_group_firestore_model.dart';
 
 class HomePage extends StatelessWidget {
@@ -418,6 +421,457 @@ class _HomePageContentState extends State<_HomePageContent> {
           ),
         );
       },
+    );
+  }
+  
+  // Show Firestore Data Explorer
+  void _showFirestoreDataExplorer(BuildContext context) async {
+    try {
+      // Start loading indicator
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: AppTheme.secondaryColor,
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: AppTheme.accentColor),
+              SizedBox(height: 16),
+              Text('Loading Firestore data...', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      );
+
+      // Create repositories
+      final categoryRepo = CategoryRepository();
+      final productRepo = FirestoreProductRepository();
+
+      // Fetch categories
+      final categories = await categoryRepo.fetchCategories();
+
+      // Fetch products for first category
+      List<ProductModel> products = [];
+      if (categories.isNotEmpty && categories.first.items.isNotEmpty) {
+        final categoryGroup = categories.first.id;
+        final categoryItem = categories.first.items.first.id;
+        products = await productRepo.fetchProductsByCategory(
+          categoryGroup: categoryGroup,
+          categoryItem: categoryItem,
+        );
+      }
+
+      // Dismiss loading dialog
+      Navigator.pop(context);
+
+      // Show the data explorer dialog
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppTheme.secondaryColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.r),
+            topRight: Radius.circular(20.r),
+          ),
+        ),
+        builder: (context) {
+          return StatefulBuilder(
+            builder: (context, setState) {
+              return DraggableScrollableSheet(
+                initialChildSize: 0.9,
+                minChildSize: 0.5,
+                maxChildSize: 0.95,
+                expand: false,
+                builder: (context, scrollController) {
+                  return Column(
+                    children: [
+                      // Header
+                      Container(
+                        padding: EdgeInsets.all(16.r),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryColor,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(20.r),
+                            topRight: Radius.circular(20.r),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Firestore Data Explorer',
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.close, color: Colors.white),
+                              onPressed: () => Navigator.pop(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
+                      // Content
+                      Expanded(
+                        child: ListView(
+                          controller: scrollController,
+                          padding: EdgeInsets.all(16.r),
+                          children: [
+                            // Categories section
+                            Text(
+                              'Categories (${categories.length})',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.accentColor,
+                              ),
+                            ),
+                            SizedBox(height: 8.h),
+                            Container(
+                              padding: EdgeInsets.all(12.r),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: categories.isEmpty
+                                ? Text(
+                                    'No categories found',
+                                    style: TextStyle(color: Colors.white70),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: categories.map((category) {
+                                      return ExpansionTile(
+                                        title: Text(
+                                          category.title,
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        collapsedTextColor: Colors.white,
+                                        textColor: AppTheme.accentColor,
+                                        iconColor: AppTheme.accentColor,
+                                        collapsedIconColor: Colors.white,
+                                        children: category.items.map((item) {
+                                          return ListTile(
+                                            title: Text(
+                                              item.label,
+                                              style: TextStyle(color: Colors.white70),
+                                            ),
+                                            onTap: () async {
+                                              try {
+                                                // Show loading
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Loading products...'),
+                                                    duration: Duration(seconds: 1),
+                                                  ),
+                                                );
+                                                
+                                                // Load products for this category
+                                                final newProducts = await productRepo.fetchProductsByCategory(
+                                                  categoryGroup: category.id,
+                                                  categoryItem: item.id,
+                                                );
+                                                
+                                                // Update products list
+                                                setState(() {
+                                                  products = newProducts;
+                                                });
+                                                
+                                                // Scroll to products section
+                                                scrollController.animateTo(
+                                                  300.h,
+                                                  duration: Duration(milliseconds: 500),
+                                                  curve: Curves.easeInOut,
+                                                );
+                                              } catch (e) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  SnackBar(
+                                                    content: Text('Error: ${e.toString()}'),
+                                                    backgroundColor: Colors.red,
+                                                  ),
+                                                );
+                                              }
+                                            },
+                                          );
+                                        }).toList(),
+                                      );
+                                    }).toList(),
+                                  ),
+                            ),
+                            
+                            SizedBox(height: 24.h),
+                            
+                            // Products section
+                            Text(
+                              'Products (${products.length})',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.accentColor,
+                              ),
+                            ),
+                            SizedBox(height: 8.h),
+                            Container(
+                              padding: EdgeInsets.all(12.r),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primaryColor.withOpacity(0.3),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: products.isEmpty
+                                ? Text(
+                                    'No products found or none selected. Tap a category item to view products.',
+                                    style: TextStyle(color: Colors.white70),
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: products.map((product) {
+                                      return ExpansionTile(
+                                        title: Text(
+                                          product.name,
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        subtitle: Text(
+                                          '${AppConstants.currencySymbol}${product.price.toStringAsFixed(2)}',
+                                          style: TextStyle(color: AppTheme.accentColor),
+                                        ),
+                                        collapsedTextColor: Colors.white,
+                                        textColor: AppTheme.accentColor,
+                                        iconColor: AppTheme.accentColor,
+                                        collapsedIconColor: Colors.white,
+                                        children: [
+                                          Padding(
+                                            padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 8.h),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                if (product.brand != null) _productDetailRow('Brand', product.brand!),
+                                                _productDetailRow('SKU', product.sku ?? 'N/A'),
+                                                _productDetailRow('Description', product.description ?? 'No description available'),
+                                                _productDetailRow('In Stock', product.inStock ? 'Yes' : 'No'),
+                                                if (product.ingredients != null) _productDetailRow('Ingredients', product.ingredients!),
+                                                if (product.nutritionalInfo != null) _productDetailRow('Nutrition', product.nutritionalInfo!),
+                                                if (product.weight != null) _productDetailRow('Weight', product.weight!),
+                                                if (product.image.isNotEmpty) Padding(
+                                                  padding: EdgeInsets.symmetric(vertical: 8.h),
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        'Image URL: ${product.image.length > 60 ? product.image.substring(0, 60) + '...' : product.image}',
+                                                        style: TextStyle(color: Colors.white70, fontSize: 12.sp),
+                                                        maxLines: 2,
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      if (product.image.contains('firebasestorage.googleapis.com'))
+                                                        Text(
+                                                          'Firebase Storage URL: Yes',
+                                                          style: TextStyle(color: Colors.green, fontSize: 12.sp),
+                                                          )
+                                                      else if (product.image.isNotEmpty)
+                                                        Text(
+                                                          'Token required: ${product.image.contains("token=") ? "No" : "Yes"}',
+                                                          style: TextStyle(
+                                                            color: product.image.contains("token=") ? Colors.green : Colors.orange,
+                                                            fontSize: 12.sp
+                                                          ),
+                                                        ),
+                                                      Text(
+                                                        'Valid URL: ${_isValidImageUrl(product.image) ? 'Yes' : 'No'}',
+                                                        style: TextStyle(
+                                                          color: _isValidImageUrl(product.image) ? Colors.green : Colors.red, 
+                                                          fontSize: 12.sp
+                                                        ),
+                                                      ),
+                                                      if (!_isValidImageUrl(product.image) && product.image.isNotEmpty)
+                                                        Text(
+                                                          'Issue: URL format problem',
+                                                          style: TextStyle(color: Colors.red, fontSize: 12.sp),
+                                                        ),
+                                                      SizedBox(height: 8.h),
+                                                      // Try to load the image with a CachedNetworkImage for better performance
+                                                      _isValidImageUrl(product.image) 
+                                                        ? ClipRRect(
+                                                            borderRadius: BorderRadius.circular(8.r),
+                                                            child: CachedNetworkImage(
+                                                              imageUrl: product.image,
+                                                              height: 100.h,
+                                                              width: double.infinity,
+                                                              fit: BoxFit.cover,
+                                                              placeholder: (context, url) => Container(
+                                                                height: 100.h,
+                                                                color: Colors.grey.shade800,
+                                                                child: Center(
+                                                                  child: CircularProgressIndicator(
+                                                                    color: AppTheme.accentColor,
+                                                                  ),
+                                                                ),
+                                                              ),
+                                                              errorWidget: (context, url, error) {
+                                                                print('Image error for ${product.name}: $error');
+                                                                return Container(
+                                                                  height: 100.h,
+                                                                  color: Colors.grey.shade800,
+                                                                  child: Center(
+                                                                    child: Column(
+                                                                      mainAxisSize: MainAxisSize.min,
+                                                                      children: [
+                                                                        Icon(Icons.image_not_supported, color: Colors.white),
+                                                                        SizedBox(height: 4.h),
+                                                                        Text(
+                                                                          'Error: ${error.toString().split('\n').first}',
+                                                                          style: TextStyle(color: Colors.white70, fontSize: 10.sp),
+                                                                          textAlign: TextAlign.center,
+                                                                        ),
+                                                                      ],
+                                                                    ),
+                                                                  ),
+                                                                );
+                                                              },
+                                                            ),
+                                                          )
+                                                        : Container(
+                                                            height: 100.h,
+                                                            color: Colors.grey.shade800,
+                                                            child: Center(
+                                                              child: Column(
+                                                                mainAxisSize: MainAxisSize.min,
+                                                                children: [
+                                                                  Icon(Icons.broken_image, color: Colors.white),
+                                                                  SizedBox(height: 4.h),
+                                                                  Text(
+                                                                    'Invalid Image URL',
+                                                                    style: TextStyle(color: Colors.white70),
+                                                                  ),
+                                                                ],
+                                                              ),
+                                                            ),
+                                                          ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      );
+                                    }).toList(),
+                                  ),
+                            ),
+                            
+                            SizedBox(height: 16.h),
+                            
+                            // Fetch All Products Button
+                            ElevatedButton(
+                              onPressed: () async {
+                                try {
+                                  // Show loading
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Loading all products (this may take a while)...'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                  
+                                  // Fetch all products
+                                  final allProducts = await productRepo.fetchAllProducts();
+                                  
+                                  // Update products list
+                                  setState(() {
+                                    products = allProducts;
+                                  });
+                                } catch (e) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: ${e.toString()}'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppTheme.accentColor,
+                                foregroundColor: Colors.black,
+                              ),
+                              child: Text('Fetch All Products'),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          );
+        },
+      );
+    } catch (e) {
+      // Dismiss loading dialog if showing
+      try {
+        Navigator.pop(context);
+      } catch (_) {}
+      
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString()}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  // Helper method to determine if a URL is valid
+  bool _isValidImageUrl(String url) {
+    if (url.isEmpty) return false;
+    
+    // Check if the URL has a valid scheme
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      return false;
+    }
+    
+    // Special check for Firebase Storage URLs
+    if (url.contains('firebasestorage.googleapis.com')) {
+      // Firebase Storage URLs are typically valid if they contain these components
+      return url.contains('/o/') && (url.contains('?alt=media') || url.contains('&alt=media'));
+    }
+    
+    // Basic URL validation for non-Firebase URLs
+    try {
+      Uri.parse(url);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  // Helper method to display product details
+  Widget _productDetailRow(String label, String value) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 8.h),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '$label: ',
+            style: TextStyle(
+              color: Colors.white70,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Expanded(
+            child: Text(
+              value,
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
+      ),
     );
   }
   
@@ -840,6 +1294,17 @@ class _HomePageContentState extends State<_HomePageContent> {
                       foregroundColor: Colors.white,
                     ),
                     child: const Text('Developer Menu'),
+                  ),
+                  SizedBox(height: 8.h),
+                  ElevatedButton.icon(
+                    onPressed: () => _showFirestoreDataExplorer(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentColor,
+                      foregroundColor: Colors.black,
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                    ),
+                    icon: Icon(Icons.data_exploration),
+                    label: const Text('Explore Firestore Data'),
                   ),
                 ],
               ),

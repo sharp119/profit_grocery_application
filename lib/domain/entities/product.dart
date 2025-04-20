@@ -19,6 +19,12 @@ class Product extends Equatable {
   final String? sellerName;
   final double? rating;
   final int? reviewCount;
+  final String? nutritionalInfo;
+  final String? ingredients;
+  final String? sku;
+  final String? productType;
+  final int? quantity;
+  final String? categoryGroup;
 
   const Product({
     required this.id,
@@ -39,6 +45,12 @@ class Product extends Equatable {
     this.sellerName,
     this.rating,
     this.reviewCount,
+    this.nutritionalInfo,
+    this.ingredients,
+    this.sku,
+    this.productType,
+    this.quantity,
+    this.categoryGroup,
   });
 
   // Get discount percentage if mrp is available
@@ -72,5 +84,11 @@ class Product extends Equatable {
         sellerName,
         rating,
         reviewCount,
+        nutritionalInfo,
+        ingredients,
+        sku,
+        productType,
+        quantity,
+        categoryGroup,
       ];
 }
