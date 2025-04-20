@@ -26,6 +26,9 @@ import '../../blocs/auth/auth_event.dart';
 import '../../blocs/home/home_bloc.dart';
 import '../../blocs/home/home_event.dart';
 import '../../blocs/home/home_state.dart';
+import '../../blocs/products/products_bloc.dart';
+import '../../blocs/products/products_event.dart';
+import '../../blocs/products/products_state.dart';
 import '../../widgets/banners/promotional_banner.dart';
 import '../../widgets/base_layout.dart';
 import '../../widgets/buttons/back_to_top_button.dart';
@@ -33,6 +36,7 @@ import '../../widgets/buttons/cart_fab.dart';
 import '../../widgets/grids/category_grid_4x2.dart';
 import '../../widgets/grids/dense_category_grid.dart';
 import '../../widgets/grids/product_grid.dart';
+import '../../widgets/grids/firebase_product_grid.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/tabs/horizontal_category_tabs.dart';
@@ -283,6 +287,7 @@ class _HomePageContentState extends State<_HomePageContent> {
 
   Future<void> _refreshData() async {
     context.read<HomeBloc>().add(const RefreshHomeData());
+    context.read<ProductsBloc>().add(const RefreshProducts());
   }
 
   void _scrollToTop() {
@@ -630,7 +635,7 @@ class _HomePageContentState extends State<_HomePageContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Profile completion banner if user profile is incomplete
-          if (_currentUser != null) ...[  
+          if (_currentUser != null && _currentUser!.name != null) ...[  
             SizedBox(height: 16.h),
             ProfileCompletionBanner(
               user: _currentUser!,
@@ -699,25 +704,98 @@ class _HomePageContentState extends State<_HomePageContent> {
               },
             )).toList(),
             
-          // Bestsellers Section
-          if (state.bestSellers.isNotEmpty) ...[
-            SectionHeader(
-              title: 'Bestsellers',
-              viewAllText: 'View All',
-              onViewAllTap: () {
-                // Navigate to all bestsellers
-              },
-            ),
-            
-            ProductGrid(
-              products: state.bestSellers,
-              onProductTap: _onProductTap,
-              onQuantityChanged: _onProductQuantityChanged,
-              cartQuantities: state.cartQuantities,
-              crossAxisCount: 2,
-              subCategoryColors: state.subcategoryColors,
-            ),
-          ],
+          // Bestsellers Section - Firebase version
+          BlocBuilder<ProductsBloc, ProductsState>(
+            builder: (context, productsState) {
+              if (productsState.status == ProductsStatus.loading) {
+                return Column(
+                  children: [
+                    SectionHeader(
+                      title: 'Bestsellers',
+                      viewAllText: 'View All',
+                      onViewAllTap: () {
+                        // Navigate to all bestsellers
+                      },
+                    ),
+                    ShimmerLoader.productGrid(),
+                  ],
+                );
+              } else if (productsState.status == ProductsStatus.loaded && 
+                       productsState.bestsellerProducts.isNotEmpty) {
+                return Column(
+                  children: [
+                    SectionHeader(
+                      title: 'Bestsellers',
+                      viewAllText: 'View All',
+                      onViewAllTap: () {
+                        // Navigate to all bestsellers
+                      },
+                    ),
+                    FirebaseProductGrid(
+                      products: productsState.bestsellerProducts,
+                      onProductTap: _onProductTap,
+                      onQuantityChanged: _onProductQuantityChanged,
+                      cartQuantities: state.cartQuantities,
+                      crossAxisCount: 2,
+                      subCategoryColors: state.subcategoryColors,
+                    ),
+                  ],
+                );
+              } else if (productsState.status == ProductsStatus.error) {
+                return Padding(
+                  padding: EdgeInsets.all(16.r),
+                  child: Center(
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.red,
+                          size: 48.sp,
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          productsState.errorMessage ?? 'Error loading bestsellers',
+                          style: TextStyle(color: Colors.white),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 16.h),
+                        ElevatedButton(
+                          onPressed: () {
+                            context.read<ProductsBloc>().add(const LoadBestsellerProducts());
+                          },
+                          child: Text('Retry'),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              } else if (state.bestSellers.isNotEmpty) {
+                // Fallback to local data if Firebase data is not available
+                return Column(
+                  children: [
+                    SectionHeader(
+                      title: 'Bestsellers',
+                      viewAllText: 'View All',
+                      onViewAllTap: () {
+                        // Navigate to all bestsellers
+                      },
+                    ),
+                    ProductGrid(
+                      products: state.bestSellers,
+                      onProductTap: _onProductTap,
+                      onQuantityChanged: _onProductQuantityChanged,
+                      cartQuantities: state.cartQuantities,
+                      crossAxisCount: 2,
+                      subCategoryColors: state.subcategoryColors,
+                    ),
+                  ],
+                );
+              }
+              
+              // Return empty container if no bestseller products
+              return SizedBox();
+            },
+          ),
           
           SizedBox(height: 100.h),
         ],

@@ -7,7 +7,10 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/presentation/blocs/products/products_event.dart';
+import 'package:profit_grocery_application/services/product/product_service.dart';
 import 'services/asset_cache_service.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
@@ -17,6 +20,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
 import 'core/di/cart_injection.dart';
+import 'core/di/product_injection.dart';
 import 'core/network/network_info.dart';
 import 'data/datasources/firebase/coupon/coupon_remote_datasource.dart';
 import 'data/repositories/coupon/coupon_repository_impl.dart';
@@ -50,6 +54,7 @@ import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/user/user_bloc.dart';
 import 'presentation/blocs/navigation/navigation_bloc.dart';
 import 'presentation/blocs/orders/orders_bloc.dart';
+import 'presentation/blocs/products/products_bloc.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
 
 // GetIt instance for dependency injection
@@ -148,6 +153,7 @@ Future<void> setupDependencyInjection() async {
   sl.registerLazySingleton(() => FirebaseDatabase.instance);
   sl.registerLazySingleton(() => FirebaseFirestore.instance);
   sl.registerLazySingleton(() => FirebaseRemoteConfig.instance);
+  sl.registerLazySingleton(() => FirebaseAnalytics.instance);
   
   // Basic services
   sl.registerLazySingleton(() => OTPService());
@@ -157,6 +163,9 @@ Future<void> setupDependencyInjection() async {
   
   // Coupon dependencies
   await initCouponDependencies();
+  
+  // Product dependencies
+  await initProductDependencies();
   
   // Determine database preference from Remote Config
   final remoteConfig = FirebaseRemoteConfig.instance;
@@ -271,6 +280,10 @@ Future<void> setupDependencyInjection() async {
   sl.registerFactory(
     () => NavigationBloc(),
   );
+  
+  sl.registerFactory(
+    () => ProductsBloc(productService: sl<ProductService>()),
+  );
 }
 
 class MyApp extends StatelessWidget {
@@ -323,6 +336,17 @@ class MyApp extends StatelessWidget {
             return cartBloc;
           },
         ),
+        BlocProvider<ProductsBloc>(
+          create: (context) {
+            // Create and initialize products bloc
+            final productsBloc = sl<ProductsBloc>();
+            
+            // Load bestseller products when the app starts
+            productsBloc.add(const LoadBestsellerProducts());
+            
+            return productsBloc;
+          },
+        ),
       ],
       child: ScreenUtilInit(
         // Use more flexible approach with adaptive design size
@@ -331,6 +355,8 @@ class MyApp extends StatelessWidget {
         splitScreenMode: true,
         // Better adaptive builder
         builder: (context, child) {
+          // Get FirebaseAnalytics instance
+          final analytics = GetIt.instance<FirebaseAnalytics>();
           return MaterialApp(
             title: AppConstants.appName,
             debugShowCheckedModeBanner: false,
@@ -338,6 +364,9 @@ class MyApp extends StatelessWidget {
             home: const SplashScreen(),
             onGenerateRoute: AppRouter.generateRoute,
             initialRoute: AppConstants.splashRoute,
+            navigatorObservers: [
+              FirebaseAnalyticsObserver(analytics: analytics),
+            ],
           );
         },
       ),

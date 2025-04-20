@@ -28,11 +28,35 @@ class UserFirestoreModel extends UserModel {
     // Parse addresses if present
     List<Address> addresses = [];
     if (data.containsKey('addresses') && data['addresses'] is List) {
-      addresses = List<Address>.from(
-        (data['addresses'] as List).map(
-          (addr) => AddressModel.fromJson(Map<String, dynamic>.from(addr)),
-        ),
-      );
+      try {
+        addresses = List<Address>.from(
+          (data['addresses'] as List).map(
+            (addr) => AddressModel.fromJson(Map<String, dynamic>.from(addr)),
+          ),
+        );
+      } catch (e) {
+        print('Error parsing Firestore addresses: $e');
+      }
+    }
+
+    // Safely handle Timestamp fields
+    DateTime createdAt = DateTime.now();
+    DateTime lastLogin = DateTime.now();
+    
+    try {
+      if (data['createdAt'] is Timestamp) {
+        createdAt = (data['createdAt'] as Timestamp).toDate();
+      }
+    } catch (e) {
+      print('Error parsing createdAt timestamp: $e');
+    }
+    
+    try {
+      if (data['lastLogin'] is Timestamp) {
+        lastLogin = (data['lastLogin'] as Timestamp).toDate();
+      }
+    } catch (e) {
+      print('Error parsing lastLogin timestamp: $e');
     }
 
     return UserFirestoreModel(
@@ -41,8 +65,8 @@ class UserFirestoreModel extends UserModel {
       name: data['name'],
       email: data['email'],
       addresses: addresses,
-      createdAt: (data['createdAt'] as Timestamp).toDate(),
-      lastLogin: (data['lastLogin'] as Timestamp).toDate(),
+      createdAt: createdAt,
+      lastLogin: lastLogin,
       isOptedInForMarketing: data['isOptedInForMarketing'] ?? true,
     );
   }

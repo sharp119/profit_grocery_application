@@ -8,7 +8,11 @@ import 'package:profit_grocery_application/domain/repositories/cart_repository.d
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart' as cart_events;
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
+import 'package:profit_grocery_application/presentation/blocs/products/products_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/products/products_event.dart';
+import 'package:profit_grocery_application/presentation/blocs/products/products_state.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
+import 'package:profit_grocery_application/presentation/widgets/cards/enhanced_product_card.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/universal_product_card.dart';
 import 'package:profit_grocery_application/services/cart/cart_sync_service.dart';
 import 'package:profit_grocery_application/services/cart/universal/universal_cart_service.dart';
@@ -36,34 +40,81 @@ class ProductDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If there's no CartBloc, wrap the page with one
+    // Check for existing blocs
     CartBloc? existingCartBloc;
+    ProductsBloc? existingProductsBloc;
     try {
       existingCartBloc = BlocProvider.of<CartBloc>(context, listen: false);
+      existingProductsBloc = BlocProvider.of<ProductsBloc>(context, listen: false);
     } catch (_) {
-      // No CartBloc found
+      // Blocs not found
     }
     
-    if (existingCartBloc != null) {
-      // Use existing CartBloc
-      return BlocProvider(
-        create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
-        child: _ProductDetailsContent(categoryId: categoryId),
-      );
-    } else {
-      // Create new CartBloc
+    // Instead of trying to manipulate existing BlocProviders,
+    // let's simplify and just handle all possible cases explicitly
+    
+    // Check which blocs we need
+    bool needsCartBloc = existingCartBloc == null;
+    bool needsProductsBloc = existingProductsBloc == null;
+    
+    // Case 1: Need all blocs
+    if (needsCartBloc && needsProductsBloc) {
       return MultiBlocProvider(
         providers: [
-          BlocProvider(
+          BlocProvider<CartBloc>(
             create: (context) => CartBloc(
               cartRepository: GetIt.instance<CartRepository>(),
               cartSyncService: GetIt.instance<CartSyncService>(),
             )..add(const cart_events.LoadCart()),
           ),
-          BlocProvider(
+          BlocProvider<ProductsBloc>(
+            create: (context) => GetIt.instance<ProductsBloc>(),
+          ),
+          BlocProvider<ProductDetailsBloc>(
             create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
           ),
         ],
+        child: _ProductDetailsContent(categoryId: categoryId),
+      );
+    }
+    
+    // Case 2: Need CartBloc and ProductDetailsBloc
+    else if (needsCartBloc) {
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider<CartBloc>(
+            create: (context) => CartBloc(
+              cartRepository: GetIt.instance<CartRepository>(),
+              cartSyncService: GetIt.instance<CartSyncService>(),
+            )..add(const cart_events.LoadCart()),
+          ),
+          BlocProvider<ProductDetailsBloc>(
+            create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+          ),
+        ],
+        child: _ProductDetailsContent(categoryId: categoryId),
+      );
+    }
+    
+    // Case 3: Need ProductsBloc and ProductDetailsBloc
+    else if (needsProductsBloc) {
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider<ProductsBloc>(
+            create: (context) => GetIt.instance<ProductsBloc>(),
+          ),
+          BlocProvider<ProductDetailsBloc>(
+            create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+          ),
+        ],
+        child: _ProductDetailsContent(categoryId: categoryId),
+      );
+    }
+    
+    // Case 4: Only need ProductDetailsBloc
+    else {
+      return BlocProvider<ProductDetailsBloc>(
+        create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
         child: _ProductDetailsContent(categoryId: categoryId),
       );
     }
@@ -517,9 +568,16 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                 
                 SizedBox(height: 16.h),
                 
-                // Similar products section
+                // Similar products section with Firebase integration
                 BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
                   builder: (blocContext, blocState) {
+                    // Trigger loading similar products from Firebase
+                    if (blocState.status == ProductDetailsStatus.loaded && 
+                        blocState.product != null) {
+                      // Dispatch event to load similar products
+                      context.read<ProductsBloc>().add(LoadSimilarProducts(product.id));
+                    }
+                    
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -536,9 +594,121 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                         
                         SizedBox(
                           height: 250.h,
-                          child: Builder(
-                            builder: (context) {
-                              // Get similar product IDs for this product
+                          child: BlocBuilder<ProductsBloc, ProductsState>(
+                            builder: (context, productsState) {
+                              // Show loading state while fetching similar products
+                              if (productsState.status == ProductsStatus.loading) {
+                                return ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: 3,
+                                  itemBuilder: (context, index) {
+                                    return Container(
+                                      width: 160.w,
+                                      margin: EdgeInsets.only(right: 12.w),
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.primaryColor.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12.r),
+                                      ),
+                                      child: Center(
+                                        child: CircularProgressIndicator(
+                                          color: AppTheme.accentColor,
+                                          strokeWidth: 2,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                              
+                              // Show error state if loading failed
+                              if (productsState.status == ProductsStatus.error) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.error_outline,
+                                        color: Colors.red.withOpacity(0.7),
+                                        size: 24.sp,
+                                      ),
+                                      SizedBox(height: 8.h),
+                                      Text(
+                                        'Failed to load similar products',
+                                        style: TextStyle(
+                                          color: Colors.grey,
+                                          fontSize: 14.sp,
+                                        ),
+                                      ),
+                                      SizedBox(height: 8.h),
+                                      TextButton(
+                                        onPressed: () {
+                                          context.read<ProductsBloc>().add(LoadSimilarProducts(product.id));
+                                        },
+                                        child: Text('Retry'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+                              
+                              // If similar products are loaded, display them
+                              if (productsState.status == ProductsStatus.loaded && 
+                                  productsState.similarProducts.isNotEmpty) {
+                                return ListView.builder(
+                                  scrollDirection: Axis.horizontal,
+                                  itemCount: productsState.similarProducts.length,
+                                  itemBuilder: (context, index) {
+                                    final similarProduct = productsState.similarProducts[index];
+                                    
+                                    // Get quantity from cart state
+                                    int quantity = 0;
+                                    final cartState = context.read<CartBloc>().state;
+                                    if (cartState.status == CartStatus.loaded) {
+                                      final cartItem = cartState.items
+                                          .where((item) => item.productId == similarProduct.id)
+                                          .toList();
+                                      if (cartItem.isNotEmpty) {
+                                        quantity = cartItem.first.quantity;
+                                      }
+                                    }
+                                    
+                                    return Container(
+                                      width: 160.w,
+                                      margin: EdgeInsets.only(right: 12.w),
+                                      child: EnhancedProductCard.fromEntity(
+                                        product: similarProduct,
+                                        onTap: () {
+                                          // Navigate to the similar product details
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (context) => ProductDetailsPage(
+                                                productId: similarProduct.id,
+                                                categoryId: similarProduct.categoryId,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        onQuantityChanged: (qty) {
+                                          // Add to cart functionality
+                                          if (qty <= 0) {
+                                            context.read<CartBloc>().add(
+                                              cart_events.RemoveFromCart(similarProduct.id),
+                                            );
+                                          } else {
+                                            context.read<CartBloc>().add(
+                                              cart_events.UpdateCartItemQuantity(similarProduct.id, qty),
+                                            );
+                                          }
+                                        },
+                                        quantity: quantity,
+                                      ),
+                                    );
+                                  },
+                                );
+                              }
+                              
+                              // Fallback to local data if Firebase data is not available
                               final similarProductIds = SimilarProducts.getSimilarProductIds(
                                 product.id,
                                 limit: 3,
@@ -561,7 +731,6 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                 }
                               }
                               
-                              // If no similar products found, show a message
                               if (similarProducts.isEmpty) {
                                 return Center(
                                   child: Text(
@@ -574,7 +743,6 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                 );
                               }
                               
-                              // Show similar products in a horizontal list
                               return ListView.builder(
                                 scrollDirection: Axis.horizontal,
                                 itemCount: similarProducts.length,
@@ -589,55 +757,23 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                                   return Container(
                                     width: 160.w,
                                     margin: EdgeInsets.only(right: 12.w),
-                                    child: BlocBuilder<CartBloc, CartState>(
-                                      builder: (context, cartState) {
-                                        // Get the quantity from cart state
-                                        int quantity = 0;
-                                        if (cartState.items.isNotEmpty) {
-                                          final cartItem = cartState.items
-                                              .where((item) => item.productId == similarProduct.id)
-                                              .toList();
-                                          if (cartItem.isNotEmpty) {
-                                            quantity = cartItem.first.quantity;
-                                          }
-                                        }
-                                        
-                                        // Stop event propagation by using a GestureDetector with behavior: HitTestBehavior.opaque
-                                        return GestureDetector(
-                                          behavior: HitTestBehavior.opaque,
-                                          onTap: () {
-                                            // Navigate to the similar product details
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) => ProductDetailsPage(
-                                                  productId: similarProduct.id,
-                                                  categoryId: similarProduct.categoryId,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                          child: UniversalProductCard(
-                                            product: similarProduct,
-                                            onTap: () {
-                                              // Navigate to the similar product details
-                                              Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => ProductDetailsPage(
-                                                    productId: similarProduct.id,
-                                                    categoryId: similarProduct.categoryId,
-                                                  ),
-                                                ),
-                                              );
-                                            },
-                                            // Use quantity from state if available, otherwise default to 0
-                                            quantity: quantity,
-                                            backgroundColor: categoryColor,
-                                            useBackgroundColor: true,
+                                    child: UniversalProductCard(
+                                      product: similarProduct,
+                                      onTap: () {
+                                        // Navigate to the similar product details
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (context) => ProductDetailsPage(
+                                              productId: similarProduct.id,
+                                              categoryId: similarProduct.categoryId,
+                                            ),
                                           ),
                                         );
                                       },
+                                      quantity: 0,
+                                      backgroundColor: categoryColor,
+                                      useBackgroundColor: true,
                                     ),
                                   );
                                 },

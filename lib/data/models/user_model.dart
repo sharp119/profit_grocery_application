@@ -18,21 +18,45 @@ class UserModel extends User {
     // Parse addresses if present
     List<Address> addresses = [];
     if (json['addresses'] != null) {
-      addresses = List<Address>.from(
-        (json['addresses'] as List).map(
-          (addr) => AddressModel.fromJson(Map<String, dynamic>.from(addr)),
-        ),
-      );
+      try {
+        addresses = List<Address>.from(
+          (json['addresses'] as List).map(
+            (addr) => AddressModel.fromJson(Map<String, dynamic>.from(addr)),
+          ),
+        );
+      } catch (e) {
+        // Handle malformed address data
+        print('Error parsing addresses: $e');
+      }
+    }
+
+    // Parse dates safely with fallbacks to current time
+    DateTime createdAt;
+    DateTime lastLogin;
+    try {
+      createdAt = json['createdAt'] != null 
+          ? DateTime.parse(json['createdAt']) 
+          : DateTime.now();
+    } catch (e) {
+      createdAt = DateTime.now();
+    }
+    
+    try {
+      lastLogin = json['lastLogin'] != null 
+          ? DateTime.parse(json['lastLogin']) 
+          : DateTime.now();
+    } catch (e) {
+      lastLogin = DateTime.now();
     }
 
     return UserModel(
-      id: json['id'],
-      phoneNumber: json['phoneNumber'],
+      id: json['id'] ?? '',
+      phoneNumber: json['phoneNumber'] ?? '',
       name: json['name'],
       email: json['email'],
       addresses: addresses,
-      createdAt: DateTime.parse(json['createdAt']),
-      lastLogin: DateTime.parse(json['lastLogin']),
+      createdAt: createdAt,
+      lastLogin: lastLogin,
       isOptedInForMarketing: json['isOptedInForMarketing'] ?? true,
     );
   }

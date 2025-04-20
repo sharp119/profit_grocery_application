@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/product.dart';
 
 class ProductModel extends Product {
@@ -16,6 +17,7 @@ class ProductModel extends Product {
     }
     return 0.0;
   }
+
   const ProductModel({
     required String id,
     required String name,
@@ -25,10 +27,16 @@ class ProductModel extends Product {
     double? mrp,
     bool inStock = true,
     required String categoryId,
+    String? categoryName,
     String? subcategoryId,
     List<String> tags = const [],
     bool isFeatured = false,
     bool isActive = true,
+    String? weight,
+    String? brand,
+    String? sellerName,
+    double? rating,
+    int? reviewCount,
   }) : super(
           id: id,
           name: name,
@@ -38,12 +46,47 @@ class ProductModel extends Product {
           mrp: mrp,
           inStock: inStock,
           categoryId: categoryId,
+          categoryName: categoryName,
           subcategoryId: subcategoryId,
           tags: tags,
           isFeatured: isFeatured,
           isActive: isActive,
+          weight: weight,
+          brand: brand,
+          sellerName: sellerName,
+          rating: rating,
+          reviewCount: reviewCount,
         );
 
+  // Factory constructor to create a ProductModel from Firestore DocumentSnapshot
+  factory ProductModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+    
+    return ProductModel(
+      id: doc.id,
+      name: data['name'] ?? 'Unnamed Product',
+      image: data['image'] ?? '',
+      description: data['description'],
+      price: _parsePrice(data['price']),
+      mrp: data['mrp'] != null ? _parsePrice(data['mrp']) : null,
+      inStock: data['inStock'] ?? true,
+      categoryId: data['categoryId'] ?? '',
+      categoryName: data['categoryName'],
+      subcategoryId: data['subcategoryId'],
+      tags: data['tags'] != null ? List<String>.from(data['tags']) : [],
+      isFeatured: data['isFeatured'] ?? false,
+      isActive: data['isActive'] ?? true,
+      weight: data['weight'],
+      brand: data['brand'],
+      sellerName: data['sellerName'],
+      rating: data['rating'] != null ? _parsePrice(data['rating']) : null,
+      reviewCount: data['reviewCount'],
+    );
+  }
+  
+  // Convert to domain entity - helpful when we need to add more logic in the future
+  Product toEntity() => this;
+  
   // Factory constructor to create a ProductModel from JSON
   factory ProductModel.fromJson(Map<String, dynamic> json) {
     return ProductModel(
@@ -55,12 +98,18 @@ class ProductModel extends Product {
       mrp: json['mrp'] != null ? _parsePrice(json['mrp']) : null,
       inStock: json['inStock'] ?? true,
       categoryId: json['categoryId'],
+      categoryName: json['categoryName'],
       subcategoryId: json['subcategoryId'],
       tags: json['tags'] != null
           ? List<String>.from(json['tags'])
           : [],
       isFeatured: json['isFeatured'] ?? false,
       isActive: json['isActive'] ?? true,
+      weight: json['weight'],
+      brand: json['brand'],
+      sellerName: json['sellerName'],
+      rating: json['rating'] != null ? _parsePrice(json['rating']) : null,
+      reviewCount: json['reviewCount'],
     );
   }
 
@@ -75,10 +124,16 @@ class ProductModel extends Product {
       'mrp': mrp,
       'inStock': inStock,
       'categoryId': categoryId,
+      'categoryName': categoryName,
       'subcategoryId': subcategoryId,
       'tags': tags,
       'isFeatured': isFeatured,
       'isActive': isActive,
+      'weight': weight,
+      'brand': brand,
+      'sellerName': sellerName,
+      'rating': rating,
+      'reviewCount': reviewCount,
     };
   }
 
@@ -92,10 +147,16 @@ class ProductModel extends Product {
     double? mrp,
     bool? inStock,
     String? categoryId,
+    String? categoryName,
     String? subcategoryId,
     List<String>? tags,
     bool? isFeatured,
     bool? isActive,
+    String? weight,
+    String? brand,
+    String? sellerName,
+    double? rating,
+    int? reviewCount,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -106,10 +167,16 @@ class ProductModel extends Product {
       mrp: mrp ?? this.mrp,
       inStock: inStock ?? this.inStock,
       categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
       subcategoryId: subcategoryId ?? this.subcategoryId,
       tags: tags ?? this.tags,
       isFeatured: isFeatured ?? this.isFeatured,
       isActive: isActive ?? this.isActive,
+      weight: weight ?? this.weight,
+      brand: brand ?? this.brand,
+      sellerName: sellerName ?? this.sellerName,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
     );
   }
 }

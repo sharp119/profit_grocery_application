@@ -1,45 +1,22 @@
-import 'package:dartz/dartz.dart';
-
 import '../entities/product.dart';
-import '../../core/errors/failures.dart';
 
+/// Interface for product repository
 abstract class ProductRepository {
-  /// Get all products with optional filtering and pagination
-  Future<Either<Failure, List<Product>>> getProducts({
-    int? limit,
-    int? offset,
-    String? categoryId,
-    String? subcategoryId,
-    bool? inStock,
-    bool? featured,
-  });
+  /// Get all products across all categories
+  Future<List<Product>> getAllProducts();
   
-  /// Get a single product by ID
-  Future<Either<Failure, Product>> getProductById(String productId);
+  /// Get a product by its ID
+  Future<Product?> getProductById(String productId);
   
-  /// Search products by name
-  Future<Either<Failure, List<Product>>> searchProducts(
-    String query, {
-    int? limit,
-    int? offset,
-  });
+  /// Get products in a specific category
+  Future<List<Product>> getProductsByCategory(String categoryId);
   
-  /// Get featured products
-  Future<Either<Failure, List<Product>>> getFeaturedProducts({
-    int? limit,
-  });
+  /// Get products in a specific subcategory
+  Future<List<Product>> getProductsBySubcategory(String categoryId, String subcategoryId);
   
-  /// Get products by category
-  Future<Either<Failure, List<Product>>> getProductsByCategory(
-    String categoryId, {
-    int? limit,
-    int? offset,
-  });
+  /// Get bestseller products
+  Future<List<Product>> getBestsellerProducts();
   
-  /// Get products by subcategory
-  Future<Either<Failure, List<Product>>> getProductsBySubcategory(
-    String subcategoryId, {
-    int? limit,
-    int? offset,
-  });
+  /// Get similar products to a specific product
+  Future<List<Product>> getSimilarProducts(String productId, {int limit = 3});
 }
