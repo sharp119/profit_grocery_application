@@ -14,6 +14,7 @@ import '../../blocs/user/user_event.dart';
 import '../../blocs/user/user_state.dart';
 import '../../widgets/base_layout.dart';
 import '../../widgets/profile/profile_summary_card.dart';
+import 'developer_menu_page.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -519,6 +520,22 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           icon: Icons.info_outline,
           subtitle: 'Version ${AppConstants.appVersion}',
           onTap: () => _showAboutDialog(context),
+        ),
+        
+        // Developer Menu (hidden feature)
+        GestureDetector(
+          onLongPress: () {
+            // Show developer menu option on long press
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const DeveloperMenuPage()),
+            );
+          },
+          child: Container(
+            color: Colors.transparent,
+            height: 10.h,
+            width: double.infinity,
+          ),
         ),
         
         SizedBox(height: 24.h),

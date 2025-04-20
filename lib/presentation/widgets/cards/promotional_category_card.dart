@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'dart:math' as math;
 
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/category.dart';
@@ -47,142 +48,144 @@ class PromotionalCategoryCard extends StatelessWidget {
     
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: height ?? 180.h,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16.r),
-        ),
-        child: Stack(
-          children: [
-            // Background image with overlay
-            Positioned.fill(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(16.r),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    // Gradient background
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16.r),
-                        gradient: LinearGradient(
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                          colors: gradientColors,
-                        ),
-                      ),
-                    ),
-                    // Product image (sized appropriately)
-                    Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 12.r),
-                      child: Image.asset(
-                        category.image,
-                        fit: BoxFit.contain,
-                        filterQuality: FilterQuality.high,
-                      ),
-                    ),
-                    // Dark overlay for better text readability
-                    Container(
-                      color: Colors.black.withOpacity(0.2),
-                    )
-                  ],
-                ),
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Calculate safe height based on available width
+          final calculatedHeight = constraints.maxWidth * 1.2;
+          final safeHeight = height != null ? 
+              math.min(height!, calculatedHeight) : 
+              math.min(180.h, calculatedHeight);
+              
+          return Container(
+            height: safeHeight,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
             ),
-            
-            // Content overlay
-            Padding(
-              padding: EdgeInsets.fromLTRB(12.r, 12.r, 12.r, 8.r), // Adjusted padding with less on bottom
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Tag (Featured, New Launch, etc.)
-                  if (category.tag != null)
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 10.w,
-                        vertical: 4.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.9),
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                      child: Text(
-                        category.tag!,
-                        style: TextStyle(
-                          color: gradientColors[0],
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.bold,
+            child: Stack(
+              children: [
+                // Background image with overlay
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16.r),
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        // Gradient background
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(16.r),
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: gradientColors,
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  
-                  const Spacer(),
-                  
-                  // Category name
-                  Text(
-                    category.name,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 20.sp, // Reduced font size
-                      fontWeight: FontWeight.bold,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 4,
-                          offset: const Offset(1, 1),
+                        // Product image (sized appropriately)
+                        Padding(
+                          padding: EdgeInsets.all(8.r),
+                          child: Image.asset(
+                            category.image,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                          ),
                         ),
+                        // Dark overlay for better text readability
+                        Container(
+                          color: Colors.black.withOpacity(0.2),
+                        )
                       ],
                     ),
-                    maxLines: 2, // Limit to 2 lines
-                    overflow: TextOverflow.ellipsis,
                   ),
-                  
-                  SizedBox(height: 4.h), // Reduced spacing
-                  
-                  // Shop now button - Ensure it has enough bottom margin
-                  Padding(
-                    padding: EdgeInsets.only(bottom: 4.h), // Add bottom padding
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
+                ),
+                
+                // Content overlay
+                Padding(
+                  padding: EdgeInsets.all(8.r),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Tag (Featured, New Launch, etc.)
+                      if (category.tag != null)
                         Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: 10.w, // Slightly reduced
-                            vertical: 4.h, // Slightly reduced
+                            horizontal: 8.w,
+                            vertical: 3.h,
                           ),
                           decoration: BoxDecoration(
-                            color: AppTheme.accentColor,
+                            color: Colors.white.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(4.r),
                           ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'SHOP NOW',
-                                style: TextStyle(
-                                  color: Colors.black,
-                                  fontSize: 10.sp, // Reduced font size
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              SizedBox(width: 2.w), // Reduced spacing
-                              Icon(
-                                Icons.arrow_forward,
-                                color: Colors.black,
-                                size: 10.sp, // Reduced icon size
-                              ),
-                            ],
+                          child: Text(
+                            category.tag!,
+                            style: TextStyle(
+                              color: gradientColors[0],
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
+                      
+                      const Spacer(),
+                      
+                      // Category name
+                      Text(
+                        category.name,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 4,
+                              offset: const Offset(1, 1),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      
+                      SizedBox(height: 4.h),
+                      
+                      // Shop now button
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 3.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'SHOP NOW',
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            SizedBox(width: 2.w),
+                            Icon(
+                              Icons.arrow_forward,
+                              color: Colors.black,
+                              size: 10.sp,
+                            ),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                  )
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        }
       ),
     );
   }

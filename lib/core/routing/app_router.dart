@@ -19,6 +19,11 @@ import '../../presentation/pages/profile/address_form_page.dart';
 import '../../presentation/pages/profile/profile_edit_page.dart';
 import '../../presentation/pages/profile/profile_page.dart';
 import '../../presentation/pages/main_navigation.dart';
+import '../../presentation/pages/profile/developer_menu_page.dart';
+import '../../presentation/pages/test/image_test_page.dart';
+import '../../presentation/pages/test/product_card_test_page.dart';
+import '../../presentation/pages/category_products/firestore/firestore_category_products_page.dart';
+import '../../presentation/pages/dev/firestore_sync_page.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -42,6 +47,13 @@ class AppRouter {
       // Home and main navigation routes
       case AppConstants.homeRoute:
         return MaterialPageRoute(builder: (_) => const MainNavigation());
+        
+      // Category product routes
+      case AppConstants.firestoreCategoryProductsRoute:
+        final categoryId = settings.arguments as String?;
+        return MaterialPageRoute(
+          builder: (_) => FirestoreCategoryProductsPage(categoryId: categoryId),
+        );
         
       // Profile routes
       case AppConstants.profileRoute:
@@ -112,6 +124,19 @@ class AppRouter {
             isPreRegistration: args['isPreRegistration'] ?? false,
           ),
         );
+      
+      // Developer routes
+      case AppConstants.developerMenuRoute:
+        return MaterialPageRoute(builder: (_) => const DeveloperMenuPage());
+      
+      case AppConstants.imageTestRoute:
+        return MaterialPageRoute(builder: (_) => const ImageTestPage());
+      
+      case AppConstants.productCardTestRoute:
+        return MaterialPageRoute(builder: (_) => const ProductCardTestPage());
+        
+      case AppConstants.firestoreSyncRoute:
+        return MaterialPageRoute(builder: (_) => const FirestoreSyncPage());
           
       // Default - route not found
       default:

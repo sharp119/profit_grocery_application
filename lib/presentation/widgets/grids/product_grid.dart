@@ -80,56 +80,70 @@ class ProductGrid extends StatelessWidget {
       );
     }
     
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        crossAxisSpacing: 16.w,
-        mainAxisSpacing: 16.h,
-        childAspectRatio: 0.7, // Decreased to provide more vertical space
-      ),
-      shrinkWrap: shrinkWrap,
-      // Don't load all items at once, use caching
-      cacheExtent: 500, // Increase the cache extent for smoother scrolling
-      physics: physics ?? const NeverScrollableScrollPhysics(),
-      padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
-      // Display all products for this subcategory
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        final product = products[index];
-        final quantity = cartQuantities[product.id] ?? 0;
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate a reasonable childAspectRatio based on screen size
+        // This helps prevent layout overflow issues
+        final horizontalPadding = (padding as EdgeInsetsGeometry?)?.horizontal ?? 32.0;
+        final availableWidth = constraints.maxWidth - horizontalPadding;
+        final itemWidth = (availableWidth - (16.w * (crossAxisCount - 1))) / crossAxisCount;
         
-        // Get the background color based on product category or ID
-        Color? backgroundColor;
+        // A child aspect ratio of 0.7 works for most devices, but adjust if necessary
+        // for very small screens
+        final safeAspectRatio = (itemWidth / (itemWidth * 1.4)).clamp(0.6, 0.8);
         
-        // First try using subcategory or category ID with provided colors
-        if (subCategoryColors != null) {
-          if (product.subcategoryId != null && subCategoryColors!.containsKey(product.subcategoryId)) {
-            backgroundColor = subCategoryColors![product.subcategoryId];
-          } else if (product.categoryId != null && subCategoryColors!.containsKey(product.categoryId)) {
-            backgroundColor = subCategoryColors![product.categoryId];
-          } else if (product.id.contains('_')) {
-            // Try to extract base category from product ID (e.g., "vegetables_fruits_1")
-            final parts = product.id.split('_');
-            if (parts.length >= 2) {
-              // Try first two parts combined
-              final baseCategory = "${parts[0]}_${parts[1]}";
-              if (subCategoryColors!.containsKey(baseCategory)) {
-                backgroundColor = subCategoryColors![baseCategory];
-              } 
-              // Try just the first part
-              else if (subCategoryColors!.containsKey(parts[0])) {
-                backgroundColor = subCategoryColors![parts[0]];
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16.w,
+            mainAxisSpacing: 16.h,
+            childAspectRatio: safeAspectRatio,
+          ),
+          shrinkWrap: shrinkWrap,
+          // Don't load all items at once, use caching
+          cacheExtent: 500, // Increase the cache extent for smoother scrolling
+          physics: physics ?? const NeverScrollableScrollPhysics(),
+          padding: padding ?? EdgeInsets.symmetric(horizontal: 16.w),
+          // Display all products for this subcategory
+          itemCount: products.length,
+          itemBuilder: (context, index) {
+            final product = products[index];
+            final quantity = cartQuantities[product.id] ?? 0;
+            
+            // Get the background color based on product category or ID
+            Color? backgroundColor;
+            
+            // First try using subcategory or category ID with provided colors
+            if (subCategoryColors != null) {
+              if (product.subcategoryId != null && subCategoryColors!.containsKey(product.subcategoryId)) {
+                backgroundColor = subCategoryColors![product.subcategoryId];
+              } else if (product.categoryId != null && subCategoryColors!.containsKey(product.categoryId)) {
+                backgroundColor = subCategoryColors![product.categoryId];
+              } else if (product.id.contains('_')) {
+                // Try to extract base category from product ID (e.g., "vegetables_fruits_1")
+                final parts = product.id.split('_');
+                if (parts.length >= 2) {
+                  // Try first two parts combined
+                  final baseCategory = "${parts[0]}_${parts[1]}";
+                  if (subCategoryColors!.containsKey(baseCategory)) {
+                    backgroundColor = subCategoryColors![baseCategory];
+                  } 
+                  // Try just the first part
+                  else if (subCategoryColors!.containsKey(parts[0])) {
+                    backgroundColor = subCategoryColors![parts[0]];
+                  }
+                }
               }
             }
-          }
-        }
-        
-        return UniversalProductCard(
-          product: product,
-          onTap: () => onProductTap(product),
-          quantity: quantity,
-          backgroundColor: backgroundColor,
-          useBackgroundColor: backgroundColor != null,
+            
+            return UniversalProductCard(
+              product: product,
+              onTap: () => onProductTap(product),
+              quantity: quantity,
+              backgroundColor: backgroundColor,
+              useBackgroundColor: backgroundColor != null,
+            );
+          },
         );
       },
     );

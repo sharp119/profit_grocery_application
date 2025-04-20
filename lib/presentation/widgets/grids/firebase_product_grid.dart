@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 
 import '../../../domain/entities/product.dart';
 import '../../../core/utils/color_mapper.dart';
-import '../../blocs/cart/cart_bloc.dart';
-import '../../blocs/cart/cart_state.dart';
 import '../cards/enhanced_product_card.dart';
 
 /// A grid view that displays products from Firebase
@@ -34,28 +31,27 @@ class FirebaseProductGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, cartState) {
-        // Use cart quantities from CartBloc state or the passed cartQuantities
-        Map<String, int> quantities = {};
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Calculate item width based on available width and desired column count
+        final maxWidth = constraints.maxWidth;
+        final horizontalPadding = 16.w * 2; // Left and right padding
+        final spacing = 16.w * (crossAxisCount - 1); // Total spacing between items
+        final availableWidth = maxWidth - horizontalPadding - spacing;
+        final itemWidth = availableWidth / crossAxisCount;
         
-        // First try to use quantities from the passed cartQuantities
-        if (cartQuantities != null) {
-          quantities = cartQuantities!;
-        }
+        // Use cart quantities if passed
+        final quantities = cartQuantities ?? <String, int>{};
         
-        // If CartBloc is loaded, use its quantities (which may be more up-to-date)
-        if (cartState.status == CartStatus.loaded) {
-          // Create a map of product IDs to quantities
-          for (final item in cartState.items) {
-            quantities[item.productId] = item.quantity;
-          }
-        }
-        
-        return MasonryGridView.count(
-          crossAxisCount: crossAxisCount,
-          mainAxisSpacing: 16.h,
-          crossAxisSpacing: 16.w,
+        // Use GridView.builder instead of MasonryGridView for more predictable layout
+        return GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            crossAxisSpacing: 16.w,
+            mainAxisSpacing: 16.h,
+            // Use fixed height ratio to ensure consistent sizing
+            childAspectRatio: childAspectRatio ?? 0.65, // Height is ~1.5x width
+          ),
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
           padding: EdgeInsets.symmetric(horizontal: 16.w),
@@ -67,18 +63,19 @@ class FirebaseProductGrid extends StatelessWidget {
             final quantity = quantities[product.id] ?? 0;
             
             // Get background color for product
-            Color backgroundColor = ColorMapper.getColorForCategory(
+            final backgroundColor = ColorMapper.getColorForCategory(
               product.subcategoryId ?? product.categoryId,
               fallbackColors: subCategoryColors,
             );
             
+            // Each grid cell has fixed dimensions from the GridView
             return EnhancedProductCard.fromEntity(
               product: product,
               onTap: () => onProductTap(product),
-              onQuantityChanged: (qty) => onQuantityChanged(product, qty),
+              onQuantityChanged: (newQuantity) => onQuantityChanged(product, newQuantity),
               quantity: quantity,
               backgroundColor: backgroundColor,
-              showAddButton: showAddButton,
+              // showAddButton: showAddButton,
             );
           },
         );

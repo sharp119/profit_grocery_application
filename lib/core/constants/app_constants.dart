@@ -51,6 +51,7 @@ class AppConstants {
   static const String otpVerificationRoute = '/otp-verification';
   static const String homeRoute = '/home';
   static const String categoryProductsRoute = '/category-products';
+  static const String firestoreCategoryProductsRoute = '/firestore-category-products';
   static const String productDetailsRoute = '/product-details';
   static const String cartRoute = '/cart';
   static const String checkoutRoute = '/checkout';
@@ -68,6 +69,12 @@ class AppConstants {
   static const String addAddressRoute = '/profile/address/add';
   static const String editAddressRoute = '/profile/address/edit';
   static const String registerRoute = '/auth/register';
+  
+  // Developer Routes
+  static const String developerMenuRoute = '/dev';  
+  static const String imageTestRoute = '/dev/image-test';
+  static const String productCardTestRoute = '/dev/product-card-test';
+  static const String firestoreSyncRoute = '/dev/firestore-sync';
   
   // Admin Routes
   static const String adminLoginRoute = '/admin/login';

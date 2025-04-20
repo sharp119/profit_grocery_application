@@ -7,6 +7,7 @@ import '../../../domain/entities/product.dart';
 import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
 import '../grids/product_grid.dart';
+import '../grids/firestore_product_grid.dart';
 import '../../../services/cart/universal/universal_cart_service.dart';
 
 /// A two-panel layout with categories on the left and products on the right
@@ -295,19 +296,39 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                               
                               SizedBox(height: 8.h),
                               
-                              // Products grid - Using the same grid widget with consistent behavior
-                              ProductGrid(
-                                products: products,
-                                onProductTap: widget.onProductTap,
-                                // We still need to provide this for backward compatibility,
-                                // but the universal card will use the centralized service
-                                onQuantityChanged: widget.onQuantityChanged,
-                                cartQuantities: widget.cartQuantities,
-                                crossAxisCount: 2,
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                subCategoryColors: widget.subcategoryColors,
+                              // Products grid - Using the Firestore-optimized grid
+                              Builder(
+                                builder: (context) {
+                                  // Check if products can be cast to ProductModel list
+                                  if (products.isEmpty) {
+                                    return Center(
+                                      child: Padding(
+                                        padding: EdgeInsets.all(16.h),
+                                        child: Text(
+                                          'No products available',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 14.sp,
+                                          ),
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                  
+                                  // Always use the standard ProductGrid since we don't have a way to 
+                                  // safely convert Product to ProductModel at runtime
+                                  return ProductGrid(
+                                    products: products,
+                                    onProductTap: widget.onProductTap,
+                                    onQuantityChanged: widget.onQuantityChanged,
+                                    cartQuantities: widget.cartQuantities,
+                                    crossAxisCount: 2,
+                                    shrinkWrap: true,
+                                    physics: const NeverScrollableScrollPhysics(),
+                                    padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                    subCategoryColors: widget.subcategoryColors,
+                                  );
+                                },
                               ),
                               
                               SizedBox(height: 16.h),

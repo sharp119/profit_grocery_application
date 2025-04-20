@@ -4,6 +4,7 @@ import 'package:badges/badges.dart' as badges;
 
 import '../../core/constants/app_theme.dart';
 import '../pages/cart/cart_page.dart';
+import '../../core/utils/screen_size_utils.dart';
 
 /// A reusable base layout widget for consistent UI across screens
 class BaseLayout extends StatelessWidget {
@@ -36,10 +37,10 @@ class BaseLayout extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // Calculate responsive sizes
-    final badgePadding = (screenWidth / 85).clamp(4.0, 6.0);
-    final badgeFontSize = (screenWidth / 40).clamp(10.0, 14.0);
-    final actionSpacing = (screenWidth / 50).clamp(4.0, 8.0);
+    // Calculate responsive sizes with safety limits
+    final badgePadding = ScreenSizeUtils.safeWidth((screenWidth / 85).clamp(4.0, 6.0));
+    final badgeFontSize = ScreenSizeUtils.safeFontSize((screenWidth / 40).clamp(10.0, 14.0));
+    final actionSpacing = ScreenSizeUtils.safeWidth((screenWidth / 50).clamp(4.0, 8.0));
     
     // Generate app bar actions
     final appBarActions = <Widget>[...actions];
@@ -109,10 +110,10 @@ class BaseLayout extends StatelessWidget {
         final screenWidth = MediaQuery.of(context).size.width;
         final screenHeight = MediaQuery.of(context).size.height;
         
-        // Calculate responsive dimensions
-        final badgePadding = (screenWidth / 85).clamp(4.0, 6.0);
-        final badgeFontSize = (screenWidth / 40).clamp(10.0, 14.0);
-        final fabLabelSize = (screenWidth / 30).clamp(14.0, 16.0);
+        // Calculate responsive dimensions with safety
+        final badgePadding = ScreenSizeUtils.safeWidth((screenWidth / 85).clamp(4.0, 6.0));
+        final badgeFontSize = ScreenSizeUtils.safeFontSize((screenWidth / 40).clamp(10.0, 14.0));
+        final fabLabelSize = ScreenSizeUtils.safeFontSize((screenWidth / 30).clamp(14.0, 16.0));
         
         return BaseLayout(
           title: title,

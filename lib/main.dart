@@ -21,6 +21,7 @@ import 'package:dartz/dartz.dart';
 
 import 'core/di/cart_injection.dart';
 import 'core/di/product_injection.dart';
+import 'core/di/firestore_service_injection.dart';
 import 'core/network/network_info.dart';
 import 'data/datasources/firebase/coupon/coupon_remote_datasource.dart';
 import 'data/repositories/coupon/coupon_repository_impl.dart';
@@ -166,6 +167,9 @@ Future<void> setupDependencyInjection() async {
   
   // Product dependencies
   await initProductDependencies();
+  
+  // Firestore service dependencies
+  await initFirestoreServiceDependencies(sl);
   
   // Determine database preference from Remote Config
   final remoteConfig = FirebaseRemoteConfig.instance;
@@ -354,19 +358,23 @@ class MyApp extends StatelessWidget {
         minTextAdapt: true,
         splitScreenMode: true,
         // Better adaptive builder
-        builder: (context, child) {
+        builder: (_, child) {
           // Get FirebaseAnalytics instance
           final analytics = GetIt.instance<FirebaseAnalytics>();
-          return MaterialApp(
-            title: AppConstants.appName,
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.darkTheme,
-            home: const SplashScreen(),
-            onGenerateRoute: AppRouter.generateRoute,
-            initialRoute: AppConstants.splashRoute,
-            navigatorObservers: [
-              FirebaseAnalyticsObserver(analytics: analytics),
-            ],
+          return Builder(
+            builder: (context) {
+              return MaterialApp(
+                title: AppConstants.appName,
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.darkTheme,
+                home: const SplashScreen(),
+                onGenerateRoute: AppRouter.generateRoute,
+                initialRoute: AppConstants.splashRoute,
+                navigatorObservers: [
+                  FirebaseAnalyticsObserver(analytics: analytics),
+                ],
+              );
+            }
           );
         },
       ),

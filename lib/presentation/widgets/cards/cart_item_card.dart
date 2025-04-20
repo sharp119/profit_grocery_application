@@ -94,11 +94,11 @@ class CartItemCard extends StatelessWidget {
                         fit: BoxFit.contain,
                         width: 64.w,
                         height: 64.w,
-                        errorWidget: Icon(
-                          Icons.image_not_supported,
-                          color: Colors.grey.withOpacity(0.5),
-                          size: 24.sp,
-                        ),
+                        // errorWidget: Icon(
+                        //   Icons.image_not_supported,
+                        //   color: Colors.grey.withOpacity(0.5),
+                        //   size: 24.sp,
+                        // ),
                       ),
                     ),
                     

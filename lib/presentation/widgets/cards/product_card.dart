@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../widgets/image_loader.dart';
+import '../../../core/utils/screen_size_utils.dart';
 
 /// A reusable widget for displaying product cards
 class ProductCard extends StatelessWidget {
@@ -72,21 +73,21 @@ class ProductCard extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // Calculate responsive dimensions
+    // Calculate responsive dimensions with bounds
     final gridItemWidth = screenWidth / 2 - 20; // Account for grid spacing
-    final aspectRatio = 0.7; // Decreased aspect ratio to provide more vertical space
+    final aspectRatio = 0.8; // Increased aspect ratio to provide more vertical space
     final calculatedHeight = gridItemWidth / aspectRatio;
     
-    // Adapt dimensions proportionally to screen size
-    final imageHeight = (calculatedHeight * 0.35).clamp(70.0, 110.0); // Further reduced image height
-    final padding = (screenWidth / 50).clamp(6.0, 10.0);
-    final borderRadius = (screenWidth / 40).clamp(10.0, 16.0);
+    // Use safe dimensions to prevent layout crashes
+    final imageHeight = ScreenSizeUtils.safeHeight((calculatedHeight * 0.4).clamp(70.0, 110.0));
+    final padding = ScreenSizeUtils.safeWidth((screenWidth / 50).clamp(6.0, 10.0));
+    final borderRadius = ScreenSizeUtils.safeRadius((screenWidth / 40).clamp(10.0, 16.0));
     
-    // Font sizes proportional to screen width
-    final nameSize = (screenWidth / 38).clamp(9.0, 13.0); // Smaller font
-    final priceSize = (screenWidth / 32).clamp(11.0, 15.0); // Smaller font
-    final mrpSize = (screenWidth / 42).clamp(8.0, 11.0); // Smaller font
-    final buttonHeight = (screenWidth / 15).clamp(24.0, 32.0);
+    // Font sizes proportional to screen width with safety bounds
+    final nameSize = ScreenSizeUtils.safeFontSize((screenWidth / 38).clamp(9.0, 13.0));
+    final priceSize = ScreenSizeUtils.safeFontSize((screenWidth / 32).clamp(11.0, 15.0));
+    final mrpSize = ScreenSizeUtils.safeFontSize((screenWidth / 42).clamp(8.0, 11.0));
+    final buttonHeight = ScreenSizeUtils.safeHeight((screenWidth / 15).clamp(24.0, 32.0));
     
     return GestureDetector(
       onTap: inStock ? onTap : null,
@@ -111,77 +112,85 @@ class ProductCard extends StatelessWidget {
                     // Product image and discount badge
                     Stack(
                       children: [
-                        // Product image with colored background
+                        // Product image container with fixed height to prevent overflow
                         Container(
-                          height: imageHeight,
                           width: double.infinity,
-                          color: backgroundColor ?? AppTheme.secondaryColor,
-                          padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding/2),
-                          child: inStock
-                              ? Container(
-                                  color: backgroundColor ?? AppTheme.secondaryColor,
-                                  child: ImageLoader.asset(
-                                    image,
-                                    fit: BoxFit.contain,
-                                    width: double.infinity,
-                                    height: imageHeight,
-                                    borderRadius: 4.0,
-                                    errorWidget: Icon(
+                          height: imageHeight,
+                          color: AppTheme.primaryColor,
+                          child: inStock 
+                            ? Center(
+                                child: image != null && image!.isNotEmpty
+                                  ? ImageLoader.network(
+                                      image!,
+                                      fit: BoxFit.contain,
+                                      width: double.infinity,
+                                      height: imageHeight,
+                                      errorWidget: Icon(
+                                        Icons.image_not_supported,
+                                        color: Colors.grey,
+                                        size: imageHeight / 2,
+                                      ),
+                                    )
+                                  : Icon(
                                       Icons.image_not_supported,
-                                      color: Colors.grey.withOpacity(0.5),
-                                      size: imageHeight * 0.5,
+                                      color: Colors.grey,
+                                      size: imageHeight / 2,
+                                    ),
+                              )
+                            : Stack(
+                                alignment: Alignment.center,
+                                children: [
+                                  // Faded unavailable image
+                                  Opacity(
+                                    opacity: 0.3,
+                                    child: image != null && image!.isNotEmpty
+                                      ? ImageLoader.network(
+                                          image!,
+                                          fit: BoxFit.contain,
+                                          width: double.infinity,
+                                          height: imageHeight,
+                                          errorWidget: Icon(
+                                            Icons.image_not_supported,
+                                            color: Colors.grey,
+                                            size: imageHeight / 2,
+                                          ),
+                                        )
+                                      : Icon(
+                                          Icons.image_not_supported,
+                                          color: Colors.grey,
+                                          size: imageHeight / 2,
+                                        ),
+                                  ),
+                                  // Out of stock overlay
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: padding,
+                                      vertical: padding / 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: Colors.red.withOpacity(0.7),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: Text(
+                                      'Out of Stock',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: nameSize,
+                                        fontWeight: FontWeight.bold,
+                                      ),
                                     ),
                                   ),
-                                )
-                              : Stack(
-                                  alignment: Alignment.center,
-                                  children: [
-                                    Container(
-                                      color: backgroundColor ?? AppTheme.secondaryColor,
-                                      child: ImageLoader.asset(
-                                        image,
-                                        fit: BoxFit.contain,
-                                        width: double.infinity,
-                                        height: imageHeight,
-                                        borderRadius: 4.0,
-                                        color: Colors.grey.withOpacity(0.5),
-                                        colorBlendMode: BlendMode.saturation,
-                                        errorWidget: Icon(
-                                          Icons.image_not_supported,
-                                          color: Colors.grey.withOpacity(0.3),
-                                          size: imageHeight * 0.5,
-                                        ),
-                                      ),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 4.0,
-                                        vertical: 2.0,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: Colors.black.withOpacity(0.7),
-                                        borderRadius: BorderRadius.circular(2.0),
-                                      ),
-                                      child: const Text(
-                                        'Out of Stock',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 8.0, // Smaller font
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                                ],
+                              ),
                         ),
                         
-                        // Discount badge - more compact
+                        // Discount badge
                         if (hasDiscount)
                           Positioned(
                             top: 4.0,
                             left: 4.0,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(
+                              padding: EdgeInsets.symmetric(
                                 horizontal: 3.0,
                                 vertical: 1.0,
                               ),
@@ -191,9 +200,9 @@ class ProductCard extends StatelessWidget {
                               ),
                               child: Text(
                                 '${discountPercentage!.toInt()}% OFF',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 7.0, // Smaller font
+                                  fontSize: ScreenSizeUtils.safeFontSize(7.0),
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -225,7 +234,7 @@ class ProductCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                           ),
                           
-                          SizedBox(height: 1.h), // Minimal spacing
+                          SizedBox(height: ScreenSizeUtils.safeHeight(1)),
                           
                           // Price section - made more compact
                           Row(
@@ -241,7 +250,7 @@ class ProductCard extends StatelessWidget {
                                 ),
                               ),
                               
-                              SizedBox(width: 4.0), // Fixed small width
+                              SizedBox(width: ScreenSizeUtils.safeWidth(4.0)),
                               
                               // Original price (MRP) if there is a discount
                               if (hasDiscount)
@@ -261,7 +270,7 @@ class ProductCard extends StatelessWidget {
                           ),
                           
                           // Add to cart button or quantity selector with minimal height
-                          SizedBox(height: 1.h), // Minimal spacing
+                          SizedBox(height: ScreenSizeUtils.safeHeight(2)),
                           quantity > 0
                               ? _buildQuantitySelector(16.h) // Further reduced height
                               : _buildAddButton(16.h),    // Further reduced height

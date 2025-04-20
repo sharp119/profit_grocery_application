@@ -15,7 +15,7 @@ import '../../../presentation/blocs/cart/cart_event.dart';
 import '../../../presentation/blocs/cart/cart_state.dart';
 import '../../../services/cart/unified_cart_service.dart';
 import '../../../utils/cart_logger.dart';
-import 'product_card.dart';
+import 'enhanced_product_card.dart';
 
 /// A universal product card that works consistently across all screens
 class UniversalProductCard extends StatefulWidget {
@@ -249,7 +249,7 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
         }
       },
       listenWhen: (previous, current) => true, // Always listen for changes
-      child: ProductCard.fromEntity(
+      child: EnhancedProductCard.fromEntity(
         product: _displayProduct,
         onTap: widget.onTap,
         onQuantityChanged: _handleQuantityChanged,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'dart:math' as math;
 
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/category.dart';
@@ -33,46 +34,68 @@ class DenseCategoryGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MasonryGridView.count(
-      crossAxisCount: crossAxisCount,
-      mainAxisSpacing: spacing,
-      crossAxisSpacing: spacing,
-      shrinkWrap: true,
-      physics: physics ?? const NeverScrollableScrollPhysics(),
-      padding: padding ?? EdgeInsets.all(spacing),
-      itemCount: categories.length,
-      itemBuilder: (context, index) {
-        final category = categories[index];
-        
-        // Determine grid layout based on category type
-        switch (category.type) {
-          case 'store':
-            return StoreCategoryCard(
-              category: category,
-              onTap: () => onCategoryTap(category),
-              showLabel: showLabels,
-            );
+    // Wrap in a container with constraints to prevent overflow
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return MasonryGridView.count(
+          crossAxisCount: crossAxisCount,
+          mainAxisSpacing: spacing,
+          crossAxisSpacing: spacing,
+          shrinkWrap: true,
+          physics: physics ?? const NeverScrollableScrollPhysics(),
+          padding: padding ?? EdgeInsets.all(spacing),
+          itemCount: categories.length,
+          itemBuilder: (context, index) {
+            final category = categories[index];
             
-          case 'promotional':
-            return PromotionalCategoryCard(
-              category: category,
-              onTap: () => onCategoryTap(category),
-            );
+            // Calculate adaptive heights based on available width
+            final maxItemWidth = (constraints.maxWidth - (spacing * (crossAxisCount - 1))) / crossAxisCount;
             
-          case 'bestseller':
-            return BestsellerCollectionCard(
-              category: category,
-              onTap: () => onCategoryTap(category),
-              productCount: category.productCount ?? 0,
-            );
-            
-          default:
-            return CategoryCard.fromEntity(
-              category: category,
-              onTap: () => onCategoryTap(category),
-              height: (index % 5 == 0 || index % 5 == 3) ? 160.h : 130.h, // Vary heights for visual interest
-            );
-        }
+            // Determine grid layout based on category type
+            switch (category.type) {
+              case 'store':
+                return StoreCategoryCard(
+                  category: category,
+                  onTap: () => onCategoryTap(category),
+                  showLabel: showLabels,
+                );
+                
+              case 'promotional':
+                return SizedBox(
+                  width: maxItemWidth,
+                  child: PromotionalCategoryCard(
+                    category: category,
+                    onTap: () => onCategoryTap(category),
+                  ),
+                );
+                
+              case 'bestseller':
+                return SizedBox(
+                  width: maxItemWidth,
+                  child: BestsellerCollectionCard(
+                    category: category,
+                    onTap: () => onCategoryTap(category),
+                    productCount: category.productCount ?? 0,
+                  ),
+                );
+                
+              default:
+                // Use adaptive heights with constraints
+                final height = (index % 5 == 0 || index % 5 == 3) 
+                    ? math.min(160.h, maxItemWidth * 1.2) 
+                    : math.min(130.h, maxItemWidth);
+                
+                return SizedBox(
+                  width: maxItemWidth,
+                  child: CategoryCard.fromEntity(
+                    category: category,
+                    onTap: () => onCategoryTap(category),
+                    height: height,
+                  ),
+                );
+            }
+          },
+        );
       },
     );
   }
@@ -89,50 +112,57 @@ class DenseCategoryGrid extends StatelessWidget {
     double spacing = 8.0,
     bool showLabels = true,
   }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Section header
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                title,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              if (onViewAllTap != null)
-                GestureDetector(
-                  onTap: onViewAllTap,
-                  child: Text(
-                    'View All',
-                    style: TextStyle(
-                      color: AppTheme.accentColor,
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w500,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Section header
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
-                ),
-            ],
-          ),
-        ),
-        
-        // Category grid
-        DenseCategoryGrid(
-          categories: categories,
-          onCategoryTap: onCategoryTap,
-          padding: padding,
-          physics: physics,
-          crossAxisCount: crossAxisCount,
-          spacing: spacing,
-          showLabels: showLabels,
-        ),
-      ],
+                  if (onViewAllTap != null)
+                    GestureDetector(
+                      onTap: onViewAllTap,
+                      child: Text(
+                        'View All',
+                        style: TextStyle(
+                          color: AppTheme.accentColor,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            
+            // Category grid
+            DenseCategoryGrid(
+              categories: categories,
+              onCategoryTap: onCategoryTap,
+              padding: padding,
+              physics: physics,
+              crossAxisCount: crossAxisCount,
+              spacing: spacing,
+              showLabels: showLabels,
+            ),
+          ],
+        );
+      },
     );
   }
 }
