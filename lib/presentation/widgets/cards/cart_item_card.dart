@@ -80,25 +80,30 @@ class CartItemCard extends StatelessWidget {
                 // Product image with discount badge
                 Stack(
                   children: [
-                    // Product image with our improved ImageLoader
+                    // Product image with improved size and fit
                     Container(
-                      width: 80.w,
-                      height: 80.w,
+                      width: 90.w,
+                      height: 90.w,
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: Colors.white.withOpacity(0.07),
                         borderRadius: BorderRadius.circular(8.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
                       ),
-                      padding: EdgeInsets.all(8.w),
-                      child: ImageLoader.asset(
-                        image,
-                        fit: BoxFit.contain,
-                        width: 64.w,
-                        height: 64.w,
-                        // errorWidget: Icon(
-                        //   Icons.image_not_supported,
-                        //   color: Colors.grey.withOpacity(0.5),
-                        //   size: 24.sp,
-                        // ),
+                      padding: EdgeInsets.all(6.w), // Reduced padding for larger image
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6.r),
+                        child: ImageLoader.asset(
+                          image,
+                          fit: BoxFit.cover, // Changed to cover for better display
+                          width: 78.w,
+                          height: 78.w,
+                        ),
                       ),
                     ),
                     
@@ -153,44 +158,65 @@ class CartItemCard extends StatelessWidget {
                       
                       SizedBox(height: 8.h),
                       
-                      // Price section
+                      // Price section with improved layout
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          // Current price
-                          Text(
-                            '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: AppTheme.accentColor,
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          
-                          if (mrp != null && mrp! > price) ...[
-                            SizedBox(width: 8.w),
-                            
-                            // Original price (MRP)
-                            Text(
-                              '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12.sp,
-                                decoration: TextDecoration.lineThrough,
+                          // Price column with current and original price stacked
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Current price with larger, more visible text
+                              Text(
+                                '${AppConstants.currencySymbol}${price.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: AppTheme.accentColor,
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.3,
+                                ),
                               ),
-                            ),
-                          ],
+                              
+                              if (mrp != null && mrp! > price)
+                                // Original price (MRP) below current price
+                                Text(
+                                  '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 12.sp,
+                                    decoration: TextDecoration.lineThrough,
+                                    height: 1.2,
+                                  ),
+                                ),
+                            ],
+                          ),
                           
                           const Spacer(),
                           
-                          // Item total
-                          Text(
-                            '${AppConstants.currencySymbol}${itemTotal.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          // Per unit and total amount in clean column layout
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              // Total amount with highlighting
+                              Text(
+                                '${AppConstants.currencySymbol}${itemTotal.toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              
+                              // Per unit text below, smaller and subdued
+                              Text(
+                                'Total',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 11.sp,
+                                  height: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -207,91 +233,127 @@ class CartItemCard extends StatelessWidget {
             height: 1,
           ),
           
-          // Action bar (quantity selector and remove button)
-          Padding(
-            padding: EdgeInsets.all(12.w),
+          // Action bar with enhanced quantity selector and remove button
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.3),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(12.r),
+                bottomRight: Radius.circular(12.r),
+              ),
+            ),
             child: Row(
               children: [
-                // Quantity label
-                Text(
-                  'Qty:',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14.sp,
-                  ),
-                ),
-                
-                SizedBox(width: 12.w),
-                
-                // Quantity selector
+                // Improved quantity selector with more prominent buttons
                 Container(
+                  height: 36.h,
                   decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    borderRadius: BorderRadius.circular(4.r),
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryColor,
+                        AppTheme.secondaryColor.withOpacity(0.9),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(8.r),
                     border: Border.all(
-                      color: AppTheme.accentColor.withOpacity(0.3),
+                      color: AppTheme.accentColor.withOpacity(0.4),
                       width: 1,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 2,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
                   ),
                   child: Row(
                     children: [
-                      // Decrease quantity
-                      InkWell(
-                        onTap: quantity > 1
-                            ? () => onQuantityChanged(quantity - 1)
-                            : null,
-                        child: Container(
-                          padding: EdgeInsets.all(6.w),
-                          child: Icon(
-                            Icons.remove,
-                            size: 16.sp,
-                            color: quantity > 1
-                                ? Colors.white
-                                : Colors.grey,
+                      // Decrease quantity - larger touch target
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: quantity > 1
+                              ? () => onQuantityChanged(quantity - 1)
+                              : null,
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(8.r),
+                            bottomLeft: Radius.circular(8.r),
+                          ),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w),
+                            height: 36.h,
+                            decoration: BoxDecoration(
+                              color: quantity > 1
+                                  ? Colors.transparent
+                                  : Colors.black.withOpacity(0.2),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(8.r),
+                                bottomLeft: Radius.circular(8.r),
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.remove,
+                              size: 18.sp,
+                              color: quantity > 1
+                                  ? AppTheme.accentColor
+                                  : Colors.grey,
+                            ),
                           ),
                         ),
                       ),
                       
-                      // Vertical divider
-                      Container(
-                        height: 24.h,
-                        width: 1,
-                        color: Colors.grey.withOpacity(0.3),
-                      ),
-                      
-                      // Quantity
+                      // Quantity with better visibility
                       Container(
                         constraints: BoxConstraints(
-                          minWidth: 32.w,
+                          minWidth: 36.w,
                         ),
+                        height: 36.h,
                         alignment: Alignment.center,
-                        padding: EdgeInsets.symmetric(horizontal: 8.w),
+                        decoration: BoxDecoration(
+                          border: Border(
+                            left: BorderSide(
+                              color: AppTheme.accentColor.withOpacity(0.1),
+                              width: 1,
+                            ),
+                            right: BorderSide(
+                              color: AppTheme.accentColor.withOpacity(0.1),
+                              width: 1,
+                            ),
+                          ),
+                          color: Colors.black.withOpacity(0.2),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 12.w),
                         child: Text(
                           quantity.toString(),
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 14.sp,
+                            fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       
-                      // Vertical divider
-                      Container(
-                        height: 24.h,
-                        width: 1,
-                        color: Colors.grey.withOpacity(0.3),
-                      ),
-                      
-                      // Increase quantity
-                      InkWell(
-                        onTap: () => onQuantityChanged(quantity + 1),
-                        child: Container(
-                          padding: EdgeInsets.all(6.w),
-                          child: Icon(
-                            Icons.add,
-                            size: 16.sp,
-                            color: Colors.white,
+                      // Increase quantity - larger touch target
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          onTap: () => onQuantityChanged(quantity + 1),
+                          borderRadius: BorderRadius.only(
+                            topRight: Radius.circular(8.r),
+                            bottomRight: Radius.circular(8.r),
+                          ),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(horizontal: 10.w),
+                            height: 36.h,
+                            child: Icon(
+                              Icons.add,
+                              size: 18.sp,
+                              color: AppTheme.accentColor,
+                            ),
                           ),
                         ),
                       ),
@@ -301,25 +363,44 @@ class CartItemCard extends StatelessWidget {
                 
                 const Spacer(),
                 
-                // Remove button
-                TextButton.icon(
-                  onPressed: onRemove,
-                  icon: Icon(
-                    Icons.delete_outline,
-                    color: Colors.red.withOpacity(0.8),
-                    size: 18.sp,
-                  ),
-                  label: Text(
-                    'Remove',
-                    style: TextStyle(
-                      color: Colors.red.withOpacity(0.8),
-                      fontSize: 12.sp,
-                    ),
-                  ),
-                  style: TextButton.styleFrom(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 4.h,
+                // Enhanced remove button with better visual cues
+                Material(
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(8.r),
+                  child: InkWell(
+                    onTap: onRemove,
+                    borderRadius: BorderRadius.circular(8.r),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal:
+                        10.w,
+                        vertical: 8.h,
+                      ),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: Colors.red.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.delete_outline,
+                            color: Colors.red.withOpacity(0.9),
+                            size: 18.sp,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'Remove',
+                            style: TextStyle(
+                              color: Colors.red.withOpacity(0.9),
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -40,161 +40,233 @@ class CartFAB extends StatelessWidget {
     
     CartLogger.info('CART_FAB', 'Building cart FAB with $itemCount items and ₹$totalAmount');
     
-    // Calculate proper image size - slightly bigger than before
-    final imageSize = 48.w;
+    // Calculate responsive image size based on screen width
+    final screenWidth = MediaQuery.of(context).size.width;
+    final imageSize = (screenWidth * 0.12).clamp(42.0, 54.0);
+    final badgeSize = (imageSize * 0.35).clamp(16.0, 22.0);
     
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: 16.w,
-          vertical: 12.h,
-        ),
-        decoration: BoxDecoration(
-          color: AppTheme.accentColor,
-          borderRadius: BorderRadius.circular(24.r),
-          boxShadow: [
-            BoxShadow(
-              color: AppTheme.accentColor.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(24.r),
+        child: Ink(
+          padding: EdgeInsets.symmetric(
+            horizontal: 16.w,
+            vertical: 12.h,
+          ),
+          decoration: BoxDecoration(
+            color: AppTheme.accentColor,
+            borderRadius: BorderRadius.circular(24.r),
+            boxShadow: [
+              BoxShadow(
+                color: AppTheme.accentColor.withOpacity(0.3),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 3,
+                offset: const Offset(0, 1),
+              ),
+            ],
+            // Add subtle gradient for premium look
+            gradient: LinearGradient(
+              colors: [
+                AppTheme.accentColor,
+                AppTheme.accentColor.withOpacity(0.9),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Item preview with badge
-            if (showPreview && previewImagePath != null)
-              badges.Badge(
-                position: badges.BadgePosition.topEnd(top: -6, end: -6),
-                badgeAnimation: const badges.BadgeAnimation.slide(),
-                badgeStyle: badges.BadgeStyle(
-                  badgeColor: Colors.white,
-                  padding: EdgeInsets.all(6.w),
-                ),
-                badgeContent: Text(
-                  itemCount.toString(),
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.bold,
+            // Add subtle border for depth
+            border: Border.all(
+              color: Colors.white.withOpacity(0.2),
+              width: 0.5,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Item preview with badge
+              if (showPreview && previewImagePath != null)
+                badges.Badge(
+                  position: badges.BadgePosition.topEnd(top: -6, end: -6),
+                  badgeAnimation: const badges.BadgeAnimation.slide(),
+                  badgeStyle: badges.BadgeStyle(
+                    badgeColor: Colors.black,
+                    padding: EdgeInsets.all(badgeSize * 0.25),
+                    borderSide: BorderSide(
+                      color: AppTheme.accentColor,
+                      width: 1.5,
+                    ),
+                    elevation: 2,
                   ),
-                ),
-                child: Container(
-                  width: imageSize,
-                  height: imageSize,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    border: Border.all(
+                  badgeContent: Text(
+                    itemCount.toString(),
+                    style: TextStyle(
+                      color: AppTheme.accentColor,
+                      fontSize: (badgeSize * 0.5).clamp(10.0, 14.0),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  child: Container(
+                    width: imageSize,
+                    height: imageSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.black,
+                        width: 1.5,
+                      ),
+                      // Enhanced shadow for depth - premium look
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                        BoxShadow(
+                          color: Colors.white.withOpacity(0.1),
+                          blurRadius: 2,
+                          offset: const Offset(0, -1),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Padding(
+                        padding: EdgeInsets.all(imageSize * 0.05), // Minimal padding for maximum image
+                        child: Image.asset(
+                          previewImagePath!,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            CartLogger.error('CART_FAB', 'Error loading image: $error');
+                            // Return a fallback icon if image fails to load
+                            return Icon(
+                              Icons.shopping_bag,
+                              color: Colors.black,
+                              size: imageSize * 0.6,
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              else
+                badges.Badge(
+                  position: badges.BadgePosition.topEnd(top: -6, end: -6),
+                  badgeAnimation: const badges.BadgeAnimation.slide(),
+                  badgeStyle: badges.BadgeStyle(
+                    badgeColor: Colors.black,
+                    padding: EdgeInsets.all(badgeSize * 0.25),
+                    borderSide: BorderSide(
+                      color: AppTheme.accentColor,
+                      width: 1.5,
+                    ),
+                    elevation: 2,
+                  ),
+                  badgeContent: Text(
+                    itemCount.toString(),
+                    style: TextStyle(
+                      color: AppTheme.accentColor,
+                      fontSize: (badgeSize * 0.5).clamp(10.0, 14.0),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  child: Container(
+                    width: imageSize,
+                    height: imageSize,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.black,
+                        width: 1.5,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.15),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.shopping_cart,
                       color: Colors.black,
-                      width: 1,
-                    ),
-                    // Add slight shadow for depth
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: ClipOval(
-                    child: Padding(
-                      padding: EdgeInsets.all(3.w), // Reduced padding for bigger image
-                      child: Image.asset(
-                        previewImagePath!,
-                        fit: BoxFit.cover, // Changed to cover for better display
-                        errorBuilder: (context, error, stackTrace) {
-                          // Return a fallback icon if image fails to load
-                          return Icon(
-                            Icons.shopping_bag,
-                            color: Colors.black,
-                            size: 24.w,
-                          );
-                        },
-                      ),
+                      size: imageSize * 0.6,
                     ),
                   ),
                 ),
-              )
-            else
-              badges.Badge(
-                position: badges.BadgePosition.topEnd(top: -6, end: -6),
-                badgeAnimation: const badges.BadgeAnimation.slide(),
-                badgeStyle: badges.BadgeStyle(
-                  badgeColor: Colors.white,
-                  padding: EdgeInsets.all(6.w),
-                ),
-                badgeContent: Text(
-                  itemCount.toString(),
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.bold,
+              
+              SizedBox(width: 12.w),
+              
+              // View cart text with enhanced typography
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'View cart',
+                    style: TextStyle(
+                      color: Colors.black,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.3,
+                    ),
                   ),
-                ),
-                child: Container(
-                  width: imageSize,
-                  height: imageSize,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
+                  
+                  // Show total amount with premium styling
+                  if (totalAmount != null)
+                    Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6.w,
+                        vertical: 2.h,
                       ),
-                    ],
-                  ),
+                      margin: EdgeInsets.only(top: 2.h),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(4.r),
+                        border: Border.all(
+                          color: Colors.black.withOpacity(0.2),
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        '₹${totalAmount!.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          color: Colors.black,
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+              
+              SizedBox(width: 8.w),
+              
+              // Enhanced arrow icon
+              Container(
+                width: 24.w,
+                height: 24.w,
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Center(
                   child: Icon(
-                    Icons.shopping_cart,
+                    Icons.arrow_forward_ios,
                     color: Colors.black,
-                    size: 28.sp,
+                    size: 14.sp,
                   ),
                 ),
               ),
-            
-            SizedBox(width: 12.w),
-            
-            // View cart text
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'View cart',
-                  style: TextStyle(
-                    color: Colors.black,
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                
-                // Show total amount if available with improved styling
-                if (totalAmount != null)
-                  Text(
-                    '₹${totalAmount!.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-              ],
-            ),
-            
-            SizedBox(width: 8.w),
-            
-            // Arrow icon
-            Icon(
-              Icons.arrow_forward_ios,
-              color: Colors.black,
-              size: 16.sp,
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

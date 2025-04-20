@@ -108,14 +108,14 @@ class EnhancedProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use a fixed height container that's shorter to prevent overflow
+    // More compact fixed height to make card less tall
     return Container(
-      height: 230.h, // Reduced fixed height to prevent overflow
+      height: 210.h, // Even more reduced height
       child: GestureDetector(
         onTap: inStock ? onTap : null,
         child: Container(
           decoration: BoxDecoration(
-            color: AppTheme.secondaryColor, // Use the app's dark theme
+            color: AppTheme.secondaryColor,
             borderRadius: BorderRadius.circular(8.r),
             border: Border.all(
               color: AppTheme.accentColor.withOpacity(0.1),
@@ -125,42 +125,42 @@ class EnhancedProductCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Discount badge and image - Fixed height
+              // Discount badge and image - Reduced fixed height
               SizedBox(
-                height: 120.h, // Fixed height for image section
+                height: 100.h, // Smaller image area
                 child: Stack(
                   children: [
                     // Product image
                     Container(
                       width: double.infinity,
-                      height: 120.h,
-                      padding: EdgeInsets.all(8.r),
+                      height: 100.h, // Smaller image container
+                      padding: EdgeInsets.all(6.r), // Reduced padding
                       child: _buildProductImage(),
                     ),
                     
-                    // Discount badge
+                    // Discount badge - Same position
                     if (hasDiscount)
                       Positioned(
-                        top: 8.r,
-                        left: 8.r,
+                        top: 6.r,
+                        left: 6.r,
                         child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 2.r),
+                          padding: EdgeInsets.symmetric(horizontal: 5.r, vertical: 1.r),
                           decoration: BoxDecoration(
                             color: Colors.green,
-                            borderRadius: BorderRadius.circular(4.r),
+                            borderRadius: BorderRadius.circular(3.r),
                           ),
                           child: Text(
                             '${discountPercentage!.toInt()}% OFF',
                             style: TextStyle(
                               color: Colors.white,
-                              fontSize: 10.sp,
+                              fontSize: 9.sp,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                         ),
                       ),
                     
-                    // Out of stock overlay
+                    // Out of stock overlay - Same styling
                     if (!inStock)
                       Positioned.fill(
                         child: Container(
@@ -174,18 +174,18 @@ class EnhancedProductCard extends StatelessWidget {
                           child: Center(
                             child: Container(
                               padding: EdgeInsets.symmetric(
-                                horizontal: 8.r,
-                                vertical: 4.r,
+                                horizontal: 6.r,
+                                vertical: 3.r,
                               ),
                               decoration: BoxDecoration(
                                 color: Colors.red.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(4.r),
+                                borderRadius: BorderRadius.circular(3.r),
                               ),
                               child: Text(
                                 'Out of Stock',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 12.sp,
+                                  fontSize: 10.sp,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
@@ -197,77 +197,83 @@ class EnhancedProductCard extends StatelessWidget {
                 ),
               ),
               
-              // Product details - Fixed height section with simplified layout
+              // Product details - Compact layout with minimal spacing
               Expanded(
                 child: Padding(
-                  padding: EdgeInsets.all(8.r),
+                  padding: EdgeInsets.fromLTRB(6.r, 4.r, 6.r, 6.r), // Tighter padding
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       // Product name - Limited height and lines
-                      Expanded(
-                        flex: 2,
-                        child: Text(
-                          name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w500,
-                            color: Colors.white,
-                          ),
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          height: 1.1, // Tighter line height
                         ),
                       ),
+                      
+                      SizedBox(height: 2.h), // Minimal spacing
                       
                       // Weight/quantity - if available
                       if (weight != null && unit != null)
                         Text(
                           '$weight $unit',
                           style: TextStyle(
-                            fontSize: 12.sp,
+                            fontSize: 11.sp,
                             color: Colors.grey,
                             fontWeight: FontWeight.w400,
+                            height: 1.0, // Tighter line height
                           ),
                         ),
                       
-                      // Price section with smaller height
-                      Expanded(
-                        flex: 1,
-                        child: Row(
-                          children: [
-                            // Current price
-                            Text(
-                              '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.accentColor,
+                      SizedBox(height: 2.h), // Minimal spacing
+                      
+                      // Price section - Compact
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          // Current price
+                          Text(
+                            '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.accentColor,
+                              height: 1.0, // Tighter line height
+                            ),
+                          ),
+                          
+                          SizedBox(width: 4.w),
+                          
+                          // Original price if there's a discount
+                          if (hasDiscount)
+                            Flexible(
+                              child: Text(
+                                '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Colors.grey,
+                                  height: 1.0, // Tighter line height
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
-                            
-                            SizedBox(width: 4.w),
-                            
-                            // Original price if there's a discount
-                            if (hasDiscount)
-                              Flexible(
-                                child: Text(
-                                  '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
-                                  style: TextStyle(
-                                    fontSize: 12.sp,
-                                    decoration: TextDecoration.lineThrough,
-                                    color: Colors.grey,
-                                  ),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                          ],
-                        ),
+                        ],
                       ),
                       
-                      // Add to cart button - Fixed height
+                      Spacer(flex: 1), // Push button to bottom
+                      
+                      // Add to cart button - Fixed height at bottom
                       SizedBox(
-                        height: 30.h, // Slightly smaller button
+                        height: 28.h, // Even smaller button
                         child: quantity > 0
                             ? _buildQuantitySelector()
                             : _buildAddButton(),
@@ -288,66 +294,96 @@ class EnhancedProductCard extends StatelessWidget {
     // Check if image is a network URL or an asset path
     bool isNetworkImage = image.startsWith('http') || image.startsWith('https');
     
-    if (isNetworkImage) {
-      // It's a network image
+    // Create a container with padding for consistent sizing and spacing
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(4.r),
+      ),
+      padding: EdgeInsets.all(4.r), // Add padding to ensure image doesn't touch edges
+      child: Center( // Center the image within the container
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(3.r),
+          child: isNetworkImage
+            ? _buildNetworkImage()
+            : _buildAssetImage(),
+        ),
+      ),
+    );
+  }
+  
+  // Specifically for network images with better error handling
+  Widget _buildNetworkImage() {
+    return inStock
+      ? ImageLoader.network(
+          image,
+          fit: BoxFit.contain, // Changed to contain to ensure full image is visible
+          width: double.infinity,
+          height: double.infinity,
+          errorWidget: _buildErrorPlaceholder(),
+        )
+      : Opacity(
+          opacity: 0.5,
+          child: ImageLoader.network(
+            image,
+            fit: BoxFit.contain, // Changed to contain to ensure full image is visible
+            width: double.infinity,
+            height: double.infinity,
+            errorWidget: _buildErrorPlaceholder(),
+          ),
+        );
+  }
+  
+  // Specifically for asset images with better error handling
+  Widget _buildAssetImage() {
+    try {
       return inStock
-          ? ImageLoader.network(
+        ? Image.asset(
+            image,
+            fit: BoxFit.contain, // Changed to contain to ensure full image is visible
+            width: double.infinity,
+            height: double.infinity,
+            errorBuilder: (context, error, stackTrace) {
+              print('Error loading asset image: $error for path: $image');
+              return _buildErrorPlaceholder();
+            },
+          )
+        : Opacity(
+            opacity: 0.5,
+            child: Image.asset(
               image,
-              fit: BoxFit.contain,
-              errorWidget: Icon(
-                Icons.image_not_supported,
-                color: Colors.grey,
-                size: 40.r,
-              ),
-            )
-          : Opacity(
-              opacity: 0.5,
-              child: ImageLoader.network(
-                image,
-                fit: BoxFit.contain,
-                errorWidget: Icon(
-                  Icons.image_not_supported,
-                  color: Colors.grey,
-                  size: 40.r,
-                ),
-              ),
-            );
-    } else {
-      // It's an asset image
-      return inStock
-          ? Image.asset(
-              image,
-              fit: BoxFit.contain,
+              fit: BoxFit.contain, // Changed to contain to ensure full image is visible
+              width: double.infinity,
+              height: double.infinity,
               errorBuilder: (context, error, stackTrace) {
-                print('Error loading asset image: $error for path: $image');
-                return Icon(
-                  Icons.image_not_supported,
-                  color: Colors.grey,
-                  size: 40.r,
-                );
+                return _buildErrorPlaceholder();
               },
-            )
-          : Opacity(
-              opacity: 0.5,
-              child: Image.asset(
-                image,
-                fit: BoxFit.contain,
-                errorBuilder: (context, error, stackTrace) {
-                  return Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                    size: 40.r,
-                  );
-                },
-              ),
-            );
+            ),
+          );
+    } catch (e) {
+      print('Exception loading asset image: $e for path: $image');
+      return _buildErrorPlaceholder();
     }
+  }
+  
+  // Consistent error placeholder
+  Widget _buildErrorPlaceholder() {
+    return Container(
+      color: Colors.black.withOpacity(0.05),
+      child: Center(
+        child: Icon(
+          Icons.image_not_supported,
+          color: Colors.grey,
+          size: 28.r, // Smaller icon size
+        ),
+      ),
+    );
   }
 
   Widget _buildAddButton() {
     return SizedBox(
       width: double.infinity,
-      height: 30.h,
+      height: 28.h,
       child: ElevatedButton(
         onPressed: inStock ? () => onQuantityChanged(1) : null,
         style: ElevatedButton.styleFrom(
@@ -357,13 +393,16 @@ class EnhancedProductCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(4.r),
           ),
           padding: EdgeInsets.zero,
-          elevation: 0,
+          elevation: 1, // Slight elevation for depth
+          // Add gradient effect for premium look
+          shadowColor: Colors.black.withOpacity(0.5),
         ),
         child: Text(
           'ADD',
           style: TextStyle(
-            fontSize: 14.sp,
+            fontSize: 13.sp,
             fontWeight: FontWeight.bold,
+            letterSpacing: 0.5,
           ),
         ),
       ),
@@ -372,42 +411,71 @@ class EnhancedProductCard extends StatelessWidget {
 
   Widget _buildQuantitySelector() {
     return Container(
-      height: 30.h,
+      height: 28.h,
       decoration: BoxDecoration(
-        border: Border.all(color: AppTheme.accentColor),
         borderRadius: BorderRadius.circular(4.r),
+        // Add subtle gradient for depth
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            AppTheme.primaryColor.withOpacity(0.8),
+            AppTheme.primaryColor,
+          ],
+        ),
+        // Add thin border for definition
+        border: Border.all(
+          color: AppTheme.accentColor.withOpacity(0.8),
+          width: 1,
+        ),
+        // Add subtle shadow for elevation
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.2),
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Decrease quantity
-          InkWell(
-            onTap: inStock ? () => onQuantityChanged(quantity - 1) : null,
-            child: Container(
-              width: 30.w,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(3.r),
-                  bottomLeft: Radius.circular(3.r),
-                ),
+          // Decrease quantity - improved tap target
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: inStock ? () => onQuantityChanged(quantity - 1) : null,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(3.r),
+                bottomLeft: Radius.circular(3.r),
               ),
-              child: Icon(
-                Icons.remove,
-                color: Colors.black,
-                size: 18.r,
+              child: Container(
+                width: 26.w, // Slightly smaller for better spacing
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor,
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(3.r),
+                    bottomLeft: Radius.circular(3.r),
+                  ),
+                ),
+                child: Icon(
+                  Icons.remove,
+                  color: Colors.black,
+                  size: 16.r, // Smaller icon
+                ),
               ),
             ),
           ),
           
-          // Quantity
+          // Quantity - improved display
           Expanded(
-            child: Center(
+            child: Container(
+              alignment: Alignment.center,
               child: Text(
                 quantity.toString(),
                 style: TextStyle(
-                  fontSize: 14.sp,
+                  fontSize: 13.sp,
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
@@ -415,23 +483,30 @@ class EnhancedProductCard extends StatelessWidget {
             ),
           ),
           
-          // Increase quantity
-          InkWell(
-            onTap: inStock ? () => onQuantityChanged(quantity + 1) : null,
-            child: Container(
-              width: 30.w,
-              height: double.infinity,
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor,
-                borderRadius: BorderRadius.only(
-                  topRight: Radius.circular(3.r),
-                  bottomRight: Radius.circular(3.r),
-                ),
+          // Increase quantity - improved tap target
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: inStock ? () => onQuantityChanged(quantity + 1) : null,
+              borderRadius: BorderRadius.only(
+                topRight: Radius.circular(3.r),
+                bottomRight: Radius.circular(3.r),
               ),
-              child: Icon(
-                Icons.add,
-                color: Colors.black,
-                size: 18.r,
+              child: Container(
+                width: 26.w, // Slightly smaller for better spacing
+                height: double.infinity,
+                decoration: BoxDecoration(
+                  color: AppTheme.accentColor,
+                  borderRadius: BorderRadius.only(
+                    topRight: Radius.circular(3.r),
+                    bottomRight: Radius.circular(3.r),
+                  ),
+                ),
+                child: Icon(
+                  Icons.add,
+                  color: Colors.black,
+                  size: 16.r, // Smaller icon
+                ),
               ),
             ),
           ),
