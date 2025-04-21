@@ -1,4 +1,4 @@
-# ProfitGrocery App - Bestseller and Category Implementation
+# ProfitGrocery App - Bestseller and Category Implementation (SIMPLIFIED)
 
 This document provides a comprehensive guide to the implementation of the bestseller section and category grids in the ProfitGrocery application. It explains the architectural decisions, data flow, caching strategies, and UI components.
 
@@ -23,6 +23,8 @@ This document provides a comprehensive guide to the implementation of the bestse
 ## Overview
 
 We implemented a streamlined approach to displaying bestseller products and category grids with several key design goals:
+
+> **IMPORTANT NOTE**: This document reflects the simplified implementation after removing conflicting bestseller implementations. The previous implementation was causing issues where the app would show different numbers of products depending on how it was launched (12 when launched from VS Code, 6 when reopened after being closed). All redundant code including the old `BestsellerRepository` and `SmartBestsellerGrid` has been removed.
 
 - Minimize Firestore queries using an efficient caching strategy
 - Separate data fetching from UI rendering

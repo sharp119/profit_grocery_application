@@ -6,6 +6,7 @@
     "explore": "node firestore_explorer.js",
     "create-products": "node create_products_structure.js",
     "preview-products": "node create_products_structure.js --preview",
+    "create-discounts": "node create_discounts.js",
     "add-bakery-products": "node add_products_bakeries.js",
     "cleanup-bakery-products": "node cleanup_products.js --confirm",
     "update-image-paths": "node update_image_paths.js",

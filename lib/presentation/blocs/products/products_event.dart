@@ -11,10 +11,10 @@ class LoadBestsellerProducts extends ProductsEvent {
   final int? limit;
   final bool? ranked;
   
-  const LoadBestsellerProducts({this.limit = 6, this.ranked = true});
+  const LoadBestsellerProducts({this.limit = 12, this.ranked = false});
   
   @override
-  List<Object> get props => [limit ?? 6, ranked ?? true];
+  List<Object> get props => [limit ?? 12, ranked ?? false];
 }
 
 class LoadProductsByCategory extends ProductsEvent {

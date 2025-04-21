@@ -25,8 +25,8 @@ class SimpleBestsellerGrid extends StatefulWidget {
     this.onProductTap,
     this.onQuantityChanged,
     this.cartQuantities,
-    this.limit = 6,
-    this.ranked = true,
+    this.limit = 12,
+    this.ranked = false,
     this.crossAxisCount = 2,
   }) : super(key: key);
 

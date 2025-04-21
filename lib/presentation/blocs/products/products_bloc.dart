@@ -3,7 +3,6 @@ import 'package:get_it/get_it.dart';
 
 import '../../../services/product/product_service.dart';
 import '../../../services/product/shared_product_service.dart';
-import '../../../data/repositories/bestseller_repository.dart';
 import '../../../services/logging_service.dart';
 import 'products_event.dart';
 import 'products_state.dart';
@@ -11,51 +10,19 @@ import 'products_state.dart';
 class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   final ProductService _productService;
   final SharedProductService _sharedProductService;
-  final BestsellerRepository _bestsellerRepository;
 
   ProductsBloc({
     ProductService? productService,
     SharedProductService? sharedProductService,
-    BestsellerRepository? bestsellerRepository,
   }) : _productService = productService ?? GetIt.instance<ProductService>(),
        _sharedProductService = sharedProductService ?? GetIt.instance<SharedProductService>(),
-       _bestsellerRepository = bestsellerRepository ?? GetIt.instance<BestsellerRepository>(),
        super(const ProductsState()) {
-    on<LoadBestsellerProducts>(_onLoadBestsellerProducts);
+    // Removed _onLoadBestsellerProducts handler since we now use SimpleBestsellerGrid
     on<LoadProductsByCategory>(_onLoadProductsByCategory);
     on<LoadProductsBySubcategory>(_onLoadProductsBySubcategory);
     on<LoadSimilarProducts>(_onLoadSimilarProducts);
     on<LoadProductById>(_onLoadProductById);
     on<RefreshProducts>(_onRefreshProducts);
-  }
-
-  Future<void> _onLoadBestsellerProducts(
-    LoadBestsellerProducts event,
-    Emitter<ProductsState> emit,
-  ) async {
-    try {
-      // Only fetch if we don't already have bestseller products
-      if (!state.areBestsellersLoaded) {
-        emit(state.copyWith(status: ProductsStatus.loading));
-        
-        // Use the enhanced bestseller repository with options
-        final products = await _bestsellerRepository.getBestsellerProducts(
-          limit: event.limit ?? 6,
-          ranked: event.ranked ?? true,
-        );
-        
-        emit(state.copyWith(
-          status: ProductsStatus.loaded,
-          bestsellerProducts: products,
-        ));
-      }
-    } catch (e) {
-      LoggingService.logError('ProductsBloc', 'Error loading bestseller products: $e');
-      emit(state.copyWith(
-        status: ProductsStatus.error,
-        errorMessage: 'Failed to load bestseller products: ${e.toString()}',
-      ));
-    }
   }
 
   Future<void> _onLoadProductsByCategory(
@@ -176,9 +143,6 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     emit(state.copyWith(status: ProductsStatus.loading));
     
     try {
-      // Reload all currently loaded products
-      final bestsellers = await _productService.getBestsellerProducts();
-      
       List<Future<dynamic>> futures = [
         // Add other futures based on what's currently loaded
         if (state.currentCategoryId != null)
@@ -198,7 +162,6 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       
       emit(state.copyWith(
         status: ProductsStatus.loaded,
-        bestsellerProducts: bestsellers,
         // Set other products based on results if available
         categoryProducts: results.isNotEmpty && state.currentCategoryId != null ? results[0] : state.categoryProducts,
         subcategoryProducts: results.length > 1 && state.currentSubcategoryId != null ? results[1] : state.subcategoryProducts,

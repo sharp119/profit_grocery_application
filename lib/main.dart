@@ -14,7 +14,7 @@ import 'package:profit_grocery_application/services/product/product_service.dart
 import 'package:profit_grocery_application/services/service_locator.dart';
 import 'package:profit_grocery_application/services/product/shared_product_service.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
-import 'package:profit_grocery_application/data/repositories/bestseller_repository.dart';
+import 'package:profit_grocery_application/data/repositories/bestseller_repository_simple.dart';
 import 'services/asset_cache_service.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
@@ -298,7 +298,7 @@ Future<void> setupDependencyInjection() async {
     () => ProductsBloc(
       productService: sl<ProductService>(),
       sharedProductService: sl<SharedProductService>(),
-      bestsellerRepository: sl<BestsellerRepository>(),
+      // Removed bestsellerRepository dependency as we no longer use it
     ),
   );
 }
@@ -358,8 +358,8 @@ class MyApp extends StatelessWidget {
             // Create and initialize products bloc
             final productsBloc = sl<ProductsBloc>();
             
-            // Load bestseller products when the app starts
-            productsBloc.add(const LoadBestsellerProducts(limit: 6, ranked: true));
+            // No longer need to load bestseller products through ProductsBloc
+            // as we use SimpleBestsellerGrid which handles its own data fetching
             
             return productsBloc;
           },
