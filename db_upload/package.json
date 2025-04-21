@@ -7,6 +7,15 @@
     "create-products": "node create_products_structure.js",
     "preview-products": "node create_products_structure.js --preview",
     "create-discounts": "node create_discounts.js",
+    "create-bestsellers": "node randomize_bestsellers.js",
+    "check-bestseller-discounts": "node check_bestseller_discounts.js",
+    "create-new-discounts": "node create_new_discounts.js",
+    "create-new-bestsellers": "node create_new_bestsellers.js",
+    "create-new-collections": "node create_new_bestsellers.js",
+    "verify-collections": "node verify_collections.js",
+    "create-verified-discounts": "node create_verified_discounts.js",
+    "create-verified-bestsellers": "node create_verified_bestsellers.js",
+    "verify-discounts": "node verify_discounts.js",
     "add-bakery-products": "node add_products_bakeries.js",
     "cleanup-bakery-products": "node cleanup_products.js --confirm",
     "update-image-paths": "node update_image_paths.js",
@@ -30,7 +39,8 @@
     "upload-product-images": "node upload_product_images.js",
     "upload-product-images-for-category": "node upload_product_images.js",
     "verify-product-images": "node verify_product_images.js",
-    "check-products-folder": "node check_products_folder.js"
+    "check-products-folder": "node check_products_folder.js",
+    "add-seed-products": "node add_seed_products.js"
   },
   "dependencies": {
     "firebase": "^10.7.1",

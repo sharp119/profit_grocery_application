@@ -3,12 +3,11 @@ import {
   getFirestore, 
   collection, 
   getDocs, 
-  deleteDoc, 
   addDoc, 
-  query,
-  orderBy,
   writeBatch,
-  doc
+  doc,
+  where,
+  query
 } from 'firebase/firestore';
 import dotenv from 'dotenv';
 
@@ -42,6 +41,8 @@ const CATEGORY_GROUPS = [
 
 // Number of bestsellers to create
 const NUM_BESTSELLERS = 20;
+// Number of bestsellers that should have discounts
+const NUM_DISCOUNTED_BESTSELLERS = 12;
 
 /**
  * Shuffle array using Fisher-Yates algorithm
@@ -55,7 +56,7 @@ function shuffleArray(array) {
 }
 
 /**
- * Get all product IDs from all categories
+ * Get all product IDs
  */
 async function getAllProductIds() {
   console.log('Collecting all product IDs from the database...');
@@ -73,12 +74,7 @@ async function getAllProductIds() {
         const productsSnapshot = await getDocs(collection(db, 'products', categoryGroup, 'items', categoryItem, 'products'));
         
         for (const productDoc of productsSnapshot.docs) {
-          allProductIds.push({
-            id: productDoc.id,
-            name: productDoc.data().name || 'Unknown Product',
-            categoryGroup,
-            categoryItem
-          });
+          allProductIds.push(productDoc.id);
         }
       }
     } catch (error) {
@@ -88,6 +84,36 @@ async function getAllProductIds() {
   
   console.log(`Found ${allProductIds.length} products in total.`);
   return allProductIds;
+}
+
+/**
+ * Get product IDs that have active discounts
+ */
+async function getDiscountedProductIds() {
+  console.log('Fetching products with active discounts...');
+  
+  try {
+    const currentDate = new Date();
+    
+    // Query for active discounts where current date is between start and end timestamp
+    const discountsSnapshot = await getDocs(
+      query(
+        collection(db, 'discounts'),
+        where('active', '==', true),
+        where('startTimestamp', '<=', currentDate),
+        where('endTimestamp', '>=', currentDate)
+      )
+    );
+    
+    // Extract productIDs from discounts
+    const discountedProductIds = discountsSnapshot.docs.map(doc => doc.data().productID);
+    
+    console.log(`Found ${discountedProductIds.length} products with active discounts.`);
+    return discountedProductIds;
+  } catch (error) {
+    console.error('Error fetching discounted products:', error);
+    return [];
+  }
 }
 
 /**
@@ -121,35 +147,57 @@ async function clearBestsellers() {
 }
 
 /**
- * Create new bestsellers with random products
+ * Create bestsellers collection with 12 discounted products and 8 regular products
  */
-async function createRandomBestsellers(productIds) {
-  console.log(`\nCreating ${NUM_BESTSELLERS} random bestsellers...`);
+async function createSimpleBestsellers(allProductIds, discountedProductIds) {
+  console.log('\nCreating bestsellers collection...');
   
   try {
-    // Shuffle and pick the first NUM_BESTSELLERS
-    const shuffledProducts = shuffleArray([...productIds]);
-    const selectedProducts = shuffledProducts.slice(0, NUM_BESTSELLERS);
+    // Get non-discounted product IDs
+    const nonDiscountedProductIds = allProductIds.filter(id => !discountedProductIds.includes(id));
     
-    if (selectedProducts.length < NUM_BESTSELLERS) {
-      console.warn(`Warning: Only ${selectedProducts.length} products available for bestsellers.`);
+    console.log(`Found ${discountedProductIds.length} discounted products.`);
+    console.log(`Found ${nonDiscountedProductIds.length} non-discounted products.`);
+    
+    // Shuffle both arrays
+    const shuffledDiscountedIds = shuffleArray([...discountedProductIds]);
+    const shuffledNonDiscountedIds = shuffleArray([...nonDiscountedProductIds]);
+    
+    // Select products for bestsellers
+    const discountedBestsellers = shuffledDiscountedIds.slice(
+      0, 
+      Math.min(NUM_DISCOUNTED_BESTSELLERS, shuffledDiscountedIds.length)
+    );
+    
+    const numRegularNeeded = NUM_BESTSELLERS - discountedBestsellers.length;
+    const nonDiscountedBestsellers = shuffledNonDiscountedIds.slice(
+      0, 
+      Math.min(numRegularNeeded, shuffledNonDiscountedIds.length)
+    );
+    
+    // Create array of all bestseller product IDs
+    const bestsellers = [...discountedBestsellers, ...nonDiscountedBestsellers];
+    
+    if (bestsellers.length < NUM_BESTSELLERS) {
+      console.warn(`Warning: Only able to create ${bestsellers.length} bestsellers due to available products.`);
     }
     
-    // Create new bestsellers with ranks 1 to NUM_BESTSELLERS
+    // Add bestsellers to Firestore
     const bestsellersRef = collection(db, 'bestsellers');
     let rank = 1;
     
-    for (const product of selectedProducts) {
+    for (const productId of bestsellers) {
       await addDoc(bestsellersRef, {
-        productId: product.id,
+        productId: productId,
         rank: rank++
       });
       
-      console.log(`✓ Added bestseller rank #${rank-1}: ${product.name} (${product.id})`);
-      console.log(`  From: ${product.categoryGroup} > ${product.categoryItem}`);
+      const isDiscounted = discountedProductIds.includes(productId);
+      console.log(`✓ Added bestseller rank #${rank-1}: ${productId} ${isDiscounted ? '[DISCOUNTED]' : ''}`);
     }
     
-    console.log(`\nSuccessfully created ${selectedProducts.length} bestsellers.`);
+    console.log(`\nSuccessfully created ${bestsellers.length} bestsellers.`);
+    console.log(`Of these, ${discountedBestsellers.length} have active discounts.`);
   } catch (error) {
     console.error('Error creating bestsellers:', error);
     throw error;
@@ -157,10 +205,10 @@ async function createRandomBestsellers(productIds) {
 }
 
 /**
- * Main function to update bestsellers
+ * Main function to create bestsellers
  */
-async function updateRandomBestsellers() {
-  console.log('\n=== RANDOM BESTSELLERS GENERATOR ===');
+async function createBestsellers() {
+  console.log('\n=== SIMPLE BESTSELLERS GENERATOR ===');
   console.log('='.repeat(40));
   
   try {
@@ -172,23 +220,29 @@ async function updateRandomBestsellers() {
       return;
     }
     
-    // Step 2: Clear existing bestsellers
+    // Step 2: Get all products with discounts
+    const discountedProductIds = await getDiscountedProductIds();
+    
+    if (discountedProductIds.length === 0) {
+      console.warn('Warning: No discounted products found. Creating bestsellers with only regular products.');
+    }
+    
+    // Step 3: Clear existing bestsellers
     await clearBestsellers();
     
-    // Step 3: Create new random bestsellers
-    await createRandomBestsellers(allProductIds);
+    // Step 4: Create new bestsellers
+    await createSimpleBestsellers(allProductIds, discountedProductIds);
     
     console.log('\n='.repeat(40));
-    console.log('Bestsellers have been successfully randomized!');
-    console.log(`${NUM_BESTSELLERS} products are now featured as bestsellers.`);
+    console.log('Bestsellers have been successfully created!');
     
   } catch (error) {
-    console.error('Failed to update bestsellers:', error);
+    console.error('Failed to create bestsellers:', error);
   }
 }
 
 // Run the function
-updateRandomBestsellers()
+createBestsellers()
   .then(() => {
     console.log('\nDone!');
     process.exit(0);

@@ -1,0 +1,121 @@
+Product ID,Product Name,Original Price,Discount Type,Discount Value,Discounted Price,Savings,Savings Percentage,Category,Start Date,End Date,Status
+0TP7NjIaHJ1dQkjBkGqg,"Potatoes",29,percentage,14,24.94,4.059999999999999,14.0,"fruits_vegetables/fresh_vegetables",2025-04-21,2025-04-23,Valid
+0hDdYOX7FB5UDUs1Gbe6,"Strawberry Pastry",80,percentage,10,72,8,10.0,"bakeries_biscuits/cakes_pastries",2025-04-21,2025-04-30,Valid
+1BETj7dkSGunVr1JDHwY,"Green Beans",59,percentage,18,48.38,10.619999999999997,18.0,"fruits_vegetables/fresh_vegetables",2025-04-21,2025-05-01,Valid
+2bSRklAtm4kKS1SjiyB7,"Orange Soda",35,percentage,7,32.55,2.450000000000003,7.0,"snacks_drinks/soft_drinks",2025-04-21,2025-05-11,Valid
+30MwZOixjtGhVHjfzU0R,"Lemon Iced Tea",35,percentage,20,28,7,20.0,"snacks_drinks/drinks_juices",2025-04-21,2025-05-12,Valid
+3reR7dS693iyozFI1liZ,"Canned Pineapple Slices",145,percentage,9,131.95000000000002,13.049999999999983,9.0,"grocery_kitchen/vegetables_fruits",2025-04-21,2025-04-30,Valid
+4YBDDWOHdpQ2Yak2t2qf,"Kulfi Sticks",120,percentage,18,98.4,21.599999999999994,18.0,"snacks_drinks/ice_cream",2025-04-21,2025-05-09,Valid
+4yHElYcI8aH7hA2CYgX9,"Avocado",249,flat,99,150,99,39.8,"fruits_vegetables/exotic_fruits",2025-04-21,2025-05-04,Valid
+5osAmCVjdAFHMB2WSvMB,"Non-Stick Frying Pan",899,percentage,16,755.16,143.84000000000003,16.0,"grocery_kitchen/kitchenware",2025-04-21,2025-05-19,Valid
+66hK1xIEifjMvlM3Vz91,"Salad Mix",69,percentage,8,63.480000000000004,5.519999999999996,8.0,"fruits_vegetables/cut_vegetables",2025-04-21,2025-05-09,Valid
+67niNlLbawQZm1fOHIkl,"Tomatoes",39,percentage,14,33.54,5.460000000000001,14.0,"fruits_vegetables/fresh_vegetables",2025-04-21,2025-05-13,Valid
+6i9q9uvc6PaPkoJTbsQ2,"Organic Banana",89,percentage,19,72.09,16.909999999999997,19.0,"fruits_vegetables/organic",2025-04-21,2025-04-26,Valid
+7OSazVYMRPTvOrRqrZ0x,"Mixed Berries",149,percentage,18,122.18,26.819999999999993,18.0,"fruits_vegetables/cut_fruits",2025-04-21,2025-05-18,Valid
+8qAWwML6kuNsZKICWwe6,"Garam Masala",85,percentage,8,78.2,6.799999999999997,8.0,"grocery_kitchen/oil_ghee_masala",2025-04-21,2025-05-08,Valid
+9AcqzflSTVZHtr3DSblH,"Multigrain Atta",250,flat,67,183,67,26.8,"grocery_kitchen/atta_rice_dal",2025-04-21,2025-05-18,Valid
+9LHIJiPrwOcVSMLlN3Y6,"Chocolate Chip Cookies",120,percentage,5,114,6,5.0,"bakeries_biscuits/bakery_snacks",2025-04-21,2025-05-14,Valid
+9QjTkYcyVsGwW3Rf32Ul,"Instant Idli Mix",85,percentage,7,79.05,5.950000000000003,7.0,"grocery_kitchen/instant_food",2025-04-21,2025-05-14,Valid
+9r3SzGMaEcKSEzbFW6N9,"Peanut Butter - Crunchy",249,percentage,11,221.61,27.389999999999986,11.0,"grocery_kitchen/sauces_spreads",2025-04-21,2025-04-29,Valid
+9svWkBNoeTwAgwfW320k,"Oatmeal Raisin Cookies",120,percentage,16,100.8,19.200000000000003,16.0,"bakeries_biscuits/cookies",2025-04-21,2025-04-26,Valid
+9vSu3gZVYIQt5RIHWewk,"Oranges",89,percentage,14,76.53999999999999,12.460000000000008,14.0,"fruits_vegetables/fresh_fruits",2025-04-21,2025-05-11,Valid
+9yQX0POzgaMwoSoh8CRS,"Grapes - Green",159,percentage,11,141.51,17.49000000000001,11.0,"fruits_vegetables/fresh_fruits",2025-04-21,2025-05-20,Valid
+BP103HX9PjCENmw0Jfz3,"Masala Tea",249,flat,81,168,81,32.5,"snacks_drinks/tea_coffee_milk",2025-04-21,2025-04-27,Valid
+BhXVzwtJD5LSEVrTw4HZ,"Assorted Tea Cookies",160,percentage,9,145.6,14.400000000000006,9.0,"bakeries_biscuits/tea_time",2025-04-21,2025-05-12,Valid
+BrYdoaXSVX9nJGMXYx4W,"Oats",195,percentage,17,161.85,33.150000000000006,17.0,"grocery_kitchen/dry_fruits_cereals",2025-04-21,2025-05-16,Valid
+DIbHPidWO9LEF8bM2w4w,"Dragon Fruit",149,percentage,10,134.1,14.900000000000006,10.0,"fruits_vegetables/exotic_fruits",2025-04-21,2025-05-16,Valid
+DJAwMAAxdNtA2CC6xBMA,"Aloo Bhujia",85,percentage,17,70.55,14.450000000000003,17.0,"snacks_drinks/chips_namkeen",2025-04-21,2025-05-05,Valid
+DdyTg4yTVqkFu24PzNgN,"Red Cabbage",79,percentage,5,75.05,3.950000000000003,5.0,"fruits_vegetables/exotic_vegetables",2025-04-21,2025-05-10,Valid
+EGUKsrctoMLAYk5FsSTI,"Classic Salted Potato Chips",40,percentage,15,34,6,15.0,"snacks_drinks/chips_namkeen",2025-04-21,2025-05-19,Valid
+EKoRNEolAjOqrQBVaNQM,"Filter Coffee Powder",180,percentage,5,171,9,5.0,"snacks_drinks/tea_coffee_milk",2025-04-21,2025-04-27,Valid
+F6haJVv1ReRT5xvrbYLl,"Kiwi",199,percentage,20,159.20000000000002,39.79999999999998,20.0,"fruits_vegetables/exotic_fruits",2025-04-21,2025-05-05,Valid
+FomgkFQDF7tdyRxBzgyS,"Energy Drink - Original",95,percentage,5,90.25,4.75,5.0,"snacks_drinks/energy_drinks",2025-04-21,2025-04-28,Valid
+FudyQQFXknvuwvrGd0bV,"Tomato Ketchup",120,percentage,5,114,6,5.0,"grocery_kitchen/sauces_spreads",2025-04-21,2025-05-13,Valid
+GFIa3bQNyCoxM6qkJ5xx,"Chocolate Fudge Brownie",299,flat,59,240,59,19.7,"snacks_drinks/ice_cream",2025-04-21,2025-04-26,Valid
+Gxmh7S6ZatWwdOM52m7c,"Green Tea",199,percentage,7,185.07,13.930000000000007,7.0,"snacks_drinks/tea_coffee_milk",2025-04-21,2025-05-10,Valid
+HMknqrGqmge33L6SAvLq,"Chilli Powder",149,percentage,19,120.69000000000001,28.309999999999988,19.0,"grocery_kitchen/oil_ghee_masala",2025-04-21,2025-05-09,Valid
+HZXUyMfOp2PN6B4Wkr41,"Whole Wheat Burger Buns",55,percentage,13,47.85,7.149999999999999,13.0,"bakeries_biscuits/buns_pavs",2025-04-21,2025-05-15,Valid
+HcSlVCsioLZwcuQHJWqr,"Mini Cheese Croissants",150,percentage,5,142.5,7.5,5.0,"bakeries_biscuits/bakery_snacks",2025-04-21,2025-05-03,Valid
+IIKtwSRwcTeYIT8EKV0p,"Sona Masoori Rice",140,percentage,11,124.60000000000001,15.399999999999991,11.0,"grocery_kitchen/atta_rice_dal",2025-04-21,2025-05-13,Valid
+IQ3Z8OjvCqxwTLUKtgjz,"Ginger",39,percentage,16,32.76,6.240000000000002,16.0,"fruits_vegetables/herbs_seasonings",2025-04-21,2025-04-22,Valid
+J1XX8PRFCMFghxG7EQxj,"Mixed Fruit Jam",155,percentage,9,141.05,13.949999999999989,9.0,"grocery_kitchen/sauces_spreads",2025-04-21,2025-04-24,Valid
+KksVCPMalF7t6MLtR0Qu,"Belgian Chocolate Chunk Cookies",299,percentage,8,275.08,23.920000000000016,8.0,"bakeries_biscuits/premium_cookies",2025-04-21,2025-05-02,Valid
+LMxmVZga5dq6sq0zR1zm,"Chopped Onions",39,percentage,19,31.590000000000003,7.409999999999997,19.0,"fruits_vegetables/cut_vegetables",2025-04-21,2025-05-06,Valid
+LeM6GAMnCEW87zdKIMge,"Gulkand",149,percentage,19,120.69000000000001,28.309999999999988,19.0,"snacks_drinks/paan_corner",2025-04-21,2025-05-07,Valid
+LkLDF0ST6zyh7M1zvaMl,"Kitchen Knife Set",699,flat,87,612,87,12.4,"grocery_kitchen/kitchenware",2025-04-21,2025-05-21,Valid
+LnIqVyj1lVzzW4cLrIAB,"Elaichi Rusk",55,percentage,15,46.75,8.25,15.0,"bakeries_biscuits/tea_time",2025-04-21,2025-04-23,Valid
+MBqqb9cLRYVrWmWBIk1p,"Frozen Green Peas",85,percentage,11,75.65,9.349999999999994,11.0,"grocery_kitchen/vegetables_fruits",2025-04-21,2025-05-08,Valid
+N46zOBfxgXVYZZMWsOkb,"Refined Sunflower Oil",180,percentage,8,165.6,14.400000000000006,8.0,"grocery_kitchen/oil_ghee_masala",2025-04-21,2025-05-10,Valid
+NklIOIpP83tBOtBDrPbL,"Mukhwas Mix",65,percentage,10,58.5,6.5,10.0,"snacks_drinks/paan_corner",2025-04-21,2025-04-27,Valid
+Nn8MLWMHDdNAY5mneOea,"Jeera Soda",30,percentage,7,27.9,2.1000000000000014,7.0,"snacks_drinks/soft_drinks",2025-04-21,2025-04-22,Valid
+PHxwlK8Nkj3IMs3xlyaT,"Black Forest Cake",499,percentage,18,409.18,89.82,18.0,"bakeries_biscuits/cakes_pastries",2025-04-21,2025-05-03,Valid
+QtQT8M1ZHwhlMPj2HJsc,"Supari Mix",99,percentage,8,91.08,7.920000000000002,8.0,"snacks_drinks/paan_corner",2025-04-21,2025-05-16,Valid
+R4uusOq9Tk1RFPM2cyr3,"Butter Shortbread",140,percentage,8,128.8,11.199999999999989,8.0,"bakeries_biscuits/cookies",2025-04-21,2025-04-26,Valid
+SDxZD7vnQbQfe1AI70SQ,"Instant Noodles",90,percentage,15,76.5,13.5,15.0,"grocery_kitchen/instant_food",2025-04-21,2025-04-29,Valid
+SeN2TcTQnmCjSQbb03eq,"Toilet Cleaner",109,percentage,9,99.19,9.810000000000002,9.0,"grocery_kitchen/cleaning_household",2025-04-21,2025-05-20,Valid
+SvFUTjy6RyTxf55dNWNP,"Toor Dal",150,percentage,16,126,24,16.0,"grocery_kitchen/atta_rice_dal",2025-04-21,2025-05-18,Valid
+TPy9mNXpurbMRCrmYDqS,"Sugar-Free Vanilla",199,percentage,10,179.1,19.900000000000006,10.0,"snacks_drinks/ice_cream",2025-04-21,2025-05-10,Valid
+Txr6a9jGzT0XSa7fAkV5,"Organic Tomatoes",69,percentage,7,64.17,4.829999999999998,7.0,"fruits_vegetables/organic",2025-04-21,2025-04-24,Valid
+UTZnWuBjDxsQ4XDsRecj,"Dehydrated Onions",79,percentage,20,63.2,15.799999999999997,20.0,"grocery_kitchen/vegetables_fruits",2025-04-21,2025-05-20,Valid
+UcJI34INJMOCu5KRgie0,"Meetha Paan",30,percentage,6,28.2,1.8000000000000007,6.0,"snacks_drinks/paan_corner",2025-04-21,2025-05-05,Valid
+UffOD4hFDBTFeqQK73RZ,"Basmati Rice",180,percentage,18,147.60000000000002,32.39999999999998,18.0,"grocery_kitchen/atta_rice_dal",2025-04-21,2025-05-11,Valid
+UvAgndQzY7SSk8suPX1g,"Glass Storage Containers",549,flat,51,498,51,9.3,"grocery_kitchen/kitchenware",2025-04-21,2025-05-15,Valid
+VJL5W9a24FmpO8FV6cg8,"Broccoli",129,percentage,7,119.97,9.030000000000001,7.0,"fruits_vegetables/exotic_vegetables",2025-04-21,2025-04-30,Valid
+W5SGAOeKXUu18fvKpHU8,"Milk Chocolate Bar",40,percentage,13,34.8,5.200000000000003,13.0,"snacks_drinks/sweets_chocolates",2025-04-21,2025-04-23,Valid
+WBpIFfxVTkMIDDhVHXmz,"Cashews",699,percentage,10,629.1,69.89999999999998,10.0,"grocery_kitchen/dry_fruits_cereals",2025-04-21,2025-05-17,Valid
+WHBWhst40kx2GPfLrj8O,"Milk Rusk",50,percentage,11,44.5,5.5,11.0,"bakeries_biscuits/rusk_khari",2025-04-21,2025-05-06,Valid
+WZUrWh37jHSZBMfSpz5B,"Vanilla Cream Sandwich Biscuits",35,percentage,18,28.700000000000003,6.299999999999997,18.0,"bakeries_biscuits/cream_biscuits",2025-04-21,2025-05-02,Valid
+XncBXYdsukE70plh5N9b,"Fruit Sorbet Mix",249,flat,23,226,23,9.2,"snacks_drinks/ice_cream",2025-04-21,2025-05-05,Valid
+bq5mFlMgxa8BJ2d9CIqL,"Assorted Toffees",99,percentage,18,81.18,17.819999999999993,18.0,"snacks_drinks/sweets_chocolates",2025-04-21,2025-05-20,Valid
+bxkXet6NE9jceKNheEMM,"Garlic Bread Buns",65,percentage,18,53.300000000000004,11.699999999999996,18.0,"bakeries_biscuits/buns_pavs",2025-04-21,2025-05-19,Valid
+c58BfqSwNPZUV9JdjJQI,"Mixture",95,percentage,18,77.9,17.099999999999994,18.0,"snacks_drinks/chips_namkeen",2025-04-21,2025-05-12,Valid
+cbPUzFVEUmKCtw4T05Bo,"Orange Juice",110,percentage,8,101.2,8.799999999999997,8.0,"snacks_drinks/drinks_juices",2025-04-21,2025-04-22,Valid
+d31s4FTxkX7eSY1WHfdB,"Basil",49,percentage,6,46.059999999999995,2.940000000000005,6.0,"fruits_vegetables/herbs_seasonings",2025-04-21,2025-05-01,Valid
+dOW5V9yikIadm3NhlWE9,"Cup Noodles",45,percentage,8,41.4,3.6000000000000014,8.0,"grocery_kitchen/instant_food",2025-04-21,2025-05-15,Valid
+dtuNWiwtL8LsSXFrlP8K,"Dishwashing Liquid",99,percentage,5,94.05,4.950000000000003,5.0,"grocery_kitchen/cleaning_household",2025-04-21,2025-05-13,Valid
+e4ZrPm5nyE3AQiJoSNpe,"Coconut Slices",59,percentage,12,51.92,7.079999999999998,12.0,"fruits_vegetables/cut_fruits",2025-04-21,2025-05-20,Valid
+eAPXYtU4CoInCXYA5q0I,"Multigrain Hot Dog Buns",70,percentage,16,58.8,11.200000000000003,16.0,"bakeries_biscuits/buns_pavs",2025-04-21,2025-04-23,Valid
+eE3EfXJRcF8BiG0gWdYl,"Bananas",49,percentage,15,41.65,7.350000000000001,15.0,"fruits_vegetables/fresh_fruits",2025-04-21,2025-05-07,Valid
+ff9SioOHVjiQEsXKO0fG,"Stainless Steel Pressure Cooker",1499,flat,35,1464,35,2.3,"grocery_kitchen/kitchenware",2025-04-21,2025-04-30,Valid
+fjVKtTrytyzem9yK5qVK,"Zucchini",99,percentage,12,87.12,11.879999999999995,12.0,"fruits_vegetables/exotic_vegetables",2025-04-21,2025-04-24,Valid
+gGvE0OhG3WMiFsm03vqW,"Floor Cleaner",189,percentage,19,153.09,35.91,19.0,"grocery_kitchen/cleaning_household",2025-04-21,2025-04-27,Valid
+gW5DWUAk8ZlCisyUYjaC,"Coconut Cookies",120,percentage,19,97.2,22.799999999999997,19.0,"bakeries_biscuits/tea_time",2025-04-21,2025-05-17,Valid
+gaie8hnbzPFgGvExHuBy,"Olive Oil - Extra Virgin",749,percentage,11,666.61,82.38999999999999,11.0,"grocery_kitchen/oil_ghee_masala",2025-04-21,2025-05-19,Valid
+gfsjsF3bhLJ0eP2bakQc,"Stir Fry Vegetable Mix",99,percentage,15,84.14999999999999,14.850000000000009,15.0,"fruits_vegetables/cut_vegetables",2025-04-21,2025-04-22,Valid
+iPrkpwcDWVPPYm4wDd2c,"Grated Coconut",49,percentage,20,39.2,9.799999999999997,20.0,"fruits_vegetables/cut_vegetables",2025-04-21,2025-04-25,Valid
+iT5a2Gwdb4F2Q4cPHi6d,"Organic Apples",199,percentage,18,163.18,35.81999999999999,18.0,"fruits_vegetables/organic",2025-04-21,2025-05-02,Valid
+ifwHWVYO8rganYZ1jsQz,"Almond Biscotti",180,percentage,10,162,18,10.0,"bakeries_biscuits/cookies",2025-04-21,2025-05-19,Valid
+jwNFYy5n4ao1d5nSvzoC,"Curry Leaves",15,percentage,11,13.35,1.6500000000000004,11.0,"fruits_vegetables/herbs_seasonings",2025-04-21,2025-05-19,Valid
+k0Q6kEzHHvMh3akpDlKB,"Mayonnaise",169,percentage,12,148.72,20.28,12.0,"grocery_kitchen/sauces_spreads",2025-04-21,2025-04-22,Valid
+kJ4egtAZU1YYrfxJ66Ww,"Chocolate Paan",45,percentage,15,38.25,6.75,15.0,"snacks_drinks/paan_corner",2025-04-21,2025-05-20,Valid
+kNALelCif4ShdsIVSjP1,"Red Velvet Cake",599,flat,95,504,95,15.9,"bakeries_biscuits/cakes_pastries",2025-04-21,2025-05-08,Valid
+kgy4SU3qHCqQ8514jjxt,"Organic Spinach",49,percentage,19,39.690000000000005,9.309999999999995,19.0,"fruits_vegetables/organic",2025-04-21,2025-04-23,Valid
+klXZN39yksT8YhMiK70m,"Natural Energy Drink",85,percentage,11,75.65,9.349999999999994,11.0,"snacks_drinks/energy_drinks",2025-04-21,2025-04-30,Valid
+l8fT9eheC0qgTbxgeJeD,"Macadamia Nut Cookies",350,percentage,12,308,42,12.0,"bakeries_biscuits/premium_cookies",2025-04-21,2025-05-11,Valid
+lIPn4IZmiLdZS8hePO0Q,"Coffee Cream Sandwich",50,percentage,8,46,4,8.0,"bakeries_biscuits/cream_biscuits",2025-04-21,2025-04-26,Valid
+lx25RWjEISCVIflT9WmU,"Strawberry Cream Biscuits",45,percentage,18,36.900000000000006,8.099999999999994,18.0,"bakeries_biscuits/cream_biscuits",2025-04-21,2025-05-21,Valid
+mUyBumFjEyK0L0xdeqvL,"Cheese Nachos",60,percentage,13,52.2,7.799999999999997,13.0,"snacks_drinks/chips_namkeen",2025-04-21,2025-04-23,Valid
+mZ6NAMwX0dVCC7Nli0CT,"Onions",35,percentage,16,29.4,5.600000000000001,16.0,"fruits_vegetables/fresh_vegetables",2025-04-21,2025-04-22,Valid
+mdFn46bG070Ldjc8nx91,"Thai Guava",89,percentage,19,72.09,16.909999999999997,19.0,"fruits_vegetables/exotic_fruits",2025-04-21,2025-04-30,Valid
+mwL2kA4rXewFP0Rg6ZTg,"Chocolate Malt Drink",349,percentage,11,310.61,38.389999999999986,11.0,"snacks_drinks/tea_coffee_milk",2025-04-21,2025-04-29,Valid
+nGqGt4RNNbR7i0J5dmcC,"Carrots",49,percentage,8,45.080000000000005,3.9199999999999946,8.0,"fruits_vegetables/fresh_vegetables",2025-04-21,2025-04-27,Valid
+os0ttxladr5khclDiFIp,"Ready-to-Eat Dal Makhani",149,percentage,15,126.64999999999999,22.35000000000001,15.0,"grocery_kitchen/instant_food",2025-04-21,2025-05-17,Valid
+q2NRnlvVnHhgCgbCZYoN,"Power Shots",65,percentage,9,59.15,5.850000000000001,9.0,"snacks_drinks/energy_drinks",2025-04-21,2025-05-03,Valid
+qzmB4CnKoEzv4HpwGWo9,"Mixed Fruit Juice",99,percentage,9,90.09,8.909999999999997,9.0,"snacks_drinks/drinks_juices",2025-04-21,2025-05-06,Valid
+r0daJnSoX9NNXqHFLMx4,"Gulab Jamun",299,flat,44,255,44,14.7,"snacks_drinks/sweets_chocolates",2025-04-21,2025-05-11,Valid
+rZDfhWEPDthnuQzJxbcY,"Passion Fruit",179,percentage,12,157.52,21.47999999999999,12.0,"fruits_vegetables/exotic_fruits",2025-04-21,2025-05-17,Valid
+rrVHg8IWFvW6IMzvA6mM,"Diced Vegetables Mix",79,percentage,19,63.99,15.009999999999998,19.0,"fruits_vegetables/cut_vegetables",2025-04-21,2025-05-15,Valid
+ryJZ5XAjnzYQF70G3nOA,"Fruit Salad Mix",89,percentage,18,72.98,16.019999999999996,18.0,"fruits_vegetables/cut_fruits",2025-04-21,2025-04-29,Valid
+sdlvFxAdSwsgMCXYAv1s,"Frozen Mixed Vegetables",129,percentage,12,113.52,15.480000000000004,12.0,"grocery_kitchen/vegetables_fruits",2025-04-21,2025-04-22,Valid
+tRnqgR9gCoGzCJ8ZMPxH,"Diet Cola",45,percentage,19,36.45,8.549999999999997,19.0,"snacks_drinks/soft_drinks",2025-04-21,2025-05-13,Valid
+tX8WBS11Me1zaWDAlxAn,"Cherry Tomatoes",109,percentage,12,95.92,13.079999999999998,12.0,"fruits_vegetables/exotic_vegetables",2025-04-21,2025-05-04,Valid
+uBDp6mVjjWOw9pU34qaJ,"Fresh Coriander",19,percentage,17,15.77,3.2300000000000004,17.0,"fruits_vegetables/herbs_seasonings",2025-04-21,2025-04-25,Valid
+uZ0FHesAbhmgwDkSblgj,"Classic Wheat Rusk",45,percentage,19,36.45,8.549999999999997,19.0,"bakeries_biscuits/rusk_khari",2025-04-21,2025-04-24,Valid
+vPZhGhEf24rd8u3pgK1y,"Frozen Sweet Corn",99,percentage,15,84.14999999999999,14.850000000000009,15.0,"grocery_kitchen/vegetables_fruits",2025-04-21,2025-05-17,Valid
+vPsBH74AQ8AkOnbTjbzA,"Organic Carrots",79,percentage,11,70.31,8.689999999999998,11.0,"fruits_vegetables/organic",2025-04-21,2025-04-22,Valid
+w6QkIhQQ0B7tWPUXcHE4,"Spinach & Corn Puffs",80,percentage,11,71.2,8.799999999999997,11.0,"bakeries_biscuits/bakery_snacks",2025-04-21,2025-05-02,Valid
+wyEu2EKN7wqKF2fEZKcx,"Pistachio Rose Shortbread",320,flat,49,271,49,15.3,"bakeries_biscuits/premium_cookies",2025-04-21,2025-05-04,Valid
+xVzMCXRA931ogIb5c9nG,"Mint Leaves",25,percentage,15,21.25,3.75,15.0,"fruits_vegetables/herbs_seasonings",2025-04-21,2025-05-17,Valid
+y326DRLpvYoo3oRkGFak,"Microwave-Safe Bowls",399,flat,93,306,93,23.3,"grocery_kitchen/kitchenware",2025-04-21,2025-04-23,Valid
+zcRTQMk87GTdY8KGsYit,"Ready-to-Serve Palak Paneer",169,percentage,12,148.72,20.28,12.0,"grocery_kitchen/instant_food",2025-04-21,2025-05-09,Valid
+zjbBwHeXu5M5bELJDBZm,"Banana Chips",70,percentage,13,60.9,9.100000000000001,13.0,"snacks_drinks/chips_namkeen",2025-04-21,2025-05-20,Valid

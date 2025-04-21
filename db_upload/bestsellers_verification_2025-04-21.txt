@@ -1,0 +1,30 @@
+BESTSELLER VERIFICATION REPORT - 2025-04-21
+
+Total bestsellers: 20
+Verified: 20
+Not found: 0
+
+VERIFIED BESTSELLERS (20):
+Rank | Bestseller ID | Product Name | Discount Type | Discount Value
+---- | ------------ | ------------ | ------------- | --------------
+1 | 9AcqzflSTVZHtr3DSblH | Multigrain Atta | flat | Flat ₹67 off
+2 | 0TP7NjIaHJ1dQkjBkGqg | Potatoes | percentage | 14% off
+3 | GFIa3bQNyCoxM6qkJ5xx | Chocolate Fudge Brownie | flat | Flat ₹59 off
+4 | 1BETj7dkSGunVr1JDHwY | Green Beans | percentage | 18% off
+5 | ZnFLOD8DtGVdu0EDI2sk | Butter Garlic Bread Sticks | none | None
+6 | w6QkIhQQ0B7tWPUXcHE4 | Spinach & Corn Puffs | none | None
+7 | 3reR7dS693iyozFI1liZ | Canned Pineapple Slices | percentage | 9% off
+8 | HZXUyMfOp2PN6B4Wkr41 | Whole Wheat Burger Buns | none | None
+9 | HcSlVCsioLZwcuQHJWqr | Mini Cheese Croissants | none | None
+10 | LkLDF0ST6zyh7M1zvaMl | Kitchen Knife Set | flat | Flat ₹87 off
+11 | 9LHIJiPrwOcVSMLlN3Y6 | Chocolate Chip Cookies | none | None
+12 | bxkXet6NE9jceKNheEMM | Garlic Bread Buns | none | None
+13 | eAPXYtU4CoInCXYA5q0I | Multigrain Hot Dog Buns | none | None
+14 | 30MwZOixjtGhVHjfzU0R | Lemon Iced Tea | percentage | 20% off
+15 | 4yHElYcI8aH7hA2CYgX9 | Avocado | flat | Flat ₹99 off
+16 | WK2LG7dNZnrRGkUhmMNB | Classic Pav Bread | none | None
+17 | 2bSRklAtm4kKS1SjiyB7 | Orange Soda | percentage | 7% off
+18 | BP103HX9PjCENmw0Jfz3 | Masala Tea | flat | Flat ₹81 off
+19 | 0hDdYOX7FB5UDUs1Gbe6 | Strawberry Pastry | percentage | 10% off
+20 | UvAgndQzY7SSk8suPX1g | Glass Storage Containers | flat | Flat ₹51 off
+
