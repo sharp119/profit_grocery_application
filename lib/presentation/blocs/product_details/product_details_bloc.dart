@@ -3,10 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:profit_grocery_application/domain/entities/cart.dart';
 
 import '../../../core/constants/app_constants.dart';
-import '../../../data/inventory/bestseller_products.dart';
 import '../../../data/inventory/similar_products.dart';
 import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/product.dart';
+import '../../../services/logging_service.dart';
 import 'product_details_event.dart';
 import 'product_details_state.dart';
 

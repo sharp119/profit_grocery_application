@@ -47,6 +47,15 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
     _loadBestsellerIds();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Force refresh if the widget is hot reloaded
+    if (_bestsellerIds.isEmpty && !_isLoading) {
+      _loadBestsellerIds();
+    }
+  }
+
   Future<void> _loadBestsellerIds() async {
     try {
       setState(() {
@@ -63,13 +72,13 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
       // Extract just the product IDs
       final productIds = products.map((product) => product.id).toList();
 
+      LoggingService.logFirestore(
+          'SmartBestsellerGrid: Loaded ${productIds.length} bestseller IDs');
+
       setState(() {
         _bestsellerIds = productIds;
         _isLoading = false;
       });
-
-      LoggingService.logFirestore(
-          'SmartBestsellerGrid: Loaded ${productIds.length} bestseller IDs');
     } catch (e) {
       LoggingService.logError(
           'SmartBestsellerGrid', 'Error loading bestseller IDs: $e');
@@ -79,6 +88,11 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
         _isLoading = false;
       });
     }
+  }
+
+  // Force refresh method that can be called from parent
+  void refresh() {
+    _loadBestsellerIds();
   }
 
   @override
@@ -99,175 +113,96 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
   }
 
   Widget _buildLoadingState() {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: widget.crossAxisCount,
-        crossAxisSpacing: 16.w,
-        mainAxisSpacing: 16.h,
-        childAspectRatio: 0.65, // Height is ~1.5x width
+    return SizedBox(
+      height: 220.h,
+      child: Center(
+        child: CircularProgressIndicator(
+          color: Theme.of(context).colorScheme.secondary,
+        ),
       ),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: widget.limit,
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      itemBuilder: (context, index) {
-        return _buildSkeletonCard();
-      },
     );
   }
 
-  Widget _buildSkeletonCard() {
+  Widget _buildErrorState() {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey.shade800,
-        borderRadius: BorderRadius.circular(12.r),
-      ),
+      height: 220.h,
+      padding: EdgeInsets.all(16.r),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Image placeholder
-          Container(
-            height: 120.h,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              color: Colors.grey.shade700,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(12.r),
-                topRight: Radius.circular(12.r),
-              ),
-            ),
+          Icon(
+            Icons.error_outline,
+            color: Colors.red,
+            size: 40.r,
           ),
-          
-          // Content placeholders
-          Padding(
-            padding: EdgeInsets.all(10.r),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 16.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade700,
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                Container(
-                  width: 80.w,
-                  height: 12.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade700,
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                Container(
-                  width: double.infinity,
-                  height: 36.h,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade700,
-                    borderRadius: BorderRadius.circular(4.r),
-                  ),
-                ),
-              ],
+          SizedBox(height: 8.h),
+          Text(
+            _errorMessage,
+            style: TextStyle(
+              color: Colors.red,
+              fontSize: 14.sp,
             ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 16.h),
+          ElevatedButton(
+            onPressed: _loadBestsellerIds,
+            child: const Text('Retry'),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              color: Colors.red,
-              size: 48.r,
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              _errorMessage,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16.sp,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 16.h),
-            ElevatedButton(
-              onPressed: _loadBestsellerIds,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-              ),
-              child: Text('Retry'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: EdgeInsets.all(16.r),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.info_outline,
-              color: Colors.amber,
-              size: 48.r,
+    return Container(
+      height: 220.h,
+      padding: EdgeInsets.all(16.r),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.info_outline,
+            color: Colors.amber,
+            size: 40.r,
+          ),
+          SizedBox(height: 8.h),
+          Text(
+            'No bestseller products found',
+            style: TextStyle(
+              color: Colors.white70,
+              fontSize: 14.sp,
             ),
-            SizedBox(height: 16.h),
-            Text(
-              'No bestseller products found',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 16.sp,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+            textAlign: TextAlign.center,
+          ),
+        ],
       ),
     );
   }
 
   Widget _buildGrid() {
-    final quantities = widget.cartQuantities ?? <String, int>{};
-
     return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: widget.crossAxisCount,
-        crossAxisSpacing: 16.w,
-        mainAxisSpacing: 16.h,
-        childAspectRatio: 0.65, // Height is ~1.5x width
-      ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
+      padding: EdgeInsets.symmetric(horizontal: 8.r),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: widget.crossAxisCount,
+        childAspectRatio: 0.75, // Adjust for desired height/width ratio
+        crossAxisSpacing: 8.r,
+        mainAxisSpacing: 8.r,
+      ),
       itemCount: _bestsellerIds.length,
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
       itemBuilder: (context, index) {
         final productId = _bestsellerIds[index];
-        final quantity = quantities[productId] ?? 0;
-
-        // Get background color for this product if available
+        final quantity = widget.cartQuantities?[productId] ?? 0;
+        
+        // Try to get color from subcategory colors map
         Color? backgroundColor;
         if (widget.subcategoryColors != null) {
-          // We don't know the subcategory yet, but the SmartProductCard
-          // will handle displaying with a default color
+          // This will be set correctly by the SmartProductCard as it knows the product details
           backgroundColor = null;
         }
-
+        
         return SmartProductCard(
           productId: productId,
           onTap: widget.onProductTap,

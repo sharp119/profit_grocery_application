@@ -65,7 +65,7 @@ class FirebaseProductGrid extends StatelessWidget {
             // Get background color for product
             final backgroundColor = ColorMapper.getColorForCategory(
               product.subcategoryId ?? product.categoryId,
-              fallbackColors: subCategoryColors,
+              // fallbackColors: subCategoryColors,
             );
             
             // Each grid cell has fixed dimensions from the GridView

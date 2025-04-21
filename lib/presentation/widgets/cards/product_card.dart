@@ -19,6 +19,7 @@ class ProductCard extends StatelessWidget {
   final Function(int) onQuantityChanged;
   final int quantity;
   final Color? backgroundColor;
+  final String? weight;
 
   const ProductCard({
     Key? key,
@@ -32,6 +33,7 @@ class ProductCard extends StatelessWidget {
     required this.onQuantityChanged,
     this.quantity = 0,
     this.backgroundColor,
+    this.weight,
   }) : super(key: key);
 
   /// Create a ProductCard from a Product entity
@@ -53,6 +55,7 @@ class ProductCard extends StatelessWidget {
       onQuantityChanged: onQuantityChanged,
       quantity: quantity,
       backgroundColor: backgroundColor,
+      weight: product.weight,
     );
   }
 
@@ -79,20 +82,20 @@ class ProductCard extends StatelessWidget {
     final calculatedHeight = gridItemWidth / aspectRatio;
     
     // Use safe dimensions to prevent layout crashes
-    final imageHeight = ScreenSizeUtils.safeHeight((calculatedHeight * 0.4).clamp(70.0, 110.0));
+    final imageHeight = ScreenSizeUtils.safeHeight((calculatedHeight * 0.4).clamp(80.0, 120.0));
     final padding = ScreenSizeUtils.safeWidth((screenWidth / 50).clamp(6.0, 10.0));
     final borderRadius = ScreenSizeUtils.safeRadius((screenWidth / 40).clamp(10.0, 16.0));
     
     // Font sizes proportional to screen width with safety bounds
-    final nameSize = ScreenSizeUtils.safeFontSize((screenWidth / 38).clamp(9.0, 13.0));
-    final priceSize = ScreenSizeUtils.safeFontSize((screenWidth / 32).clamp(11.0, 15.0));
-    final mrpSize = ScreenSizeUtils.safeFontSize((screenWidth / 42).clamp(8.0, 11.0));
-    final buttonHeight = ScreenSizeUtils.safeHeight((screenWidth / 15).clamp(24.0, 32.0));
+    final nameSize = ScreenSizeUtils.safeFontSize((screenWidth / 38).clamp(11.0, 14.0));
+    final weightSize = ScreenSizeUtils.safeFontSize((screenWidth / 45).clamp(9.0, 12.0));
+    final priceSize = ScreenSizeUtils.safeFontSize((screenWidth / 32).clamp(12.0, 16.0));
+    final mrpSize = ScreenSizeUtils.safeFontSize((screenWidth / 42).clamp(9.0, 12.0));
+    final buttonHeight = ScreenSizeUtils.safeHeight((screenWidth / 15).clamp(28.0, 36.0));
     
     return GestureDetector(
       onTap: inStock ? onTap : null,
       child: Container(
-        // No fixed height to avoid overflow
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(borderRadius),
           border: Border.all(
@@ -112,28 +115,28 @@ class ProductCard extends StatelessWidget {
                     // Product image and discount badge
                     Stack(
                       children: [
-                        // Product image container with fixed height to prevent overflow
+                        // Product image container with category background color
                         Container(
                           width: double.infinity,
                           height: imageHeight,
-                          color: AppTheme.primaryColor,
+                          color: backgroundColor ?? AppTheme.primaryColor,
                           child: inStock 
                             ? Center(
-                                child: image != null && image!.isNotEmpty
+                                child: image.isNotEmpty
                                   ? ImageLoader.network(
-                                      image!,
+                                      image,
                                       fit: BoxFit.contain,
                                       width: double.infinity,
-                                      height: imageHeight,
+                                      height: imageHeight * 0.8,
                                       errorWidget: Icon(
                                         Icons.image_not_supported,
-                                        color: Colors.grey,
+                                        color: Colors.white,
                                         size: imageHeight / 2,
                                       ),
                                     )
                                   : Icon(
                                       Icons.image_not_supported,
-                                      color: Colors.grey,
+                                      color: Colors.white,
                                       size: imageHeight / 2,
                                     ),
                               )
@@ -143,21 +146,21 @@ class ProductCard extends StatelessWidget {
                                   // Faded unavailable image
                                   Opacity(
                                     opacity: 0.3,
-                                    child: image != null && image!.isNotEmpty
+                                    child: image.isNotEmpty
                                       ? ImageLoader.network(
-                                          image!,
+                                          image,
                                           fit: BoxFit.contain,
                                           width: double.infinity,
-                                          height: imageHeight,
+                                          height: imageHeight * 0.8,
                                           errorWidget: Icon(
                                             Icons.image_not_supported,
-                                            color: Colors.grey,
+                                            color: Colors.white,
                                             size: imageHeight / 2,
                                           ),
                                         )
                                       : Icon(
                                           Icons.image_not_supported,
-                                          color: Colors.grey,
+                                          color: Colors.white,
                                           size: imageHeight / 2,
                                         ),
                                   ),
@@ -211,69 +214,100 @@ class ProductCard extends StatelessWidget {
                       ],
                     ),
                     
-                    // Product details - using flexible layout with different background
+                    // Product details with new layout
                     Container(
-                      color: AppTheme.secondaryColor,
+                      color: Colors.white,
                       width: double.infinity,
-                      padding: EdgeInsets.symmetric(horizontal: padding, vertical: padding / 2), // Reduced vertical padding
+                      padding: EdgeInsets.all(padding),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.start, // Align content to top
                         children: [
-                          // Product name - allow 1 line max with ellipsis to prevent overflow
+                          // Product name - allow 2 lines max with ellipsis
                           Text(
                             name,
                             style: TextStyle(
-                              color: Colors.white,
+                              color: Colors.black,
                               fontSize: nameSize,
-                              fontWeight: FontWeight.w500,
-                              height: 1.0, // Minimize line height
+                              fontWeight: FontWeight.w600,
+                              height: 1.2,
                             ),
-                            maxLines: 1, // Allow only one line to prevent overflow
+                            maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                           
-                          SizedBox(height: ScreenSizeUtils.safeHeight(1)),
+                          // Weight display
+                          if (weight != null && weight!.isNotEmpty)
+                            Text(
+                              weight!,
+                              style: TextStyle(
+                                color: Colors.grey.shade600,
+                                fontSize: weightSize,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
                           
-                          // Price section - made more compact
+                          SizedBox(height: 4.h),
+                          
+                          // Price section with new layout
                           Row(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
                               // Current price
                               Text(
                                 '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
                                 style: TextStyle(
-                                  color: AppTheme.accentColor,
-                                  fontSize: priceSize - 1, // Slightly smaller font 
+                                  color: Colors.black,
+                                  fontSize: priceSize,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               
-                              SizedBox(width: ScreenSizeUtils.safeWidth(4.0)),
+                              SizedBox(width: 6.w),
                               
                               // Original price (MRP) if there is a discount
                               if (hasDiscount)
-                                Flexible(
-                                  child: Text(
-                                    '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: mrpSize - 1, // Slightly smaller font
-                                      fontWeight: FontWeight.w500,
-                                      decoration: TextDecoration.lineThrough,
-                                    ),
-                                    overflow: TextOverflow.ellipsis,
+                                Text(
+                                  '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: mrpSize,
+                                    fontWeight: FontWeight.w400,
+                                    decoration: TextDecoration.lineThrough,
                                   ),
                                 ),
+                              
+                              const Spacer(),
+                              
+                              // Add button with new style
+                              if (quantity == 0)
+                                Container(
+                                  height: buttonHeight,
+                                  width: 70.w,
+                                  child: ElevatedButton(
+                                    onPressed: inStock ? () => onQuantityChanged(1) : null,
+                                    style: ElevatedButton.styleFrom(
+                                      foregroundColor: Colors.white,
+                                      backgroundColor: Colors.green,
+                                      padding: EdgeInsets.zero,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(4.0),
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                    child: Text(
+                                      'ADD',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                _buildQuantitySelector(buttonHeight),
                             ],
                           ),
-                          
-                          // Add to cart button or quantity selector with minimal height
-                          SizedBox(height: ScreenSizeUtils.safeHeight(2)),
-                          quantity > 0
-                              ? _buildQuantitySelector(16.h) // Further reduced height
-                              : _buildAddButton(16.h),    // Further reduced height
                         ],
                       ),
                     ),
@@ -286,59 +320,23 @@ class ProductCard extends StatelessWidget {
     );
   }
   
-  // Add to cart button - more compact
-  Widget _buildAddButton(double buttonHeight) {
-    final fontSize = (buttonHeight / 2.5).clamp(9.0, 12.0); // Smaller font
-    
-    return SizedBox(
-      width: double.infinity,
-      height: buttonHeight,
-      child: ElevatedButton(
-        onPressed: inStock ? () => onQuantityChanged(1) : null,
-        style: ElevatedButton.styleFrom(
-          foregroundColor: Colors.black,
-          backgroundColor: inStock ? AppTheme.accentColor : Colors.grey,
-          padding: EdgeInsets.zero, // No padding
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4.0), // Smaller radius
-          ),
-          // Absolutely minimize internal padding
-          minimumSize: Size.zero,
-          visualDensity: VisualDensity.compact,
-          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        ),
-        child: Text(
-          'ADD',
-          style: TextStyle(
-            fontSize: fontSize,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  // Quantity selector for products already in cart - more compact
+  // Quantity selector for products already in cart
   Widget _buildQuantitySelector(double buttonHeight) {
-    final buttonMinWidth = (buttonHeight * 0.8).clamp(20.0, 28.0); // Smaller width
-    final fontSize = (buttonHeight / 2.3).clamp(10.0, 14.0); // Smaller font
-    final iconSize = (buttonHeight / 2.5).clamp(10.0, 14.0); // Smaller icons
+    final buttonMinWidth = (buttonHeight * 0.8).clamp(20.0, 28.0);
+    final fontSize = (buttonHeight / 2.3).clamp(10.0, 14.0);
+    final iconSize = (buttonHeight / 2.5).clamp(10.0, 14.0);
     
     return Container(
       height: buttonHeight,
+      width: 90.w,
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor,
-        borderRadius: BorderRadius.circular(4.0), // Smaller radius
-        border: Border.all(
-          color: AppTheme.accentColor,
-          width: 1,
-        ),
+        color: Colors.green,
+        borderRadius: BorderRadius.circular(4.0),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        mainAxisSize: MainAxisSize.max,
         children: [
-          // Decrease quantity - allow decreasing to 0 to remove from cart
+          // Decrease quantity
           SizedBox(
             width: buttonMinWidth,
             child: InkWell(
@@ -347,7 +345,7 @@ class ProductCard extends StatelessWidget {
                 child: Icon(
                   Icons.remove,
                   size: iconSize,
-                  color: inStock ? Colors.white : Colors.grey,
+                  color: Colors.white,
                 ),
               ),
             ),
@@ -377,7 +375,7 @@ class ProductCard extends StatelessWidget {
                 child: Icon(
                   Icons.add,
                   size: iconSize,
-                  color: inStock ? Colors.white : Colors.grey,
+                  color: Colors.white,
                 ),
               ),
             ),
