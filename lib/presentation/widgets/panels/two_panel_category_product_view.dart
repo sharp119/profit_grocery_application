@@ -6,14 +6,13 @@ import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
-import '../grids/product_grid.dart';
-import '../grids/firestore_product_grid.dart';
+import '../cards/smart_product_card.dart';
 import '../../../services/cart/universal/universal_cart_service.dart';
 
 /// A two-panel layout with categories on the left and products on the right
 class TwoPanelCategoryProductView extends StatefulWidget {
   final List<Category> categories;
-  final Map<String, List<Product>> categoryProducts;
+  final Map<String, List<String>> categoryProductIds; // Changed to store product IDs only
   final Function(Category) onCategoryTap;
   final Function(Product) onProductTap;
   final Function(Product, int) onQuantityChanged;
@@ -27,7 +26,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
   const TwoPanelCategoryProductView({
     Key? key,
     required this.categories,
-    required this.categoryProducts,
+    required this.categoryProductIds, // Changed parameter
     required this.onCategoryTap,
     required this.onProductTap,
     required this.onQuantityChanged,
@@ -142,11 +141,11 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           children: [
             // Left panel: Category navigation
             SizedBox(
-              width: 100.w,
+              width: 110.w, // Slightly wider for better visibility
               child: ListView.builder(
                 controller: _categoryScrollController,
                 itemCount: widget.categories.length,
-                padding: EdgeInsets.symmetric(vertical: 16.h),
+                padding: EdgeInsets.symmetric(vertical: 20.h),
                 itemBuilder: (context, index) {
                   final category = widget.categories[index];
                   final isSelected = index == _selectedCategoryIndex;
@@ -161,15 +160,15 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                           ? AppTheme.secondaryColor
                           : Colors.transparent,
                       padding: EdgeInsets.symmetric(
-                        vertical: 12.h,
+                        vertical: 16.h,
                         horizontal: 8.w,
                       ),
                       child: Column(
                         children: [
                           // Category icon
                           Container(
-                            width: 50.w,
-                            height: 50.w,
+                            width: 60.w,
+                            height: 60.w,
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? backgroundColor.withOpacity(0.8)
@@ -179,13 +178,13 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                 color: isSelected
                                     ? AppTheme.accentColor
                                     : Colors.transparent,
-                                width: 1.5,
+                                width: 2,
                               ),
                             ),
                             child: Center(
                               child: SizedBox(
-                                width: 30.w,
-                                height: 30.w,
+                                width: 36.w,
+                                height: 36.w,
                                 child: Image.asset(
                                   category.image,
                                   color: isSelected
@@ -197,7 +196,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                       color: isSelected
                                           ? AppTheme.accentColor
                                           : Colors.white,
-                                      size: 24.w,
+                                      size: 28.w,
                                     );
                                   },
                                 ),
@@ -205,7 +204,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                             ),
                           ),
                           
-                          SizedBox(height: 8.h),
+                          SizedBox(height: 12.h),
                           
                           // Category name
                           Text(
@@ -214,7 +213,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                               color: isSelected
                                   ? AppTheme.accentColor
                                   : Colors.white,
-                              fontSize: 12.sp,
+                              fontSize: 13.sp,
                               fontWeight: isSelected
                                   ? FontWeight.bold
                                   : FontWeight.normal,
@@ -227,8 +226,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                           // Selected indicator
                           if (isSelected)
                             Container(
-                              margin: EdgeInsets.only(top: 8.h),
-                              width: 30.w,
+                              margin: EdgeInsets.only(top: 10.h),
+                              width: 36.w,
                               height: 3.h,
                               decoration: BoxDecoration(
                                 color: AppTheme.accentColor,
@@ -254,7 +253,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                       child: Builder(
                         builder: (context) {
                           final category = widget.categories[i];
-                          final products = widget.categoryProducts[category.id] ?? [];
+                          final productIds = widget.categoryProductIds[category.id] ?? [];
                           
                           // Store the offset of this category section
                           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -271,12 +270,12 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                             children: [
                               // Category header
                               Padding(
-                                padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 8.h),
+                                padding: EdgeInsets.fromLTRB(20.w, 20.h, 20.w, 8.h),
                                 child: Text(
                                   category.name,
                                   style: TextStyle(
                                     color: Colors.white,
-                                    fontSize: 18.sp,
+                                    fontSize: 20.sp,
                                     fontWeight: FontWeight.bold,
                                   ),
                                 ),
@@ -284,54 +283,36 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                               
                               // Product count
                               Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16.w),
+                                padding: EdgeInsets.symmetric(horizontal: 20.w),
                                 child: Text(
-                                  '${products.length} products available',
+                                  '${productIds.length} products available',
                                   style: TextStyle(
                                     color: Colors.white.withOpacity(0.7),
-                                    fontSize: 12.sp,
+                                    fontSize: 13.sp,
                                   ),
                                 ),
                               ),
                               
-                              SizedBox(height: 8.h),
-                              
-                              // Products grid - Using the Firestore-optimized grid
-                              Builder(
-                                builder: (context) {
-                                  // Check if products can be cast to ProductModel list
-                                  if (products.isEmpty) {
-                                    return Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.all(16.h),
-                                        child: Text(
-                                          'No products available',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 14.sp,
-                                          ),
-                                        ),
-                                      ),
-                                    );
-                                  }
-                                  
-                                  // Always use the standard ProductGrid since we don't have a way to 
-                                  // safely convert Product to ProductModel at runtime
-                                  return ProductGrid(
-                                    products: products,
-                                    onProductTap: widget.onProductTap,
-                                    onQuantityChanged: widget.onQuantityChanged,
-                                    cartQuantities: widget.cartQuantities,
-                                    crossAxisCount: 2,
-                                    shrinkWrap: true,
-                                    physics: const NeverScrollableScrollPhysics(),
-                                    padding: EdgeInsets.symmetric(horizontal: 16.w),
-                                    subCategoryColors: widget.subcategoryColors,
-                                  );
-                                },
-                              ),
-                              
                               SizedBox(height: 16.h),
+                              
+                              // Products grid - Using Smart Product Cards
+                              if (productIds.isEmpty)
+                                Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(20.h),
+                                    child: Text(
+                                      'No products available',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14.sp,
+                                      ),
+                                    ),
+                                  ),
+                                )
+                              else
+                                _buildProductGrid(productIds, category.id),
+                              
+                              SizedBox(height: 20.h),
                             ],
                           );
                         },
@@ -375,6 +356,39 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           ),
         ),
       ],
+    );
+  }
+  
+  // Build a grid of smart product cards
+  Widget _buildProductGrid(List<String> productIds, String categoryId) {
+    // Get the background color for this category
+    final Color? categoryColor = widget.subcategoryColors?[categoryId];
+    
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: 16.w),
+      child: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          crossAxisSpacing: 16.w,
+          mainAxisSpacing: 16.h,
+          childAspectRatio: 0.7, // Better aspect ratio for product cards
+        ),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemCount: productIds.length,
+        itemBuilder: (context, index) {
+          final productId = productIds[index];
+          final quantity = widget.cartQuantities[productId] ?? 0;
+          
+          return SmartProductCard(
+            productId: productId,
+            onTap: widget.onProductTap,
+            onQuantityChanged: widget.onQuantityChanged,
+            quantity: quantity,
+            backgroundColor: categoryColor,
+          );
+        },
+      ),
     );
   }
 }

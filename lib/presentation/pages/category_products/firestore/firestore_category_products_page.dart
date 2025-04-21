@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/data/models/product_model.dart';
 
 import '../../../../core/constants/app_theme.dart';
 import '../../../../core/constants/app_constants.dart';
@@ -394,7 +395,7 @@ class FirestoreCategoryProductsPage extends StatelessWidget {
             builder: (context, cartState) {
               return TwoPanelCategoryProductView(
                 categories: state.categories,
-                categoryProducts: state.categoryProducts,
+                categoryProductIds: _convertToProductIds(state),
                 onCategoryTap: (category) {
                   context.read<FirestoreCategoryProductsBloc>().add(SelectCategory(category));
                 },
@@ -452,6 +453,21 @@ class FirestoreCategoryProductsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // Helper method to convert from category products map to category product IDs map
+  // This handles the specific ProductModel type from FirestoreCategories
+  Map<String, List<String>> _convertToProductIds(CategoryProductsLoaded state) {
+    final result = <String, List<String>>{};
+    
+    // Use dynamic to handle both Product and ProductModel
+    final Map<String, List<dynamic>> products = state.categoryProducts;
+    
+    products.forEach((categoryId, productList) {
+      result[categoryId] = productList.map<String>((product) => product.id as String).toList();
+    });
+    
+    return result;
   }
 
   // Helper method to safely get a cart preview image

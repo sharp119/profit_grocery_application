@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import 'dart:async'; // Add this import for the timer
 
 import '../../../domain/entities/product.dart';
 import '../../../data/repositories/bestseller_repository.dart';
@@ -39,21 +40,42 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  Timer? _loadingTimer; // Add a timer to prevent infinite loading
+  bool _timedOut = false;
 
   @override
   void initState() {
     super.initState();
     _bestsellerRepository = GetIt.instance<BestsellerRepository>();
     _loadBestsellerIds();
+    
+    // Set a timeout for loading state to prevent infinite loading
+    _loadingTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && _isLoading) {
+        setState(() {
+          _isLoading = false;
+          _timedOut = true;
+          _hasError = true;
+          _errorMessage = 'Loading bestsellers timed out. Please try again.';
+        });
+        LoggingService.logError('SmartBestsellerGrid', 'Loading bestsellers timed out');
+      }
+    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Force refresh if the widget is hot reloaded
-    if (_bestsellerIds.isEmpty && !_isLoading) {
+    if (_bestsellerIds.isEmpty && !_isLoading && !_timedOut) {
       _loadBestsellerIds();
     }
+  }
+  
+  @override
+  void dispose() {
+    _loadingTimer?.cancel(); // Cancel the timer when widget is disposed
+    super.dispose();
   }
 
   Future<void> _loadBestsellerIds() async {
@@ -61,13 +83,28 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
       setState(() {
         _isLoading = true;
         _hasError = false;
+        _timedOut = false;
       });
 
       // Fetch bestseller products with specified limit and ranking
       final products = await _bestsellerRepository.getBestsellerProducts(
         limit: widget.limit,
         ranked: widget.ranked,
+        timeout: const Duration(seconds: 10), // Add a reasonable timeout
       );
+
+      // Check if widget is still mounted before updating state
+      if (!mounted) return;
+      
+      // If no bestsellers found, show empty state but not error state
+      if (products.isEmpty) {
+        LoggingService.logFirestore('SmartBestsellerGrid: No bestseller products found');
+        setState(() {
+          _bestsellerIds = [];
+          _isLoading = false;
+        });
+        return;
+      }
 
       // Extract just the product IDs
       final productIds = products.map((product) => product.id).toList();
@@ -80,19 +117,34 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
         _isLoading = false;
       });
     } catch (e) {
-      LoggingService.logError(
-          'SmartBestsellerGrid', 'Error loading bestseller IDs: $e');
-      setState(() {
-        _hasError = true;
-        _errorMessage = 'Failed to load bestsellers';
-        _isLoading = false;
-      });
+      // Only update state if widget is still mounted
+      if (mounted) {
+        LoggingService.logError(
+            'SmartBestsellerGrid', 'Error loading bestseller IDs: $e');
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Failed to load bestsellers';
+          _isLoading = false;
+        });
+      }
     }
   }
 
   // Force refresh method that can be called from parent
   void refresh() {
+    _loadingTimer?.cancel();
     _loadBestsellerIds();
+    // Reset the loading timer
+    _loadingTimer = Timer(const Duration(seconds: 15), () {
+      if (mounted && _isLoading) {
+        setState(() {
+          _isLoading = false;
+          _timedOut = true;
+          _hasError = true;
+          _errorMessage = 'Loading bestsellers timed out. Please try again.';
+        });
+      }
+    });
   }
 
   @override
@@ -116,8 +168,21 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
     return SizedBox(
       height: 220.h,
       child: Center(
-        child: CircularProgressIndicator(
-          color: Theme.of(context).colorScheme.secondary,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              color: Theme.of(context).colorScheme.secondary,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Loading bestsellers...',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14.sp,
+              ),
+            ),
+          ],
         ),
       ),
     );

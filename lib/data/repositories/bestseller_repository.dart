@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'dart:math';
+import 'dart:async'; // Add this import for timeout functionality
 
 import '../../domain/entities/product.dart';
 import '../../services/product/shared_product_service.dart';
@@ -30,11 +31,12 @@ class BestsellerRepository {
   Future<List<Product>> getBestsellerProducts({
     int limit = 6,
     bool ranked = true,
+    Duration timeout = const Duration(seconds: 10), // Add timeout parameter
   }) async {
     try {
       LoggingService.logFirestore('BestsellerRepository: Getting bestseller products (limit: $limit, ranked: $ranked)');
       
-      // Get all bestsellers from the bestsellers collection
+      // Get all bestsellers from the bestsellers collection with timeout
       QuerySnapshot bestsellersSnapshot;
       
       if (ranked) {
@@ -42,14 +44,29 @@ class BestsellerRepository {
         bestsellersSnapshot = await _firestore.collection('bestsellers')
             .orderBy('rank')
             .limit(limit)
-            .get();
+            .get()
+            .timeout(timeout, onTimeout: () {
+              LoggingService.logError('BestsellerRepository', 'Timeout getting bestseller products');
+              throw TimeoutException('Bestseller query timed out');
+            });
         
         LoggingService.logFirestore('BestsellerRepository: Retrieved ${bestsellersSnapshot.docs.length} ranked bestsellers');
       } else {
         // Get all bestsellers, we'll randomize later
-        bestsellersSnapshot = await _firestore.collection('bestsellers').get();
+        bestsellersSnapshot = await _firestore.collection('bestsellers')
+            .get()
+            .timeout(timeout, onTimeout: () {
+              LoggingService.logError('BestsellerRepository', 'Timeout getting bestseller products');
+              throw TimeoutException('Bestseller query timed out');
+            });
         
         LoggingService.logFirestore('BestsellerRepository: Retrieved ${bestsellersSnapshot.docs.length} bestsellers for randomization');
+      }
+      
+      // If we got no bestsellers, return an empty list immediately
+      if (bestsellersSnapshot.docs.isEmpty) {
+        LoggingService.logFirestore('BestsellerRepository: No bestsellers found in database');
+        return [];
       }
       
       // Extract product IDs from the bestseller documents
@@ -75,10 +92,27 @@ class BestsellerRepository {
       // Get full product details for these IDs
       final List<Product> products = [];
       
+      // If no product IDs were found, return empty list
+      if (productIds.isEmpty) {
+        LoggingService.logFirestore('BestsellerRepository: No valid product IDs found');
+        return [];
+      }
+      
       for (final productId in productIds) {
-        final product = await _productService.getProductById(productId);
-        if (product != null) {
-          products.add(product);
+        try {
+          final product = await _productService.getProductById(productId)
+              .timeout(timeout, onTimeout: () {
+                LoggingService.logError('BestsellerRepository', 'Timeout getting product $productId');
+                return null;
+              });
+              
+          if (product != null) {
+            products.add(product);
+          }
+        } catch (e) {
+          LoggingService.logError('BestsellerRepository', 'Error getting product $productId: $e');
+          // Continue with next product instead of failing completely
+          continue;
         }
       }
       

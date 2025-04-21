@@ -313,7 +313,7 @@ class CategoryProductsPage extends StatelessWidget {
             builder: (context, cartState) {
               return TwoPanelCategoryProductView(
                 categories: state.categories,
-                categoryProducts: state.categoryProducts,
+                categoryProductIds: _convertToProductIds(state),
                 onCategoryTap: (category) {
                   context.read<CategoryProductsBloc>().add(SelectCategory(category));
                 },
@@ -371,6 +371,21 @@ class CategoryProductsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  // Helper method to convert from category products map to category product IDs map
+  // Works with any product type that has an id field
+  Map<String, List<String>> _convertToProductIds(CategoryProductsLoaded state) {
+    final result = <String, List<String>>{};
+    
+    // Use dynamic to handle both Product and ProductModel
+    final Map<String, List<dynamic>> products = state.categoryProducts;
+    
+    products.forEach((categoryId, productList) {
+      result[categoryId] = productList.map<String>((product) => product.id as String).toList();
+    });
+    
+    return result;
   }
 
   // Helper method to safely get a cart preview image
