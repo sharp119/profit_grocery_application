@@ -26,6 +26,7 @@ class UniversalProductCard extends StatefulWidget {
   final int quantity;
   final Color? backgroundColor;
   final bool useBackgroundColor;
+  final Function(int)? onQuantityChanged;
 
   const UniversalProductCard({
     Key? key,
@@ -35,6 +36,7 @@ class UniversalProductCard extends StatefulWidget {
     this.quantity = 0,
     this.backgroundColor,
     this.useBackgroundColor = true,
+    this.onQuantityChanged,
   }) : assert(product != null || productId != null, "Either product or productId must be provided"),
        super(key: key);
 
@@ -171,6 +173,17 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
   // Handle quantity changes
   void _handleQuantityChanged(int newQuantity) {
     try {
+      // Call the parent's callback if provided
+      if (widget.onQuantityChanged != null) {
+        widget.onQuantityChanged!(newQuantity);
+        
+        // Update local state for immediate UI feedback
+        setState(() {
+          _currentQuantity = newQuantity;
+        });
+        return;
+      }
+      
       if (_userId == null || _userId!.isEmpty) {
         CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'User ID not available for updating cart');
         return;

@@ -24,6 +24,7 @@ import '../../presentation/pages/test/image_test_page.dart';
 import '../../presentation/pages/test/product_card_test_page.dart';
 import '../../presentation/pages/category_products/firestore/firestore_category_products_page.dart';
 import '../../presentation/pages/dev/firestore_sync_page.dart';
+import '../../presentation/pages/product_details/product_details_page.dart';
 
 class AppRouter {
   static Route<dynamic> generateRoute(RouteSettings settings) {
@@ -137,6 +138,17 @@ class AppRouter {
         
       case AppConstants.firestoreSyncRoute:
         return MaterialPageRoute(builder: (_) => const FirestoreSyncPage());
+      
+      case AppConstants.productDetailsRoute:
+        final args = settings.arguments as Map<String, dynamic>;
+        final productId = args['productId'] as String;
+        final categoryId = args['categoryId'] as String?;
+        return MaterialPageRoute(
+          builder: (_) => ProductDetailsPage(
+            productId: productId,
+            categoryId: categoryId,
+          ),
+        );
           
       // Default - route not found
       default:

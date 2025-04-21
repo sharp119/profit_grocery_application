@@ -9,6 +9,7 @@ class ProductsState extends Equatable {
   final List<Product> categoryProducts;
   final List<Product> subcategoryProducts;
   final List<Product> similarProducts;
+  final List<Product> randomProducts;
   final Product? selectedProduct;
   final String? errorMessage;
   final String? currentCategoryId;
@@ -20,6 +21,7 @@ class ProductsState extends Equatable {
     this.categoryProducts = const [],
     this.subcategoryProducts = const [],
     this.similarProducts = const [],
+    this.randomProducts = const [],
     this.selectedProduct,
     this.errorMessage,
     this.currentCategoryId,
@@ -32,6 +34,7 @@ class ProductsState extends Equatable {
     List<Product>? categoryProducts,
     List<Product>? subcategoryProducts,
     List<Product>? similarProducts,
+    List<Product>? randomProducts,
     Product? selectedProduct,
     String? errorMessage,
     String? currentCategoryId,
@@ -43,6 +46,7 @@ class ProductsState extends Equatable {
       categoryProducts: categoryProducts ?? this.categoryProducts,
       subcategoryProducts: subcategoryProducts ?? this.subcategoryProducts,
       similarProducts: similarProducts ?? this.similarProducts,
+      randomProducts: randomProducts ?? this.randomProducts,
       selectedProduct: selectedProduct ?? this.selectedProduct,
       errorMessage: errorMessage ?? this.errorMessage,
       currentCategoryId: currentCategoryId ?? this.currentCategoryId,
@@ -80,6 +84,7 @@ class ProductsState extends Equatable {
     categoryProducts, 
     subcategoryProducts,
     similarProducts,
+    randomProducts,
     selectedProduct,
     errorMessage,
     currentCategoryId,

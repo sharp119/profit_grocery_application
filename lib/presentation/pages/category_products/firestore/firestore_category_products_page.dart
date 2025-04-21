@@ -400,14 +400,13 @@ class FirestoreCategoryProductsPage extends StatelessWidget {
                 },
                 onProductTap: (product) {
                   // Navigate to product details
-                  Navigator.push(
+                  Navigator.pushNamed(
                     context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetailsPage(
-                        productId: product.id,
-                        categoryId: product.categoryId, // Use product's categoryId to preserve color
-                      ),
-                    ),
+                    AppConstants.productDetailsRoute,
+                    arguments: {
+                      'productId': product.id,
+                      'categoryId': product.categoryId,
+                    },
                   );
                 },
                 onQuantityChanged: (product, quantity) {

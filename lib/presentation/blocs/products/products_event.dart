@@ -4,17 +4,17 @@ abstract class ProductsEvent extends Equatable {
   const ProductsEvent();
 
   @override
-  List<Object> get props => [];
+  List<Object?> get props => [];
 }
 
 class LoadBestsellerProducts extends ProductsEvent {
   final int? limit;
   final bool? ranked;
   
-  const LoadBestsellerProducts({this.limit = 6, this.ranked = true});
+  const LoadBestsellerProducts({this.limit, this.ranked});
   
   @override
-  List<Object> get props => [limit ?? 6, ranked ?? true];
+  List<Object?> get props => [limit, ranked];
 }
 
 class LoadProductsByCategory extends ProductsEvent {
@@ -23,7 +23,7 @@ class LoadProductsByCategory extends ProductsEvent {
   const LoadProductsByCategory(this.categoryId);
   
   @override
-  List<Object> get props => [categoryId];
+  List<Object?> get props => [categoryId];
 }
 
 class LoadProductsBySubcategory extends ProductsEvent {
@@ -33,17 +33,17 @@ class LoadProductsBySubcategory extends ProductsEvent {
   const LoadProductsBySubcategory(this.categoryId, this.subcategoryId);
   
   @override
-  List<Object> get props => [categoryId, subcategoryId];
+  List<Object?> get props => [categoryId, subcategoryId];
 }
 
 class LoadSimilarProducts extends ProductsEvent {
   final String productId;
-  final int limit;
+  final int? limit;
   
-  const LoadSimilarProducts(this.productId, {this.limit = 3});
+  const LoadSimilarProducts(this.productId, {this.limit});
   
   @override
-  List<Object> get props => [productId, limit];
+  List<Object?> get props => [productId, limit];
 }
 
 class LoadProductById extends ProductsEvent {
@@ -52,9 +52,18 @@ class LoadProductById extends ProductsEvent {
   const LoadProductById(this.productId);
   
   @override
-  List<Object> get props => [productId];
+  List<Object?> get props => [productId];
 }
 
 class RefreshProducts extends ProductsEvent {
   const RefreshProducts();
+}
+
+class LoadRandomProducts extends ProductsEvent {
+  final int limit;
+
+  const LoadRandomProducts(this.limit);
+
+  @override
+  List<Object?> get props => [limit];
 }

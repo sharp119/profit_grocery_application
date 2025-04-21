@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
-import 'package:profit_grocery_application/data/inventory/product_inventory.dart';
-import 'package:profit_grocery_application/data/inventory/similar_products.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:profit_grocery_application/domain/entities/cart.dart';
 import 'package:profit_grocery_application/domain/repositories/cart_repository.dart';
+import 'package:profit_grocery_application/domain/repositories/product_repository.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart' as cart_events;
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
@@ -12,10 +13,9 @@ import 'package:profit_grocery_application/presentation/blocs/products/products_
 import 'package:profit_grocery_application/presentation/blocs/products/products_event.dart';
 import 'package:profit_grocery_application/presentation/blocs/products/products_state.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
-import 'package:profit_grocery_application/presentation/widgets/cards/enhanced_product_card.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/universal_product_card.dart';
 import 'package:profit_grocery_application/services/cart/cart_sync_service.dart';
-import 'package:profit_grocery_application/services/cart/universal/universal_cart_service.dart';
+import 'package:profit_grocery_application/services/product/shared_product_service.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -68,10 +68,13 @@ class ProductDetailsPage extends StatelessWidget {
             )..add(const cart_events.LoadCart()),
           ),
           BlocProvider<ProductsBloc>(
-            create: (context) => GetIt.instance<ProductsBloc>(),
+            create: (context) => GetIt.instance<ProductsBloc>()..add(const LoadRandomProducts(6)),
           ),
           BlocProvider<ProductDetailsBloc>(
-            create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+            create: (context) => ProductDetailsBloc(
+              productRepository: GetIt.instance<ProductRepository>(),
+              productService: GetIt.instance<SharedProductService>(),
+            )..add(LoadProductDetails(productId)),
           ),
         ],
         child: _ProductDetailsContent(categoryId: categoryId),
@@ -89,7 +92,10 @@ class ProductDetailsPage extends StatelessWidget {
             )..add(const cart_events.LoadCart()),
           ),
           BlocProvider<ProductDetailsBloc>(
-            create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+            create: (context) => ProductDetailsBloc(
+              productRepository: GetIt.instance<ProductRepository>(),
+              productService: GetIt.instance<SharedProductService>(),
+            )..add(LoadProductDetails(productId)),
           ),
         ],
         child: _ProductDetailsContent(categoryId: categoryId),
@@ -101,10 +107,13 @@ class ProductDetailsPage extends StatelessWidget {
       return MultiBlocProvider(
         providers: [
           BlocProvider<ProductsBloc>(
-            create: (context) => GetIt.instance<ProductsBloc>(),
+            create: (context) => GetIt.instance<ProductsBloc>()..add(const LoadRandomProducts(6)),
           ),
           BlocProvider<ProductDetailsBloc>(
-            create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+            create: (context) => ProductDetailsBloc(
+              productRepository: GetIt.instance<ProductRepository>(),
+              productService: GetIt.instance<SharedProductService>(),
+            )..add(LoadProductDetails(productId)),
           ),
         ],
         child: _ProductDetailsContent(categoryId: categoryId),
@@ -114,7 +123,10 @@ class ProductDetailsPage extends StatelessWidget {
     // Case 4: Only need ProductDetailsBloc
     else {
       return BlocProvider<ProductDetailsBloc>(
-        create: (context) => ProductDetailsBloc()..add(LoadProductDetails(productId)),
+        create: (context) => ProductDetailsBloc(
+          productRepository: GetIt.instance<ProductRepository>(),
+          productService: GetIt.instance<SharedProductService>(),
+        )..add(LoadProductDetails(productId)),
         child: _ProductDetailsContent(categoryId: categoryId),
       );
     }
@@ -131,9 +143,9 @@ class _ProductDetailsContent extends StatefulWidget {
 }
 
 class _ProductDetailsContentState extends State<_ProductDetailsContent> {
-  int _quantity = 1;
   final PageController _imagePageController = PageController();
   int _currentImageIndex = 0;
+  int _quantity = 1;
 
   @override
   void dispose() {
@@ -141,13 +153,13 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
     super.dispose();
   }
 
-  void _increaseQuantity() {
+  void _incrementQuantity() {
     setState(() {
       _quantity++;
     });
   }
 
-  void _decreaseQuantity() {
+  void _decrementQuantity() {
     if (_quantity > 1) {
       setState(() {
         _quantity--;
@@ -155,65 +167,19 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
     }
   }
 
-  void _addToCart(Product product) {
-    // Add to ProductDetailsBloc for local state
-    context.read<ProductDetailsBloc>().add(AddToCart(product, _quantity));
-    
-    // Also add to CartBloc for global state
-    context.read<CartBloc>().add(cart_events.AddToCart(product, _quantity));
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added ${product.name} to cart'),
-        duration: const Duration(seconds: 2),
-        backgroundColor: AppTheme.secondaryColor,
-        action: SnackBarAction(
-          label: 'VIEW CART',
-          textColor: AppTheme.accentColor,
-          onPressed: _navigateToCart,
-        ),
-      ),
-    );
-  }
-  
   void _navigateToCart() {
-    Navigator.push(
+    Navigator.pushNamed(
       context,
-      MaterialPageRoute(builder: (context) => const CartPage()),
+      AppConstants.cartRoute,
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Get the actual cart data from CartBloc
-    return BlocBuilder<CartBloc, CartState>(
-      builder: (context, cartState) {
-        return BlocConsumer<ProductDetailsBloc, ProductDetailsState>(
-          listener: (context, state) {
-            if (state.status == ProductDetailsStatus.error) {
-              // Check if the error is a FormatException
-              final errorMsg = state.errorMessage ?? 'An error occurred';
-              final isFormatException = errorMsg.contains('FormatException');
-              
-              // Only show user-friendly messages
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isFormatException 
-                      ? 'Unable to add product to cart' 
-                      : errorMsg),
-                  backgroundColor: Colors.red,
-                  action: SnackBarAction(
-                    label: 'DISMISS',
-                    textColor: Colors.white,
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).hideCurrentSnackBar();
-                    },
-                  ),
-                ),
-              );
-            }
-          },
-          builder: (context, state) {
+    return BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
+      builder: (context, state) {
+        return BlocBuilder<CartBloc, CartState>(
+          builder: (context, cartState) {
             // Use the cart data from CartBloc instead of product details bloc
             final cartItemCount = cartState.itemCount;
             final cartTotalAmount = cartState.total;
@@ -221,27 +187,26 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
             return Scaffold(
               backgroundColor: AppTheme.backgroundColor,
               appBar: AppBar(
-                title: const Text('Product Details'),
-              actions: [
-                if (widget.categoryId != null)
-                  TextButton.icon(
-                    onPressed: () {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryProductsPage(categoryId: widget.categoryId),
+                title: Text(state.product?.name ?? 'Product Details'),
+                actions: [
+                  if (widget.categoryId != null)
+                    TextButton.icon(
+                      onPressed: () {
+                        Navigator.pushNamed(
+                          context,
+                          AppConstants.firestoreCategoryProductsRoute,
+                          arguments: widget.categoryId,
+                        );
+                      },
+                      icon: const Icon(Icons.grid_view, color: AppTheme.accentColor),
+                      label: Text(
+                        'View All',
+                        style: TextStyle(
+                          color: AppTheme.accentColor,
+                          fontSize: 14.sp,
                         ),
-                      );
-                    },
-                    icon: const Icon(Icons.grid_view, color: AppTheme.accentColor),
-                    label: Text(
-                      'View All',
-                      style: TextStyle(
-                        color: AppTheme.accentColor,
-                        fontSize: 14.sp,
                       ),
                     ),
-                  ),
                   IconButton(
                     icon: const Icon(Icons.share_outlined),
                     onPressed: () {
@@ -276,7 +241,7 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
             );
           },
         );
-      }
+      },
     );
   }
 
@@ -301,19 +266,20 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
   }
 
   Widget _buildProductDetails(Product product) {
-    // For the demo, assume product has at least one image
-    // In a real app, multiple images would come from the Product entity
-    final productImages = [
-      product.image,
-      '${AppConstants.assetsProductsPath}1.png',
-      '${AppConstants.assetsProductsPath}2.png',
-    ];
+    // Get the background color based on the product's category
+    final Color backgroundColor = ColorMapper.getColorForCategory(
+      product.categoryGroup ?? product.categoryId
+    );
     
     final hasDiscount = product.mrp != null && product.mrp! > product.price;
     final discountPercentage = hasDiscount
         ? ((product.mrp! - product.price) / product.mrp! * 100).round()
         : 0;
-
+    
+    // Check if image is a network URL    
+    final bool isNetworkImage = product.image.startsWith('http') || 
+                               product.image.startsWith('https');
+        
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -321,83 +287,73 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
           // Product images with page indicator
           Stack(
             children: [
-              // Image carousel
-              SizedBox(
+              // Image container with background
+              Container(
                 height: 300.h,
-                child: PageView.builder(
-                  controller: _imagePageController,
-                  itemCount: productImages.length,
-                  onPageChanged: (index) {
-                    setState(() {
-                      _currentImageIndex = index;
-                    });
-                  },
-                  itemBuilder: (context, index) {
-                    return BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
-                      builder: (context, blocState) {
-                        // Get the background color based on the product's category
-                        final Color backgroundColor = ColorMapper.getColorForCategory(
-                          product.id.split('_').take(2).join('_')
-                        );
-                            
-                        return Container(
-                          color: backgroundColor,
-                          padding: EdgeInsets.all(24.w),
-                          child: Image.asset(
-                            productImages[index],
-                            fit: BoxFit.contain,
+                width: double.infinity,
+                color: backgroundColor,
+                child: Center(
+                  child: isNetworkImage
+                      ? CachedNetworkImage(
+                          imageUrl: product.image,
+                          fit: BoxFit.contain,
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(
+                              color: AppTheme.accentColor,
+                            ),
                           ),
-                        );
-                      }
-                    );
-                  },
+                          errorWidget: (context, url, error) => const Icon(
+                            Icons.error_outline,
+                            color: Colors.red,
+                            size: 48,
+                          ),
+                        )
+                      : Image.asset(
+                          product.image,
+                          fit: BoxFit.contain,
+                          errorBuilder: (context, error, stackTrace) => const Icon(
+                            Icons.image_not_supported,
+                            color: Colors.red,
+                            size: 48,
+                          ),
+                        ),
                 ),
               ),
               
               // Out of stock overlay
               if (!product.inStock)
-                Positioned.fill(
-                  child: Container(
-                    color: Colors.black.withOpacity(0.7),
-                    child: Center(
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 20.w,
-                          vertical: 10.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.secondaryColor,
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(
-                            color: Colors.red.withOpacity(0.7),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          'OUT OF STOCK',
-                          style: TextStyle(
-                            color: Colors.red,
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
+                Container(
+                  height: 300.h,
+                  width: double.infinity,
+                  color: Colors.black.withOpacity(0.7),
+                  child: Center(
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Text(
+                        'OUT OF STOCK',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
                   ),
                 ),
-              
-              // Discount badge
+                
+              // Discount tag
               if (hasDiscount)
                 Positioned(
                   top: 16.h,
                   left: 16.w,
                   child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 12.w,
-                      vertical: 6.h,
-                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                     decoration: BoxDecoration(
-                      color: Colors.green,
+                      color: Colors.red,
                       borderRadius: BorderRadius.circular(4.r),
                     ),
                     child: Text(
@@ -410,34 +366,10 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                     ),
                   ),
                 ),
-              
-              // Page indicator
-              Positioned(
-                bottom: 16.h,
-                left: 0,
-                right: 0,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    productImages.length,
-                    (index) => Container(
-                      width: 8.w,
-                      height: 8.h,
-                      margin: EdgeInsets.symmetric(horizontal: 4.w),
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: _currentImageIndex == index
-                            ? AppTheme.accentColor
-                            : Colors.white.withOpacity(0.3),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
             ],
           ),
-          
-          // Product info section
+            
+          // Product information section
           Padding(
             padding: EdgeInsets.all(16.w),
             child: Column(
@@ -553,237 +485,129 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
                 SizedBox(height: 8.h),
                 
                 // Specification list
-                _buildSpecificationItem(
-                  'Brand',
-                  product.brand ?? 'Generic',
-                ),
-                _buildSpecificationItem(
-                  'Weight',
-                  product.weight ?? '100g',
-                ),
-                _buildSpecificationItem(
-                  'Category',
-                  product.categoryName ?? product.categoryId,
-                ),
+                if (product.brand != null && product.brand!.isNotEmpty) 
+                  _buildSpecificationItem('Brand', product.brand!),
+                if (product.weight != null && product.weight!.isNotEmpty) 
+                  _buildSpecificationItem('Weight', product.weight!),
+                if (product.categoryName != null && product.categoryName!.isNotEmpty) 
+                  _buildSpecificationItem('Category', product.categoryName!),
+                if (product.sku != null && product.sku!.isNotEmpty) 
+                  _buildSpecificationItem('SKU', product.sku!),
+                if (product.ingredients != null && product.ingredients!.isNotEmpty) 
+                  _buildSpecificationItem('Ingredients', product.ingredients!),
+                if (product.nutritionalInfo != null && product.nutritionalInfo!.isNotEmpty) 
+                  _buildSpecificationItem('Nutritional Info', product.nutritionalInfo!),
                 
                 SizedBox(height: 16.h),
                 
                 // Similar products section with Firebase integration
-                BlocBuilder<ProductDetailsBloc, ProductDetailsState>(
-                  builder: (blocContext, blocState) {
-                    // Trigger loading similar products from Firebase
-                    if (blocState.status == ProductDetailsStatus.loaded && 
-                        blocState.product != null) {
-                      // Dispatch event to load similar products
-                      context.read<ProductsBloc>().add(LoadSimilarProducts(product.id));
-                    }
-                    
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Similar Products',
-                          style: TextStyle(
-                            color: AppTheme.accentColor,
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                Text(
+                  'Similar Products',
+                  style: TextStyle(
+                    color: AppTheme.accentColor,
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                
+                SizedBox(height: 8.h),
+                
+                // Use the ProductsBloc to fetch similar products
+                SizedBox(
+                  height: 220.h,
+                  child: BlocBuilder<ProductsBloc, ProductsState>(
+                    builder: (context, productsState) {
+                      // Check if we already have similar products data
+                      final hasProductsData = productsState.randomProducts.isNotEmpty;
+                      
+                      if (!hasProductsData) {
+                        // Dispatch event to load random products for similar products section
+                        context.read<ProductsBloc>().add(const LoadRandomProducts(6));
                         
-                        SizedBox(height: 8.h),
-                        
-                        SizedBox(
-                          height: 250.h,
-                          child: BlocBuilder<ProductsBloc, ProductsState>(
-                            builder: (context, productsState) {
-                              // Show loading state while fetching similar products
-                              if (productsState.status == ProductsStatus.loading) {
-                                return ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: 3,
-                                  itemBuilder: (context, index) {
-                                    return Container(
-                                      width: 160.w,
-                                      margin: EdgeInsets.only(right: 12.w),
-                                      decoration: BoxDecoration(
-                                        color: AppTheme.primaryColor.withOpacity(0.1),
-                                        borderRadius: BorderRadius.circular(12.r),
-                                      ),
-                                      child: Center(
-                                        child: CircularProgressIndicator(
-                                          color: AppTheme.accentColor,
-                                          strokeWidth: 2,
-                                        ),
-                                      ),
-                                    );
-                                  },
-                                );
+                        // Show loading indicator while data is being fetched
+                        return ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: 5,
+                          itemBuilder: (context, index) {
+                            return Container(
+                              width: 160.w,
+                              margin: EdgeInsets.only(right: 12.w),
+                              child: ShimmerLoader.customContainer(
+                                height: 220.h,
+                                width: 160.w,
+                                borderRadius: 8.r,
+                              ),
+                            );
+                          },
+                        );
+                      }
+                      
+                      // Use random products from Firebase
+                      final similarProducts = productsState.randomProducts;
+                      
+                      // Create scrollable list
+                      return BlocBuilder<CartBloc, CartState>(
+                        builder: (context, cartState) {
+                          return ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: similarProducts.length,
+                            itemBuilder: (context, index) {
+                              final similarProduct = similarProducts[index];
+                              
+                              // Don't show the current product in similar products
+                              if (similarProduct.id == product.id) {
+                                return const SizedBox.shrink();
                               }
                               
-                              // Show error state if loading failed
-                              if (productsState.status == ProductsStatus.error) {
-                                return Center(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.center,
-                                    children: [
-                                      Icon(
-                                        Icons.error_outline,
-                                        color: Colors.red.withOpacity(0.7),
-                                        size: 24.sp,
-                                      ),
-                                      SizedBox(height: 8.h),
-                                      Text(
-                                        'Failed to load similar products',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 14.sp,
-                                        ),
-                                      ),
-                                      SizedBox(height: 8.h),
-                                      TextButton(
-                                        onPressed: () {
-                                          context.read<ProductsBloc>().add(LoadSimilarProducts(product.id));
-                                        },
-                                        child: Text('Retry'),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }
-                              
-                              // If similar products are loaded, display them
-                              if (productsState.status == ProductsStatus.loaded && 
-                                  productsState.similarProducts.isNotEmpty) {
-                                return ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount: productsState.similarProducts.length,
-                                  itemBuilder: (context, index) {
-                                    final similarProduct = productsState.similarProducts[index];
-                                    
-                                    // Get quantity from cart state
-                                    int quantity = 0;
-                                    final cartState = context.read<CartBloc>().state;
-                                    if (cartState.status == CartStatus.loaded) {
-                                      final cartItem = cartState.items
-                                          .where((item) => item.productId == similarProduct.id)
-                                          .toList();
-                                      if (cartItem.isNotEmpty) {
-                                        quantity = cartItem.first.quantity;
-                                      }
-                                    }
-                                    
-                                    return Container(
-                                      width: 160.w,
-                                      margin: EdgeInsets.only(right: 12.w),
-                                      child: EnhancedProductCard.fromEntity(
-                                        product: similarProduct,
-                                        onTap: () {
-                                          // Navigate to the similar product details
-                                          Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) => ProductDetailsPage(
-                                                productId: similarProduct.id,
-                                                categoryId: similarProduct.categoryId,
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        onQuantityChanged: (qty) {
-                                          // Add to cart functionality
-                                          if (qty <= 0) {
-                                            context.read<CartBloc>().add(
-                                              cart_events.RemoveFromCart(similarProduct.id),
-                                            );
-                                          } else {
-                                            context.read<CartBloc>().add(
-                                              cart_events.UpdateCartItemQuantity(similarProduct.id, qty),
-                                            );
-                                          }
-                                        },
-                                        quantity: quantity,
-                                      ),
-                                    );
-                                  },
-                                );
-                              }
-                              
-                              // Fallback to local data if Firebase data is not available
-                              final similarProductIds = SimilarProducts.getSimilarProductIds(
-                                product.id,
-                                limit: 3,
+                              // Get color for category
+                              final categoryColor = ColorMapper.getColorForCategory(
+                                similarProduct.categoryGroup ?? similarProduct.categoryId
                               );
                               
-                              // Get all products from inventory
-                              final allProducts = ProductInventory.getAllProducts();
+                              // Check if this product is in cart
+                              final quantity = cartState.getItemQuantity(similarProduct.id);
                               
-                              // Find the similar products
-                              final similarProducts = <Product>[];
-                              
-                              for (final productId in similarProductIds) {
-                                try {
-                                  final similarProduct = allProducts.firstWhere(
-                                    (p) => p.id == productId,
-                                  );
-                                  similarProducts.add(similarProduct);
-                                } catch (e) {
-                                  // Skip if product not found
-                                }
-                              }
-                              
-                              if (similarProducts.isEmpty) {
-                                return Center(
-                                  child: Text(
-                                    'No similar products found',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: 14.sp,
-                                    ),
-                                  ),
-                                );
-                              }
-                              
-                              return ListView.builder(
-                                scrollDirection: Axis.horizontal,
-                                itemCount: similarProducts.length,
-                                itemBuilder: (context, index) {
-                                  final similarProduct = similarProducts[index];
-                                  
-                                  // Get color for category
-                                  final categoryColor = ColorMapper.getColorForCategory(
-                                    similarProduct.id.split('_').take(2).join('_')
-                                  );
-                                  
-                                  return Container(
-                                    width: 160.w,
-                                    margin: EdgeInsets.only(right: 12.w),
-                                    child: UniversalProductCard(
-                                      product: similarProduct,
-                                      onTap: () {
-                                        // Navigate to the similar product details
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(
-                                            builder: (context) => ProductDetailsPage(
-                                              productId: similarProduct.id,
-                                              categoryId: similarProduct.categoryId,
-                                            ),
-                                          ),
-                                        );
+                              return Container(
+                                width: 160.w,
+                                margin: EdgeInsets.only(right: 12.w),
+                                child: UniversalProductCard(
+                                  product: similarProduct,
+                                  onTap: () {
+                                    // Navigate to the similar product details
+                                    Navigator.pushNamed(
+                                      context,
+                                      AppConstants.productDetailsRoute,
+                                      arguments: {
+                                        'productId': similarProduct.id,
+                                        'categoryId': similarProduct.categoryId,
                                       },
-                                      quantity: 0,
-                                      backgroundColor: categoryColor,
-                                      useBackgroundColor: true,
-                                    ),
-                                  );
-                                },
+                                    );
+                                  },
+                                  quantity: quantity,
+                                  backgroundColor: categoryColor,
+                                  useBackgroundColor: true,
+                                  onQuantityChanged: (qty) {
+                                    if (qty <= 0) {
+                                      context.read<CartBloc>().add(
+                                        cart_events.RemoveFromCart(similarProduct.id),
+                                      );
+                                    } else {
+                                      context.read<CartBloc>().add(
+                                        cart_events.AddToCart(
+                                          similarProduct,
+                                          qty,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
                               );
                             },
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                          );
+                        }
+                      );
+                    },
+                  ),
                 ),
                 
                 // Space for bottom bar
@@ -798,17 +622,18 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
   
   Widget _buildSpecificationItem(String label, String value) {
     return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4.h),
+      padding: EdgeInsets.only(bottom: 8.h),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 100.w,
+            width: 120.w,
             child: Text(
               label,
               style: TextStyle(
                 color: Colors.grey,
                 fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ),
@@ -827,111 +652,114 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
   }
 
   Widget _buildBottomActionBar(Product product) {
+    // Find this product in the cart
+    final cartBloc = BlocProvider.of<CartBloc>(context);
+    final productInCart = cartBloc.state.getItem(product.id);
+    final quantityInCart = productInCart?.quantity ?? 0;
+    
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 16.w,
-        vertical: 12.h,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: AppTheme.primaryColor,
+        color: AppTheme.backgroundColor.withOpacity(0.95),
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16.r),
+          topRight: Radius.circular(16.r),
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.2),
+            spreadRadius: 0,
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
         ],
-        border: Border(
-          top: BorderSide(
-            color: AppTheme.accentColor.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
       ),
-      child: SafeArea(
-        child: Row(
-          children: [
-            // Quantity selector
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.secondaryColor,
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: AppTheme.accentColor.withOpacity(0.5),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Decrease button
-                  IconButton(
-                    onPressed: _decreaseQuantity,
-                    icon: Icon(
-                      Icons.remove,
-                      color: Colors.white,
-                      size: 16.sp,
-                    ),
-                    padding: EdgeInsets.all(4.w),
-                    constraints: const BoxConstraints(),
-                  ),
-                  
-                  // Quantity
-                  Container(
-                    constraints: BoxConstraints(
-                      minWidth: 40.w,
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 8.w),
-                    child: Text(
-                      _quantity.toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  
-                  // Increase button
-                  IconButton(
-                    onPressed: _increaseQuantity,
-                    icon: Icon(
-                      Icons.add,
-                      color: Colors.white,
-                      size: 16.sp,
-                    ),
-                    padding: EdgeInsets.all(4.w),
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
+      child: Row(
+        children: [
+          // Quantity selector
+          Container(
+            decoration: BoxDecoration(
+              color: AppTheme.secondaryColor,
+              borderRadius: BorderRadius.circular(8.r),
             ),
-            
-            SizedBox(width: 16.w),
-            
-            // Add to cart button
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _addToCart(product),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentColor,
-                  foregroundColor: Colors.black,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
+            child: Row(
+              children: [
+                IconButton(
+                  onPressed: _decrementQuantity,
+                  icon: Icon(
+                    Icons.remove,
+                    color: _quantity > 1 ? Colors.white : Colors.grey,
                   ),
                 ),
-                child: Text(
-                  'ADD TO CART',
+                Text(
+                  _quantity.toString(),
                   style: TextStyle(
-                    fontSize: 16.sp,
+                    color: Colors.white,
+                    fontSize: 18.sp,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                IconButton(
+                  onPressed: _incrementQuantity,
+                  icon: const Icon(
+                    Icons.add,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(width: 16.w),
+          
+          // Add to cart button
+          Expanded(
+            child: ElevatedButton(
+              onPressed: () {
+                // If product is already in cart, update quantity
+                // Otherwise add it to cart
+                if (quantityInCart > 0) {
+                  cartBloc.add(cart_events.UpdateCartItemQuantity(
+                    product.id,
+                    quantityInCart + _quantity,
+                  ));
+                } else {
+                  cartBloc.add(cart_events.AddToCart(
+                    product,
+                    _quantity,
+                  ));
+                }
+                
+                // Show confirmation
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      'Added ${_quantity.toString()} ${product.name} to cart',
+                      style: const TextStyle(color: Colors.white),
+                    ),
+                    backgroundColor: AppTheme.accentColor,
+                    duration: const Duration(seconds: 2),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accentColor,
+                padding: EdgeInsets.symmetric(vertical: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              child: Text(
+                quantityInCart > 0 ? 'UPDATE CART' : 'ADD TO CART',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

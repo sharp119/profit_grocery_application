@@ -21,7 +21,7 @@ class HomeState extends Equatable {
   final List<Category> featuredPromotions;
   
   // Category group data
-  final List<CategoryGroupModel> categoryGroups;
+  final List<CategoryGroup> categoryGroups;
   
   // Cart data
   final int cartItemCount;
@@ -79,7 +79,7 @@ class HomeState extends Equatable {
     List<Category>? snacksCategories,
     List<Category>? storeCategories,
     List<Category>? featuredPromotions,
-    List<CategoryGroupModel>? categoryGroups,
+    List<CategoryGroup>? categoryGroups,
     int? cartItemCount,
     double? cartTotalAmount,
     String? cartPreviewImage,

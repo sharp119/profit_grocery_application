@@ -87,4 +87,28 @@ class CartState extends Equatable {
     syncStatus,
     couponRequirements,
   ];
+
+  // Get the quantity of a specific item in the cart
+  int getItemQuantity(String productId) {
+    final item = items.firstWhere(
+      (item) => item.productId == productId,
+      orElse: () => const CartItem(
+        productId: '',
+        name: '',
+        image: '',
+        price: 0,
+        quantity: 0,
+      ),
+    );
+    return item.quantity;
+  }
+
+  // Get a specific item from the cart
+  CartItem? getItem(String productId) {
+    try {
+      return items.firstWhere((item) => item.productId == productId);
+    } catch (_) {
+      return null;
+    }
+  }
 }

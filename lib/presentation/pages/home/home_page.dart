@@ -51,6 +51,7 @@ import '../../blocs/categories/categories_bloc.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/product/firestore_product_repository.dart';
 import '../../../data/models/firestore/category_group_firestore_model.dart';
+import '../../../data/models/category_group_model.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -947,6 +948,26 @@ class _HomePageContentState extends State<_HomePageContent> {
     ];
   }
 
+  // Convert CategoryGroup to CategoryGroupFirestore
+  CategoryGroupFirestore _convertToFirestoreGroup(CategoryGroup model) {
+    // Convert CategoryItem to CategoryItemFirestore
+    final items = model.items.map((item) => CategoryItemFirestore(
+      id: item.id,
+      label: item.label,
+      imagePath: item.imagePath,
+      description: item.description,
+    )).toList();
+    
+    // Create and return CategoryGroupFirestore
+    return CategoryGroupFirestore(
+      id: model.id,
+      title: model.title,
+      backgroundColor: model.backgroundColor,
+      itemBackgroundColor: model.itemBackgroundColor,
+      items: items,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<HomeBloc, HomeState>(
@@ -1168,7 +1189,7 @@ class _HomePageContentState extends State<_HomePageContent> {
           // Category Groups Section
           if (state.categoryGroups.isNotEmpty)
             ...state.categoryGroups.map((group) => CategoryGrid4x2(
-              categoryGroup: group,
+              categoryGroup: _convertToFirestoreGroup(group),
               onItemTap: (item) {
                 Navigator.push(
                   context,

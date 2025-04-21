@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:get_it/get_it.dart';
+import 'dart:math';
 
 import '../../../services/product/product_service.dart';
 import '../../../services/product/shared_product_service.dart';
@@ -12,6 +13,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   final ProductService _productService;
   final SharedProductService _sharedProductService;
   final BestsellerRepository _bestsellerRepository;
+  final Random _random = Random();
 
   ProductsBloc({
     ProductService? productService,
@@ -27,6 +29,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     on<LoadSimilarProducts>(_onLoadSimilarProducts);
     on<LoadProductById>(_onLoadProductById);
     on<RefreshProducts>(_onRefreshProducts);
+    on<LoadRandomProducts>(_onLoadRandomProducts);
   }
 
   Future<void> _onLoadBestsellerProducts(
@@ -124,7 +127,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       
       final products = await _productService.getSimilarProducts(
         event.productId,
-        limit: event.limit,
+        limit: event.limit ?? 3,
       );
       
       emit(state.copyWith(
@@ -209,6 +212,48 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       emit(state.copyWith(
         status: ProductsStatus.error,
         errorMessage: 'Failed to refresh products: ${e.toString()}',
+      ));
+    }
+  }
+
+  Future<void> _onLoadRandomProducts(
+    LoadRandomProducts event,
+    Emitter<ProductsState> emit,
+  ) async {
+    try {
+      emit(state.copyWith(status: ProductsStatus.loading));
+      
+      // Fetch all products (or we could fetch just popular categories to make it faster)
+      final allProducts = await _productService.getAllProducts();
+      
+      // Randomize products
+      if (allProducts.isNotEmpty) {
+        allProducts.shuffle(_random);
+        
+        // Take the required number of products
+        final randomProducts = allProducts.take(event.limit).toList();
+        
+        emit(state.copyWith(
+          status: ProductsStatus.loaded,
+          randomProducts: randomProducts,
+        ));
+      } else {
+        // If no products are available, try to get bestsellers as a fallback
+        final bestsellers = await _bestsellerRepository.getBestsellerProducts(
+          limit: event.limit,
+          ranked: false, // Get random bestsellers
+        );
+        
+        emit(state.copyWith(
+          status: ProductsStatus.loaded,
+          randomProducts: bestsellers,
+        ));
+      }
+    } catch (e) {
+      LoggingService.logError('ProductsBloc', 'Error loading random products: $e');
+      emit(state.copyWith(
+        status: ProductsStatus.error,
+        errorMessage: 'Failed to load random products: ${e.toString()}',
       ));
     }
   }

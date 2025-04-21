@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:profit_grocery_application/core/constants/app_constants.dart';
 import 'package:profit_grocery_application/data/inventory/product_inventory.dart';
 
 import '../../../core/constants/app_theme.dart';
@@ -634,8 +635,11 @@ class _OrdersViewState extends State<OrdersView> with SingleTickerProviderStateM
                               // Navigate to product details
                               Navigator.pushNamed(
                                 context,
-                                '/product-details',
-                                arguments: product.id,
+                                AppConstants.productDetailsRoute,
+                                arguments: {
+                                  'productId': product.id,
+                                  'categoryId': product.categoryId
+                                },
                               );
                             },
                             onQuantityChanged: (quantity) {
