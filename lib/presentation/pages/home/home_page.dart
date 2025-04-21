@@ -15,7 +15,7 @@ import 'package:profit_grocery_application/presentation/widgets/profile/profile_
 import 'package:profit_grocery_application/services/cart/home_cart_bridge.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
-import 'package:profit_grocery_application/presentation/widgets/grids/smart_bestseller_grid.dart';
+import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -89,7 +89,6 @@ class _HomePageContentState extends State<_HomePageContent> {
   late IUserService _userService;
   late final Stream<User?> _userStream;
   late final SharedCategoryService _sharedCategoryService;
-  Map<String, Color> _subcategoryColors = {};
   
   @override
   void initState() {
@@ -98,9 +97,6 @@ class _HomePageContentState extends State<_HomePageContent> {
     _currentUser = _userService.getCurrentUser();
     _userStream = _userService.userStream;
     _sharedCategoryService = GetIt.instance<SharedCategoryService>();
-    
-    // Load subcategory colors
-    _loadSubcategoryColors();
     
     // Listen to user changes from UserService
     _userStream.listen((user) {
@@ -191,20 +187,7 @@ class _HomePageContentState extends State<_HomePageContent> {
     });
   }
 
-  // Load subcategory colors from SharedCategoryService
-  Future<void> _loadSubcategoryColors() async {
-    try {
-      final colors = await _sharedCategoryService.getSubcategoryColors();
-      if (mounted) {
-        setState(() {
-          _subcategoryColors = colors;
-        });
-        LoggingService.logFirestore('HomePage: Loaded ${colors.length} subcategory colors');
-      }
-    } catch (e) {
-      LoggingService.logError('HomePage', 'Error loading subcategory colors: $e');
-    }
-  }
+
 
   @override
   void dispose() {
@@ -448,6 +431,253 @@ class _HomePageContentState extends State<_HomePageContent> {
   }
   
   // Show Firestore Data Explorer
+  // Show cached categories information without fetching from Firestore
+  void _showCachedCategoriesInfo(BuildContext context) async {
+    try {
+      // Get the shared category service
+      final categoryService = GetIt.instance<SharedCategoryService>();
+      
+      // Log the start of cache inspection
+      LoggingService.logFirestore('CAT_CACHE_INSPECT: Starting inspection of cached categories');
+      print('CAT_CACHE_INSPECT: Starting inspection of cached categories');
+      
+      // Check if we have all categories cached
+      final categoriesCache = categoryService.getCachedCategories();
+      
+      if (categoriesCache.isEmpty) {
+        LoggingService.logFirestore('CAT_CACHE_INSPECT: No categories in cache yet');
+        print('CAT_CACHE_INSPECT: No categories in cache yet');
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('No categories found in cache. Browse the app first to populate the cache.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        return;
+      }
+      
+      // Log the number of cached categories
+      LoggingService.logFirestore('CAT_CACHE_INSPECT: Found ${categoriesCache.length} categories in cache');
+      print('CAT_CACHE_INSPECT: Found ${categoriesCache.length} categories in cache');
+      
+      // Show a modal with the cached category information
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: AppTheme.secondaryColor,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20.r),
+            topRight: Radius.circular(20.r),
+          ),
+        ),
+        builder: (context) {
+          return DraggableScrollableSheet(
+            initialChildSize: 0.85,
+            minChildSize: 0.5,
+            maxChildSize: 0.95,
+            expand: false,
+            builder: (context, scrollController) {
+              return Column(
+                children: [
+                  // Header
+                  Container(
+                    padding: EdgeInsets.all(16.r),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20.r),
+                        topRight: Radius.circular(20.r),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Cached Categories (${categoriesCache.length})',
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.close, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  // Content
+                  Expanded(
+                    child: ListView.builder(
+                      controller: scrollController,
+                      itemCount: categoriesCache.length,
+                      padding: EdgeInsets.all(16.r),
+                      itemBuilder: (context, index) {
+                        final category = categoriesCache[index];
+                        
+                        // Log each category being displayed
+                        LoggingService.logFirestore('CAT_CACHE_INSPECT: Displaying category ${category.id} (${category.title})');
+                        print('CAT_CACHE_INSPECT: Displaying category ${category.id} (${category.title})');
+                        
+                        return Card(
+                          margin: EdgeInsets.only(bottom: 16.h),
+                          color: AppTheme.primaryColor.withOpacity(0.3),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: ExpansionTile(
+                            title: Row(
+                              children: [
+                                Container(
+                                  width: 16.w,
+                                  height: 16.h,
+                                  decoration: BoxDecoration(
+                                    color: category.itemBackgroundColor,
+                                    shape: BoxShape.circle,
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Expanded(
+                                  child: Text(
+                                    category.title,
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              'ID: ${category.id} • ${category.items.length} items',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                            children: [
+                              Padding(
+                                padding: EdgeInsets.all(16.r),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Background Color: ${category.backgroundColor}',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    Text(
+                                      'Item Background Color: ${category.itemBackgroundColor}',
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                    Divider(color: Colors.white24),
+                                    
+                                    // Subcategories grid
+                                    Text(
+                                      'Subcategories (${category.items.length}):',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    SizedBox(height: 8.h),
+                                    
+                                    GridView.builder(
+                                      shrinkWrap: true,
+                                      physics: NeverScrollableScrollPhysics(),
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: 2,
+                                        childAspectRatio: 3,
+                                        crossAxisSpacing: 8.w,
+                                        mainAxisSpacing: 8.h,
+                                      ),
+                                      itemCount: category.items.length,
+                                      itemBuilder: (context, idx) {
+                                        final item = category.items[idx];
+                                        return Container(
+                                          padding: EdgeInsets.all(8.r),
+                                          decoration: BoxDecoration(
+                                            color: category.itemBackgroundColor.withOpacity(0.3),
+                                            borderRadius: BorderRadius.circular(8.r),
+                                          ),
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                item.label,
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 12.sp,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                'ID: ${item.id}',
+                                                style: TextStyle(
+                                                  color: Colors.white70,
+                                                  fontSize: 10.sp,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  
+                  // Stats footer
+                  Container(
+                    padding: EdgeInsets.all(16.r),
+                    color: AppTheme.primaryColor,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Categories: ${categoriesCache.length}',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        Text(
+                          'Subcategories: ${categoriesCache.fold<int>(0, (sum, cat) => sum + cat.items.length)}',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        },
+      );
+      
+      // Log completion of cache inspection
+      LoggingService.logFirestore('CAT_CACHE_INSPECT: Completed inspection of cached categories');
+      print('CAT_CACHE_INSPECT: Completed inspection of cached categories');
+      
+    } catch (e) {
+      LoggingService.logError('CAT_CACHE_INSPECT', 'Error displaying cached categories: $e');
+      print('CAT_CACHE_INSPECT ERROR: Failed to display cached categories - $e');
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: ${e.toString().split('\n').first}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+  
   void _showFirestoreDataExplorer(BuildContext context) async {
     try {
       // Start loading indicator
@@ -1181,7 +1411,7 @@ class _HomePageContentState extends State<_HomePageContent> {
               },
             )).toList(),
             
-          // Bestsellers Section - Using Smart Bestseller Grid
+          // Bestsellers Section - Using Simple Bestseller Grid
           Column(
             children: [
               SectionHeader(
@@ -1191,14 +1421,13 @@ class _HomePageContentState extends State<_HomePageContent> {
                   // Navigate to all bestsellers
                 },
               ),
-              SmartBestsellerGrid(
+              SimpleBestsellerGrid(
                 onProductTap: _onProductTap,
                 onQuantityChanged: _onProductQuantityChanged,
                 cartQuantities: state.cartQuantities,
-                limit: 6,  // Show 6 bestsellers
-                ranked: true,  // Sort by rank
+                limit: 12,  // Show 12 bestsellers (increased from 6)
+                ranked: false,  // Randomize instead of sorting by rank
                 crossAxisCount: 2,  // 2 products per row
-                subcategoryColors: _subcategoryColors,
               ),
             ],
           ),
@@ -1257,6 +1486,17 @@ class _HomePageContentState extends State<_HomePageContent> {
                     ),
                     icon: Icon(Icons.data_exploration),
                     label: const Text('Explore Firestore Data'),
+                  ),
+                  SizedBox(height: 8.h),
+                  ElevatedButton.icon(
+                    onPressed: () => _showCachedCategoriesInfo(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.teal,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                    ),
+                    icon: Icon(Icons.category),
+                    label: const Text('Show Cached Categories'),
                   ),
                 ],
               ),

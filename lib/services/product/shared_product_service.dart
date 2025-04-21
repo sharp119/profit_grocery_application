@@ -38,9 +38,14 @@ class SharedProductService {
   /// This is the main method for getting product details anywhere in the app
   Future<Product?> getProductById(String productId) async {
     try {
+      // Log that we're trying to get a product
+      print('SharedProductService: Trying to get product by ID: $productId');
+      LoggingService.logFirestore('SharedProductService: Trying to get product by ID: $productId');
+      
       // Check cache first
       if (_productCache.containsKey(productId)) {
         LoggingService.logFirestore('SharedProductService: Cache hit for product $productId');
+        print('SharedProductService: Cache hit for product $productId');
         return _productCache[productId]!;
       }
       
@@ -51,7 +56,12 @@ class SharedProductService {
       
       // Cache the result (even if null, to prevent repeated failed lookups)
       if (product != null) {
+        print('SharedProductService: Found product in Firestore: ${product.id}, name=${product.name}, categoryName=${product.categoryName}, categoryId=${product.categoryId}, subcategoryId=${product.subcategoryId}');
+        LoggingService.logFirestore('SharedProductService: Found product in Firestore: ${product.id}, name=${product.name}, categoryName=${product.categoryName}, categoryId=${product.categoryId}, subcategoryId=${product.subcategoryId}');
         _productCache[productId] = product;
+      } else {
+        print('SharedProductService: Product $productId not found in Firestore');
+        LoggingService.logFirestore('SharedProductService: Product $productId not found in Firestore');
       }
       
       return product;

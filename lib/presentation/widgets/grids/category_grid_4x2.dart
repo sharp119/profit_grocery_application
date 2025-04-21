@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../../data/models/firestore/category_group_firestore_model.dart';
+import '../../../services/logging_service.dart';
 
 import '../../../core/constants/app_theme.dart';
 import '../section_header.dart';
@@ -26,6 +27,18 @@ class CategoryGrid4x2 extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Log when a category grid is being built
+    LoggingService.logFirestore('CAT_GRID_4X2: Building grid for category group: ${categoryGroup.title} (${categoryGroup.id})');
+    print('CAT_GRID_4X2: Building grid for category group: ${categoryGroup.title} (${categoryGroup.id})');
+    
+    // Log number of items in this category group
+    LoggingService.logFirestore('CAT_GRID_4X2: Category group contains ${categoryGroup.items.length} items');
+    print('CAT_GRID_4X2: Category group contains ${categoryGroup.items.length} items');
+    
+    // Log background colors
+    LoggingService.logFirestore('CAT_GRID_4X2: Group background color: ${categoryGroup.backgroundColor}, Item background color: ${categoryGroup.itemBackgroundColor}');
+    print('CAT_GRID_4X2: Group background color: ${categoryGroup.backgroundColor}, Item background color: ${categoryGroup.itemBackgroundColor}');
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -71,8 +84,21 @@ class CategoryGrid4x2 extends StatelessWidget {
   }
 
   Widget _buildGridItem(CategoryItemFirestore item) {
+    // Log when a grid item is being built
+    LoggingService.logFirestore('CAT_GRID_4X2: Building grid item for: ${item.label} (${item.id})');
+    print('CAT_GRID_4X2: Building grid item for: ${item.label} (${item.id})');
+    
+    // Log image path
+    LoggingService.logFirestore('CAT_GRID_4X2: Item image path: ${item.imagePath}');
+    print('CAT_GRID_4X2: Item image path: ${item.imagePath}');
+
     return GestureDetector(
-      onTap: () => onItemTap(item),
+      onTap: () {
+        // Log when a grid item is tapped
+        LoggingService.logFirestore('CAT_GRID_4X2: Grid item tapped: ${item.label} (${item.id})');
+        print('CAT_GRID_4X2: Grid item tapped: ${item.label} (${item.id})');
+        onItemTap(item);
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -89,14 +115,24 @@ class CategoryGrid4x2 extends StatelessWidget {
                 child: CachedNetworkImage(
                   imageUrl: item.imagePath,
                   fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                  errorWidget: (context, url, error) => Icon(
-                    Icons.image_not_supported,
-                    color: Colors.white,
-                    size: 24.sp,
-                  ),
+                  placeholder: (context, url) {
+                    // Log when an image is loading
+                    LoggingService.logFirestore('CAT_GRID_4X2: Loading image for: ${item.label}');
+                    print('CAT_GRID_4X2: Loading image for: ${item.label}');
+                    return const Center(
+                      child: CircularProgressIndicator(),
+                    );
+                  },
+                  errorWidget: (context, url, error) {
+                    // Log when an image fails to load
+                    LoggingService.logFirestore('CAT_GRID_4X2: Error loading image for: ${item.label} - $error');
+                    print('CAT_GRID_4X2: Error loading image for: ${item.label} - $error');
+                    return Icon(
+                      Icons.image_not_supported,
+                      color: Colors.white,
+                      size: 24.sp,
+                    );
+                  },
                 ),
               ),
             ),

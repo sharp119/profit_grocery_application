@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
+import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 
 import '../../../domain/entities/product.dart';
 import '../../../data/repositories/bestseller_repository.dart';
@@ -16,7 +17,6 @@ class SmartBestsellerGrid extends StatefulWidget {
   final int limit;
   final bool ranked;
   final int crossAxisCount;
-  final Map<String, Color>? subcategoryColors;
 
   const SmartBestsellerGrid({
     Key? key,
@@ -26,7 +26,6 @@ class SmartBestsellerGrid extends StatefulWidget {
     this.limit = 6,
     this.ranked = true,
     this.crossAxisCount = 2,
-    this.subcategoryColors,
   }) : super(key: key);
 
   @override
@@ -54,6 +53,10 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
         _hasError = false;
       });
 
+      // Log start of bestseller loading process
+      LoggingService.logFirestore('SmartBestsellerGrid: Starting to load bestseller products');
+      print('HOME_BESTSELLER: Starting to load bestseller products');
+
       // Fetch bestseller products with specified limit and ranking
       final products = await _bestsellerRepository.getBestsellerProducts(
         limit: widget.limit,
@@ -62,17 +65,67 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
 
       // Extract just the product IDs
       final productIds = products.map((product) => product.id).toList();
+      
+      // Detailed logging for each product with its category
+      LoggingService.logFirestore('HOME_BESTSELLER: Retrieved ${productIds.length} bestseller product IDs');
+      print('HOME_BESTSELLER: Retrieved ${productIds.length} bestseller product IDs');
+      print('HOME_BESTSELLER: Product IDs: ${productIds.join(', ')}');
+      LoggingService.logFirestore('HOME_BESTSELLER: Product IDs: ${productIds.join(', ')}');
+      
+      // Log category information for each product
+      for (final product in products) {
+        final categoryName = product.categoryName ?? 'Unknown Category';
+        final categoryId = product.categoryId ?? 'Unknown ID';
+        final subcategoryId = product.subcategoryId ?? 'Unknown Subcategory';
+        
+        LoggingService.logFirestore('HOME_BESTSELLER: Product ${product.id} (${product.name}) belongs to category: $categoryName (ID: $categoryId), subcategory: $subcategoryId');
+        print('HOME_BESTSELLER: Product ${product.id} (${product.name}) belongs to category: $categoryName (ID: $categoryId), subcategory: $subcategoryId');
+        
+        // Fetch and log detailed category group information
+        try {
+          final categoryService = GetIt.instance<SharedCategoryService>();
+          final categoryGroup = await categoryService.getCategoryById(categoryName);
+          
+          if (categoryGroup != null) {
+            // Log basic category group info
+            LoggingService.logFirestore('HOME_BESTSELLER: CategoryGroup for ${product.name} - Title: ${categoryGroup.title}, ID: ${categoryGroup.id}');
+            print('HOME_BESTSELLER: CategoryGroup for ${product.name} - Title: ${categoryGroup.title}, ID: ${categoryGroup.id}');
+            
+            // Count how many items are in this category group
+            final itemCount = categoryGroup.items.length;
+            LoggingService.logFirestore('HOME_BESTSELLER: CategoryGroup ${categoryGroup.title} has $itemCount subcategories');
+            print('HOME_BESTSELLER: CategoryGroup ${categoryGroup.title} has $itemCount subcategories');
+            
+            // Find matching subcategory if available
+            final matchingSubcategories = categoryGroup.items.where(
+              (item) => item.id == subcategoryId
+            ).toList();
+            
+            if (matchingSubcategories.isNotEmpty) {
+              final subcategory = matchingSubcategories.first;
+              LoggingService.logFirestore('HOME_BESTSELLER: Found matching subcategory "${subcategory.label}" for product ${product.name}');
+              print('HOME_BESTSELLER: Found matching subcategory "${subcategory.label}" for product ${product.name}');
+            }
+          } else {
+            LoggingService.logFirestore('HOME_BESTSELLER: Could not find category group for $categoryName');
+            print('HOME_BESTSELLER: Could not find category group for $categoryName');
+          }
+        } catch (e) {
+          LoggingService.logError('HOME_BESTSELLER', 'Error getting category details: $e');
+          print('HOME_BESTSELLER: Error getting category details: $e');
+        }
+      }
 
       setState(() {
         _bestsellerIds = productIds;
         _isLoading = false;
       });
 
-      LoggingService.logFirestore(
-          'SmartBestsellerGrid: Loaded ${productIds.length} bestseller IDs');
+      LoggingService.logFirestore('SmartBestsellerGrid: Successfully loaded and displayed ${productIds.length} bestseller products');
     } catch (e) {
       LoggingService.logError(
           'SmartBestsellerGrid', 'Error loading bestseller IDs: $e');
+      print('HOME_BESTSELLER ERROR: Failed to load bestsellers - $e');
       setState(() {
         _hasError = true;
         _errorMessage = 'Failed to load bestsellers';
@@ -245,6 +298,10 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
   Widget _buildGrid() {
     final quantities = widget.cartQuantities ?? <String, int>{};
 
+    // Log when the bestseller grid starts displaying products
+    LoggingService.logFirestore('HOME_BESTSELLER: Building grid view with ${_bestsellerIds.length} products');
+    print('HOME_BESTSELLER: Building grid view with ${_bestsellerIds.length} products');
+
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: widget.crossAxisCount,
@@ -260,20 +317,24 @@ class _SmartBestsellerGridState extends State<SmartBestsellerGrid> {
         final productId = _bestsellerIds[index];
         final quantity = quantities[productId] ?? 0;
 
-        // Get background color for this product if available
-        Color? backgroundColor;
-        if (widget.subcategoryColors != null) {
-          // We don't know the subcategory yet, but the SmartProductCard
-          // will handle displaying with a default color
-          backgroundColor = null;
-        }
-
+        // Log when each individual product card is being created
+        LoggingService.logFirestore('HOME_BESTSELLER: Creating product card for ID: $productId (position: ${index + 1})');
+        print('HOME_BESTSELLER: Creating product card for ID: $productId (position: ${index + 1})');
+        
         return SmartProductCard(
           productId: productId,
           onTap: widget.onProductTap,
           onQuantityChanged: widget.onQuantityChanged,
           quantity: quantity,
-          backgroundColor: backgroundColor,
+          onProductLoaded: (product) {
+            // Log when product details are successfully loaded in the card
+            if (product != null) {
+              final categoryName = product.categoryName ?? 'Unknown Category';
+              final categoryId = product.categoryId ?? 'Unknown ID';
+              LoggingService.logFirestore('HOME_BESTSELLER: Displayed product ${product.id} (${product.name}) from category: $categoryName (ID: $categoryId)');
+              print('HOME_BESTSELLER: Displayed product ${product.id} (${product.name}) from category: $categoryName (ID: $categoryId)');
+            }
+          },
         );
       },
     );

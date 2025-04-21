@@ -33,10 +33,16 @@ class SharedCategoryService {
   Future<void> _initializeCache() async {
     if (_isCacheInitialized) return;
     
-    LoggingService.logFirestore('SharedCategoryService: Initializing category cache');
+    LoggingService.logFirestore('CAT_CACHE: Initializing category cache system');
+    print('CAT_CACHE: Initializing category cache system');
     
     // We'll do lazy initialization to avoid unnecessary Firestore reads
     _isCacheInitialized = true;
+    
+    LoggingService.logFirestore('CAT_CACHE: Cache system initialized with empty caches');
+    print('CAT_CACHE: Cache system initialized with empty caches');
+    LoggingService.logFirestore('CAT_CACHE: Using memory-based cache (not SharedPreferences)');
+    print('CAT_CACHE: Using memory-based cache (not SharedPreferences)');
   }
   
   /// Get all category groups with caching
@@ -44,21 +50,33 @@ class SharedCategoryService {
     try {
       // Return from cache if available
       if (_allCategoriesCache != null) {
-        LoggingService.logFirestore('SharedCategoryService: Cache hit for all categories');
+        LoggingService.logFirestore('CAT_CACHE: Cache HIT for all categories - returning ${_allCategoriesCache!.length} category groups from memory');
+        print('CAT_CACHE: Cache HIT for all categories - returning ${_allCategoriesCache!.length} category groups from memory');
         return _allCategoriesCache!;
       }
       
-      LoggingService.logFirestore('SharedCategoryService: Cache miss for all categories, fetching from Firestore');
+      LoggingService.logFirestore('CAT_CACHE: Cache MISS for all categories - fetching from Firestore');
+      print('CAT_CACHE: Cache MISS for all categories - fetching from Firestore');
       
       // Fetch all category groups
       final categorySnapshot = await _firestore.collection('categories').get();
+      
+      LoggingService.logFirestore('CAT_CACHE: Fetched ${categorySnapshot.docs.length} category groups from Firestore');
+      print('CAT_CACHE: Fetched ${categorySnapshot.docs.length} category groups from Firestore');
       
       List<CategoryGroupFirestore> categoryGroups = [];
       
       // For each category group, fetch its items
       for (var doc in categorySnapshot.docs) {
+        final categoryId = doc.id;
+        LoggingService.logFirestore('CAT_CACHE: Processing category group: $categoryId');
+        print('CAT_CACHE: Processing category group: $categoryId');
+        
         // Fetch items subcollection for this category
         final itemsSnapshot = await doc.reference.collection('items').get();
+        
+        LoggingService.logFirestore('CAT_CACHE: Fetched ${itemsSnapshot.docs.length} items for category $categoryId');
+        print('CAT_CACHE: Fetched ${itemsSnapshot.docs.length} items for category $categoryId');
         
         // Convert items documents to CategoryItemFirestore objects
         final items = itemsSnapshot.docs
@@ -68,13 +86,22 @@ class SharedCategoryService {
         // Create CategoryGroupFirestore with its items
         final categoryGroup = CategoryGroupFirestore.fromFirestore(doc, items);
         
+        // Log background colors
+        LoggingService.logFirestore('CAT_CACHE: Category $categoryId colors - Background: ${categoryGroup.backgroundColor}, Item Background: ${categoryGroup.itemBackgroundColor}');
+        print('CAT_CACHE: Category $categoryId colors - Background: ${categoryGroup.backgroundColor}, Item Background: ${categoryGroup.itemBackgroundColor}');
+        
         // Cache this category group and its items
         _categoryGroupCache[categoryGroup.id] = categoryGroup;
         _subcategoriesCache[categoryGroup.id] = items;
         
+        LoggingService.logFirestore('CAT_CACHE: Cached category group $categoryId with ${items.length} items');
+        print('CAT_CACHE: Cached category group $categoryId with ${items.length} items');
+        
         // Cache individual category items
         for (final item in items) {
           _categoryItemCache['${categoryGroup.id}/${item.id}'] = item;
+          LoggingService.logFirestore('CAT_CACHE: Cached category item ${item.id} (${item.label}) in category $categoryId');
+          // Don't print every item to avoid log spam
         }
         
         categoryGroups.add(categoryGroup);
@@ -83,9 +110,13 @@ class SharedCategoryService {
       // Update the all categories cache
       _allCategoriesCache = categoryGroups;
       
+      LoggingService.logFirestore('CAT_CACHE: All categories cached - ${categoryGroups.length} category groups with a total of ${_categoryItemCache.length} items');
+      print('CAT_CACHE: All categories cached - ${categoryGroups.length} category groups with a total of ${_categoryItemCache.length} items');
+      
       return categoryGroups;
     } catch (e) {
-      LoggingService.logError('SharedCategoryService', 'Error fetching all categories: $e');
+      LoggingService.logError('CAT_CACHE', 'Error fetching all categories: $e');
+      print('CAT_CACHE ERROR: Failed to fetch categories - $e');
       rethrow;
     }
   }
@@ -277,12 +308,50 @@ class SharedCategoryService {
     return colors;
   }
   
+  /// Get all currently cached categories without fetching from Firestore
+  /// Returns an empty list if cache is not initialized
+  List<CategoryGroupFirestore> getCachedCategories() {
+    LoggingService.logFirestore('CAT_CACHE: Getting categories from cache only (no Firestore fetch)');
+    print('CAT_CACHE: Getting categories from cache only (no Firestore fetch)');
+    
+    // If we have all categories cached, return them
+    if (_allCategoriesCache != null) {
+      LoggingService.logFirestore('CAT_CACHE: Returning ${_allCategoriesCache!.length} categories from all-categories cache');
+      print('CAT_CACHE: Returning ${_allCategoriesCache!.length} categories from all-categories cache');
+      return _allCategoriesCache!;
+    }
+    
+    // If we don't have all categories cached but have individual categories
+    if (_categoryGroupCache.isNotEmpty) {
+      final categories = _categoryGroupCache.values.toList();
+      LoggingService.logFirestore('CAT_CACHE: Returning ${categories.length} categories from individual category cache');
+      print('CAT_CACHE: Returning ${categories.length} categories from individual category cache');
+      return categories;
+    }
+    
+    // No categories in cache
+    LoggingService.logFirestore('CAT_CACHE: No categories in cache yet');
+    print('CAT_CACHE: No categories in cache yet');
+    return [];
+  }
+  
+  /// Get cache statistics
+  Map<String, int> getCacheStats() {
+    return {
+      'categoryGroups': _categoryGroupCache.length,
+      'categoryItems': _categoryItemCache.length,
+      'subcategories': _subcategoriesCache.length,
+      'allCategoriesInitialized': _allCategoriesCache != null ? 1 : 0,
+    };
+  }
+
   /// Clear the category cache
   void clearCache() {
     _categoryGroupCache.clear();
     _categoryItemCache.clear();
     _subcategoriesCache.clear();
     _allCategoriesCache = null;
-    LoggingService.logFirestore('SharedCategoryService: Category cache cleared');
+    LoggingService.logFirestore('CAT_CACHE: Category cache cleared');
+    print('CAT_CACHE: Category cache cleared');
   }
 }
