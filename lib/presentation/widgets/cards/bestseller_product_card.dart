@@ -1,20 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/bestseller_product.dart';
 import '../../../services/logging_service.dart';
+import 'reusable_product_card.dart';
 
 /// A specialized product card for bestseller products
-/// Displays both regular product information and bestseller-specific discounts
+/// Uses the reusable product card component
 class BestsellerProductCard extends StatelessWidget {
   final BestsellerProduct bestsellerProduct;
   final Color backgroundColor;
   final Function(BestsellerProduct)? onTap;
   final Function(BestsellerProduct, int)? onQuantityChanged;
   final int quantity;
-  final bool showBestsellerBadge;
+  final bool showBestsellerBadge; // Kept for backward compatibility
 
   const BestsellerProductCard({
     Key? key,
@@ -30,361 +27,43 @@ class BestsellerProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final product = bestsellerProduct.product;
     
+    // Log the bestseller-specific info
     LoggingService.logFirestore(
-      'BESTSELLER_CARD: Building card for ${product.name} (${product.id}), '
-      'Original price: ${product.price}, Final price: ${bestsellerProduct.finalPrice}, '
-      'Discount: ${bestsellerProduct.hasSpecialDiscount ? "${bestsellerProduct.discountType}: ${bestsellerProduct.discountValue}" : "None"}'
+      'BESTSELLER_CARD: Using bestseller product ${product.name} with rank ${bestsellerProduct.rank}'
     );
-    
-    print(
-      'BESTSELLER_CARD: Building card for ${product.name} (${product.id}), '
-      'Original price: ${product.price}, Final price: ${bestsellerProduct.finalPrice}, '
-      'Discount: ${bestsellerProduct.hasSpecialDiscount ? "${bestsellerProduct.discountType}: ${bestsellerProduct.discountValue}" : "None"}'
-    );
-    
-    final discountPercentage = bestsellerProduct.totalDiscountPercentage.round();
-    final discountVal = bestsellerProduct.discountValue?.toInt();
 
-    return GestureDetector(
-      onTap: () {
-        LoggingService.logFirestore('BESTSELLER_CARD: Card tapped for ${product.name}');
-        print('BESTSELLER_CARD: Card tapped for ${product.name}');
-        if (onTap != null) {
-          onTap!(bestsellerProduct);
-        }
-      },
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.secondaryColor,
-          borderRadius: BorderRadius.circular(12.r),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 4.r,
-              offset: Offset(0, 2.h),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(12.r),
-                    topRight: Radius.circular(12.r),
-                  ),
-                  child: Container(
-                    height: 120.h,
-                    width: double.infinity,
-                    color: backgroundColor,
-                    padding: EdgeInsets.all(10.r),
-                    child: CachedNetworkImage(
-                      imageUrl: product.image,
-                      fit: BoxFit.contain,
-                      placeholder: (context, url) => Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.accentColor,
-                          strokeWidth: 2.w,
-                        ),
-                      ),
-                      errorWidget: (context, url, error) {
-                        LoggingService.logError('BESTSELLER_CARD', 'Error loading image for ${product.name}: $error');
-                        print('BESTSELLER_CARD ERROR: Failed to load image - $error');
-                        return Center(
-                          child: Icon(
-                            Icons.image_not_supported,
-                            color: Colors.white,
-                            size: 30.r,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                if (bestsellerProduct.hasSpecialDiscount || discountPercentage > 0)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      width: 48.w,
-                      padding: EdgeInsets.symmetric(vertical: 8.h),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 3.r,
-                            offset: Offset(0, 1.h),
-                          ),
-                        ],
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(12.r),
-                          bottomLeft: Radius.circular(12.r),
-                        ),
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            bestsellerProduct.discountType == 'percentage' 
-                              ? '$discountVal%'
-                              : '₹${bestsellerProduct.discountValue?.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 14.sp,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          Text(
-                            'OFF',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12.sp,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                if (!product.inStock)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.6),
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(12.r),
-                          topRight: Radius.circular(12.r),
-                        ),
-                      ),
-                      child: Center(
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                          child: Text(
-                            'OUT OF STOCK',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 12.sp,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            // Product details - new layout with 3 rows
-            Padding(
-              padding: EdgeInsets.all(10.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row 1: Product name (full width) - limited to 2 lines with ellipsis
-                  Container(
-                    width: double.infinity,
-                    height: 40.h, // Fixed height to accommodate exactly 2 lines
-                    child: Text(
-                      product.name,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14.sp,
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis, // Ensures text ends with "..." if trimmed
-                    ),
-                  ),
-                  
-                  SizedBox(height: 8.h), // Space between name and second row
-                  
-                  // Row 2: Two equal columns for Weight/Quantity and Price
-                  Row(
-                    children: [
-                      // Left column: Weight/Quantity
-                      Expanded(
-                        child: product.weight != null && product.weight!.isNotEmpty
-                          ? Text(
-                              product.weight!,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12.sp,
-                              ),
-                            )
-                          : SizedBox(height: 16.h), // Maintain consistent height
-                      ),
-                      
-                      // Right column: Price and original price
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end, // Right-align text
-                          children: [
-                            // Current price
-                            Text(
-                              '${AppConstants.currencySymbol}${bestsellerProduct.finalPrice.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                color: bestsellerProduct.hasSpecialDiscount 
-                                    ? Colors.green 
-                                    : AppTheme.accentColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16.sp,
-                              ),
-                            ),
-                            // Strikethrough original price (if discounted)
-                            Container(
-                              height: 16.h, // Fixed height for this area
-                              child: (product.mrp != null && product.mrp! > bestsellerProduct.finalPrice)
-                                ? Text(
-                                    '${AppConstants.currencySymbol}${product.mrp?.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      decoration: TextDecoration.lineThrough,
-                                      fontSize: 12.sp,
-                                    ),
-                                  )
-                                : (bestsellerProduct.hasSpecialDiscount)
-                                  ? Text(
-                                      '${AppConstants.currencySymbol}${product.price.toStringAsFixed(0)}',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        decoration: TextDecoration.lineThrough,
-                                        fontSize: 12.sp,
-                                      ),
-                                    )
-                                  : SizedBox(), // Empty but takes up the same space
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  SizedBox(height: 10.h), // Space before the button
-                  
-                  // Row 3: Add button or quantity controls
-                  if (product.inStock)
-                    _buildQuantityControl()
-                  else
-                    ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade700,
-                        disabledBackgroundColor: Colors.grey.shade700,
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor: Colors.white70,
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                      ),
-                      child: Text(
-                        'Out of Stock',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuantityControl() {
-    if (quantity <= 0) {
-      return SizedBox(
-        height: 36.h,
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            LoggingService.logFirestore('BESTSELLER_CARD: Add button pressed for ${bestsellerProduct.name}');
-            print('BESTSELLER_CARD: Add button pressed for ${bestsellerProduct.name}');
-            if (onQuantityChanged != null) {
-              onQuantityChanged!(bestsellerProduct, 1);
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accentColor,
-            foregroundColor: Colors.black,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-          ),
-          child: Text(
-            'ADD',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14.sp,
-            ),
-          ),
-        ),
-      );
-    } else {
-      return Row(
-        children: <Widget>[
-          _buildQuantityButton(
-            icon: Icons.remove,
-            onPressed: () {
-              LoggingService.logFirestore('BESTSELLER_CARD: Decrease quantity for ${bestsellerProduct.name} to ${quantity - 1}');
-              print('BESTSELLER_CARD: Decrease quantity for ${bestsellerProduct.name} to ${quantity - 1}');
-              if (onQuantityChanged != null) {
-                onQuantityChanged!(bestsellerProduct, quantity - 1);
-              }
-            },
-          ),
-          Expanded(
-            child: Container(
-              height: 36.h,
-              alignment: Alignment.center,
-              child: Text(
-                quantity.toString(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.sp,
-                ),
-              ),
-            ),
-          ),
-          _buildQuantityButton(
-            icon: Icons.add,
-            onPressed: () {
-              LoggingService.logFirestore('BESTSELLER_CARD: Increase quantity for ${bestsellerProduct.name} to ${quantity + 1}');
-              print('BESTSELLER_CARD: Increase quantity for ${bestsellerProduct.name} to ${quantity + 1}');
-              if (onQuantityChanged != null) {
-                onQuantityChanged!(bestsellerProduct, quantity + 1);
-              }
-            },
-          ),
-        ],
-      );
+    // Handle callbacks by wrapping them to pass BestsellerProduct instead of Product
+    void _handleTap(dynamic _) {
+      if (onTap != null) {
+        onTap!(bestsellerProduct);
+      }
     }
-  }
 
-  Widget _buildQuantityButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 36.w,
-      height: 36.h,
-      decoration: BoxDecoration(
-        color: AppTheme.accentColor,
-        borderRadius: BorderRadius.circular(4.r),
-      ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(icon),
-        color: Colors.black,
-        iconSize: 18.r,
-        onPressed: onPressed,
-      ),
+    void _handleQuantityChanged(dynamic _, int newQuantity) {
+      if (onQuantityChanged != null) {
+        onQuantityChanged!(bestsellerProduct, newQuantity);
+      }
+    }
+
+    // Calculate original price to show (either MRP or regular price depending on discount type)
+    final originalPrice = product.mrp != null && product.mrp! > bestsellerProduct.finalPrice 
+        ? product.mrp 
+        : bestsellerProduct.hasSpecialDiscount 
+            ? product.price 
+            : null;
+
+    // Use the reusable product card with bestseller-specific data
+    return ReusableProductCard(
+      product: product,
+      finalPrice: bestsellerProduct.finalPrice,
+      originalPrice: originalPrice,
+      hasDiscount: bestsellerProduct.hasSpecialDiscount,
+      discountType: bestsellerProduct.discountType,
+      discountValue: bestsellerProduct.discountValue,
+      backgroundColor: backgroundColor,
+      onTap: _handleTap,
+      onQuantityChanged: _handleQuantityChanged,
+      quantity: quantity,
     );
   }
 }
