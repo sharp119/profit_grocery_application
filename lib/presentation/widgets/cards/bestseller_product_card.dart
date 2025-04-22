@@ -45,6 +45,7 @@ class BestsellerProductCard extends StatelessWidget {
     
     // Calculate total discount percentage
     final discountPercentage = bestsellerProduct.totalDiscountPercentage.round();
+    final discountVal = bestsellerProduct.discountValue?.toInt();
 
     return GestureDetector(
       onTap: () {
@@ -107,63 +108,68 @@ class BestsellerProductCard extends StatelessWidget {
                   ),
                 ),
 
-                // Discount badge
-                if (discountPercentage > 0)
+                // Percentage discount badge (top right)
+                if (bestsellerProduct.discountType == 'percentage')
                   Positioned(
                     top: 0,
                     right: 0,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
                       decoration: BoxDecoration(
                         color: Colors.red,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 3.r,
+                            offset: Offset(0, 1.h),
+                          ),
+                        ],
                         borderRadius: BorderRadius.only(
                           topRight: Radius.circular(12.r),
                           bottomLeft: Radius.circular(12.r),
                         ),
                       ),
                       child: Text(
-                        '$discountPercentage% OFF',
+                        '$discountVal% OFF',
                         style: TextStyle(
                           color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10.sp,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12.sp,
+                          letterSpacing: 0.5,
                         ),
                       ),
                     ),
                   ),
                   
-                // Bestseller badge
-                if (showBestsellerBadge)
+                // Flat amount discount badge (top right)
+                if (bestsellerProduct.hasSpecialDiscount && bestsellerProduct.discountType == "flat")
                   Positioned(
                     top: 0,
-                    left: 0,
+                    right: 0,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
                       decoration: BoxDecoration(
-                        color: AppTheme.accentColor,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(12.r),
-                          bottomRight: Radius.circular(12.r),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.star,
-                            color: Colors.black,
-                            size: 12.r,
-                          ),
-                          SizedBox(width: 2.w),
-                          Text(
-                            'BESTSELLER',
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 8.sp,
-                            ),
+                        color: Colors.red, // Gold color
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.3),
+                            blurRadius: 3.r,
+                            offset: Offset(0, 1.h),
                           ),
                         ],
+                        borderRadius: BorderRadius.only(
+                          topRight: Radius.circular(12.r),
+                          bottomLeft: Radius.circular(12.r),
+                        ),
+                      ),
+                      child: Text(
+                        '₹${bestsellerProduct.discountValue?.toStringAsFixed(0)} OFF',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12.sp,
+                          letterSpacing: 0.5,
+                        ),
                       ),
                     ),
                   ),
@@ -244,7 +250,7 @@ class BestsellerProductCard extends StatelessWidget {
                         '${AppConstants.currencySymbol}${bestsellerProduct.finalPrice.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: bestsellerProduct.hasSpecialDiscount 
-                              ? Colors.deepOrange // Highlight bestseller prices
+                              ? Colors.green // Highlight bestseller prices
                               : AppTheme.accentColor,
                           fontWeight: FontWeight.bold,
                           fontSize: 16.sp,
