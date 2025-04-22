@@ -100,6 +100,8 @@ class SharedCategoryService {
         // Cache individual category items
         for (final item in items) {
           _categoryItemCache['${categoryGroup.id}/${item.id}'] = item;
+          // Also cache with just the item ID as key for lookups by item ID
+          _categoryItemCache[item.id] = item;
           LoggingService.logFirestore('CAT_CACHE: Cached category item ${item.id} (${item.label}) in category $categoryId');
           // Don't print every item to avoid log spam
         }
@@ -158,11 +160,67 @@ class SharedCategoryService {
       // Cache individual category items
       for (final item in items) {
         _categoryItemCache['${categoryId}/${item.id}'] = item;
+        // Also cache with just the item ID as key for lookups by item ID
+        _categoryItemCache[item.id] = item;
       }
       
       return categoryGroup;
     } catch (e) {
       LoggingService.logError('SharedCategoryService', 'Error getting category $categoryId: $e');
+      return null;
+    }
+  }
+  
+  /// Find the category group that contains a specific category item (subcategory)
+  Future<CategoryGroupFirestore?> findCategoryGroupForItem(String categoryItemId) async {
+    try {
+      LoggingService.logFirestore('SharedCategoryService: Finding category group for item $categoryItemId');
+      print('SharedCategoryService: Finding category group for item $categoryItemId');
+      
+      // If we have the item in cache, we can check which category it belongs to
+      if (_categoryItemCache.containsKey(categoryItemId)) {
+        // Find the category group that contains this item
+        for (var entry in _categoryGroupCache.entries) {
+          final groupId = entry.key;
+          final subcategories = _subcategoriesCache[groupId];
+          
+          if (subcategories != null) {
+            for (var item in subcategories) {
+              if (item.id == categoryItemId) {
+                LoggingService.logFirestore('SharedCategoryService: Found category group $groupId for item $categoryItemId in cache');
+                print('SharedCategoryService: Found category group $groupId for item $categoryItemId in cache');
+                return entry.value;
+              }
+            }
+          }
+        }
+      }
+      
+      // If not found in cache or cache is not initialized, fetch from Firestore
+      LoggingService.logFirestore('SharedCategoryService: Category item not found in cache, fetching from Firestore');
+      print('SharedCategoryService: Category item not found in cache, fetching from Firestore');
+      
+      // First, make sure we have all categories loaded
+      final allCategories = await getAllCategories();
+      
+      // Now search through all categories for this item
+      for (var category in allCategories) {
+        for (var item in category.items) {
+          if (item.id == categoryItemId) {
+            LoggingService.logFirestore('SharedCategoryService: Found category group ${category.id} for item $categoryItemId');
+            print('SharedCategoryService: Found category group ${category.id} for item $categoryItemId');
+            return category;
+          }
+        }
+      }
+      
+      // Not found in any category
+      LoggingService.logFirestore('SharedCategoryService: No category group found for item $categoryItemId');
+      print('SharedCategoryService: No category group found for item $categoryItemId');
+      return null;
+    } catch (e) {
+      LoggingService.logError('SharedCategoryService', 'Error finding category group for item $categoryItemId: $e');
+      print('SharedCategoryService ERROR: Failed to find category group for item $categoryItemId: $e');
       return null;
     }
   }

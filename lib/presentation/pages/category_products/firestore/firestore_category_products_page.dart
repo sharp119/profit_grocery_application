@@ -394,7 +394,6 @@ class FirestoreCategoryProductsPage extends StatelessWidget {
             builder: (context, cartState) {
               return TwoPanelCategoryProductView(
                 categories: state.categories,
-                categoryProducts: state.categoryProducts,
                 onCategoryTap: (category) {
                   context.read<FirestoreCategoryProductsBloc>().add(SelectCategory(category));
                 },
@@ -425,16 +424,6 @@ class FirestoreCategoryProductsPage extends StatelessWidget {
                   } else {
                     context.read<CartBloc>().add(RemoveFromCart(product.id));
                   }
-                  
-                  // Show manual snackbar feedback
-                  String cartMessage = "Product '${product.name}' added to cart";
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ $cartMessage'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
                 },
                 cartQuantities: state.cartQuantities,
                 cartItemCount: cartState.itemCount ?? 0, // Use the CartBloc's item count with null safety
@@ -443,7 +432,7 @@ class FirestoreCategoryProductsPage extends StatelessWidget {
                   // Navigate to cart using proper route constant
                   Navigator.pushNamed(context, AppConstants.cartRoute);
                 },
-                cartPreviewImage: (cartState.itemCount ?? 0) > 0 && state.categoryProducts.isNotEmpty
+                cartPreviewImage: (cartState.itemCount ?? 0) > 0 && !state.categoryProducts.values.isEmpty
                     ? _getCartPreviewImage(state)
                     : null,
                 subcategoryColors: state.subcategoryColors,

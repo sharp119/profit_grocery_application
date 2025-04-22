@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
-import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
 
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
@@ -10,9 +9,11 @@ import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/cart_repository.dart';
 import '../../../services/cart/cart_sync_service.dart';
+import '../../../services/logging_service.dart';
 import '../product_details/product_details_page.dart';
 import '../../blocs/cart/cart_bloc.dart';
 import '../../blocs/cart/cart_event.dart';
+import '../../blocs/cart/cart_state.dart';
 import '../../blocs/category_products/category_products_bloc.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/panels/two_panel_category_product_view.dart';
@@ -56,14 +57,14 @@ class CategoryProductsPage extends StatelessWidget {
         listener: (context, state) {
           // When state changes, check if a product was added to show feedback
           if (state is CategoryProductsLoaded && state.lastAddedProduct != null) {
-            String cartMessage = "yoyo product with id ${state.lastAddedProduct!.id} got added in the cart";
+            String cartMessage = "Product '${state.lastAddedProduct!.name}' added to cart";
             
             // Show a snackbar message
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('✅ $cartMessage'),
                 backgroundColor: Colors.green,
-                duration: Duration(seconds: 2),
+                duration: const Duration(seconds: 2),
               ),
             );
           }
@@ -146,7 +147,7 @@ class CategoryProductsPage extends StatelessWidget {
           color: Colors.white,
         ),
         onPressed: () {
-          // TODO: Implement search
+          // Search functionality
         },
       ),
       IconButton(
@@ -155,7 +156,7 @@ class CategoryProductsPage extends StatelessWidget {
           color: Colors.white,
         ),
         onPressed: () {
-          // TODO: Implement filter
+          // Filter functionality
         },
       ),
     ];
@@ -269,6 +270,8 @@ class CategoryProductsPage extends StatelessWidget {
   }
 
   Widget _buildLoadedState(BuildContext context, CategoryProductsLoaded state) {
+    LoggingService.logFirestore('CATEGORY_PAGE: Building loaded state with ${state.categories.length} categories');
+    
     return Column(
       children: [
         // Search bar
@@ -302,7 +305,7 @@ class CategoryProductsPage extends StatelessWidget {
             ),
             cursorColor: AppTheme.accentColor,
             onChanged: (query) {
-              // TODO: Implement search
+              // Search functionality
             },
           ),
         ),
@@ -313,7 +316,6 @@ class CategoryProductsPage extends StatelessWidget {
             builder: (context, cartState) {
               return TwoPanelCategoryProductView(
                 categories: state.categories,
-                categoryProducts: state.categoryProducts,
                 onCategoryTap: (category) {
                   context.read<CategoryProductsBloc>().add(SelectCategory(category));
                 },
@@ -344,16 +346,6 @@ class CategoryProductsPage extends StatelessWidget {
                   } else {
                     context.read<CartBloc>().add(RemoveFromCart(product.id));
                   }
-                  
-                  // Show manual snackbar feedback
-                  String cartMessage = "Product '${product.name}' added to cart";
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('✅ $cartMessage'),
-                      backgroundColor: Colors.green,
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
                 },
                 cartQuantities: state.cartQuantities,
                 cartItemCount: cartState.itemCount ?? 0, // Use the CartBloc's item count with null safety
@@ -396,6 +388,7 @@ class CategoryProductsPage extends StatelessWidget {
       return 'assets/images/categories/vegetables.png';
     } catch (e) {
       // Return a default image in case of any error
+      LoggingService.logError('CATEGORY_PAGE', 'Error getting cart preview image: $e');
       return 'assets/images/categories/vegetables.png';
     }
   }
