@@ -30,7 +30,6 @@ class BestsellerProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final product = bestsellerProduct.product;
     
-    // Log when this product card is built
     LoggingService.logFirestore(
       'BESTSELLER_CARD: Building card for ${product.name} (${product.id}), '
       'Original price: ${product.price}, Final price: ${bestsellerProduct.finalPrice}, '
@@ -43,7 +42,6 @@ class BestsellerProductCard extends StatelessWidget {
       'Discount: ${bestsellerProduct.hasSpecialDiscount ? "${bestsellerProduct.discountType}: ${bestsellerProduct.discountValue}" : "None"}'
     );
     
-    // Calculate total discount percentage
     final discountPercentage = bestsellerProduct.totalDiscountPercentage.round();
     final discountVal = bestsellerProduct.discountValue?.toInt();
 
@@ -57,7 +55,7 @@ class BestsellerProductCard extends StatelessWidget {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: AppTheme.secondaryColor, // Default background for the entire card
+          color: AppTheme.secondaryColor,
           borderRadius: BorderRadius.circular(12.r),
           boxShadow: [
             BoxShadow(
@@ -70,10 +68,8 @@ class BestsellerProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product image with discount badge if applicable
             Stack(
               children: [
-                // Image
                 ClipRRect(
                   borderRadius: BorderRadius.only(
                     topLeft: Radius.circular(12.r),
@@ -82,7 +78,7 @@ class BestsellerProductCard extends StatelessWidget {
                   child: Container(
                     height: 120.h,
                     width: double.infinity,
-                    color: backgroundColor, // Apply category color ONLY to the image background
+                    color: backgroundColor,
                     padding: EdgeInsets.all(10.r),
                     child: CachedNetworkImage(
                       imageUrl: product.image,
@@ -107,14 +103,12 @@ class BestsellerProductCard extends StatelessWidget {
                     ),
                   ),
                 ),
-
-                // Unified Discount Label (top right) - VERTICAL LAYOUT
                 if (bestsellerProduct.hasSpecialDiscount || discountPercentage > 0)
                   Positioned(
                     top: 0,
                     right: 0,
                     child: Container(
-                      width: 48.w, // Fixed width for vertical layout
+                      width: 48.w,
                       padding: EdgeInsets.symmetric(vertical: 8.h),
                       decoration: BoxDecoration(
                         color: Colors.red,
@@ -133,7 +127,6 @@ class BestsellerProductCard extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Discount Value on top - Shows either percentage or flat amount
                           Text(
                             bestsellerProduct.discountType == 'percentage' 
                               ? '$discountVal%'
@@ -145,7 +138,6 @@ class BestsellerProductCard extends StatelessWidget {
                             ),
                             textAlign: TextAlign.center,
                           ),
-                          // OFF text below
                           Text(
                             'OFF',
                             style: TextStyle(
@@ -159,8 +151,6 @@ class BestsellerProductCard extends StatelessWidget {
                       ),
                     ),
                   ),
-
-                // Out of stock overlay
                 if (!product.inStock)
                   Positioned.fill(
                     child: Container(
@@ -192,16 +182,16 @@ class BestsellerProductCard extends StatelessWidget {
                   ),
               ],
             ),
-
-            // Product details
+            // Product details - new layout with 3 rows
             Padding(
               padding: EdgeInsets.all(10.r),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Product name - Increase height and ensure proper constraints
+                  // Row 1: Product name (full width) - limited to 2 lines with ellipsis
                   Container(
-                    height: 38.h, // Fixed height for product name
+                    width: double.infinity,
+                    height: 40.h, // Fixed height to accommodate exactly 2 lines
                     child: Text(
                       product.name,
                       style: TextStyle(
@@ -210,68 +200,76 @@ class BestsellerProductCard extends StatelessWidget {
                         fontSize: 14.sp,
                       ),
                       maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      overflow: TextOverflow.ellipsis, // Ensures text ends with "..." if trimmed
                     ),
                   ),
-
-                  // Product weight/quantity
-                  if (product.weight != null && product.weight!.isNotEmpty)
-                    Text(
-                      product.weight!,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12.sp,
-                      ),
-                    )
-                  else
-                    SizedBox(height: 4.h), // Ensure consistent height even without weight
-                    
-                  SizedBox(height: 4.h),
-
-                  // Product price with bestseller discount
+                  
+                  SizedBox(height: 8.h), // Space between name and second row
+                  
+                  // Row 2: Two equal columns for Weight/Quantity and Price
                   Row(
-                    children: <Widget>[
-                      // Display final price (with bestseller discount applied)
-                      Text(
-                        '${AppConstants.currencySymbol}${bestsellerProduct.finalPrice.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          color: bestsellerProduct.hasSpecialDiscount 
-                              ? Colors.green // Highlight bestseller prices
-                              : AppTheme.accentColor,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16.sp,
+                    children: [
+                      // Left column: Weight/Quantity
+                      Expanded(
+                        child: product.weight != null && product.weight!.isNotEmpty
+                          ? Text(
+                              product.weight!,
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12.sp,
+                              ),
+                            )
+                          : SizedBox(height: 16.h), // Maintain consistent height
+                      ),
+                      
+                      // Right column: Price and original price
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.end, // Right-align text
+                          children: [
+                            // Current price
+                            Text(
+                              '${AppConstants.currencySymbol}${bestsellerProduct.finalPrice.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                color: bestsellerProduct.hasSpecialDiscount 
+                                    ? Colors.green 
+                                    : AppTheme.accentColor,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16.sp,
+                              ),
+                            ),
+                            // Strikethrough original price (if discounted)
+                            Container(
+                              height: 16.h, // Fixed height for this area
+                              child: (product.mrp != null && product.mrp! > bestsellerProduct.finalPrice)
+                                ? Text(
+                                    '${AppConstants.currencySymbol}${product.mrp?.toStringAsFixed(0)}',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      decoration: TextDecoration.lineThrough,
+                                      fontSize: 12.sp,
+                                    ),
+                                  )
+                                : (bestsellerProduct.hasSpecialDiscount)
+                                  ? Text(
+                                      '${AppConstants.currencySymbol}${product.price.toStringAsFixed(0)}',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        decoration: TextDecoration.lineThrough,
+                                        fontSize: 12.sp,
+                                      ),
+                                    )
+                                  : SizedBox(), // Empty but takes up the same space
+                            ),
+                          ],
                         ),
                       ),
-
-                      SizedBox(width: 8.w),
-
-                      // Original price if there's a discount
-                      if (product.mrp != null && product.mrp! > bestsellerProduct.finalPrice)
-                        Text(
-                          '${AppConstants.currencySymbol}${product.mrp?.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 12.sp,
-                          ),
-                        )
-                      
-                      // Regular price if there's only a bestseller discount
-                      else if (bestsellerProduct.hasSpecialDiscount)
-                        Text(
-                          '${AppConstants.currencySymbol}${product.price.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: Colors.white70,
-                            decoration: TextDecoration.lineThrough,
-                            fontSize: 12.sp,
-                          ),
-                        ),
                     ],
                   ),
-
-                  SizedBox(height: 8.h),
-
-                  // Add to cart button or quantity selector
+                  
+                  SizedBox(height: 10.h), // Space before the button
+                  
+                  // Row 3: Add button or quantity controls
                   if (product.inStock)
                     _buildQuantityControl()
                   else
@@ -300,12 +298,10 @@ class BestsellerProductCard extends StatelessWidget {
     );
   }
 
-  // Build quantity control based on current quantity
   Widget _buildQuantityControl() {
     if (quantity <= 0) {
-      // Show "Add" button if not in cart
       return SizedBox(
-        height: 36.h, // Fixed height
+        height: 36.h,
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
@@ -330,10 +326,8 @@ class BestsellerProductCard extends StatelessWidget {
         ),
       );
     } else {
-      // Show quantity selector if in cart
       return Row(
         children: <Widget>[
-          // Minus button
           _buildQuantityButton(
             icon: Icons.remove,
             onPressed: () {
@@ -344,8 +338,6 @@ class BestsellerProductCard extends StatelessWidget {
               }
             },
           ),
-          
-          // Quantity display
           Expanded(
             child: Container(
               height: 36.h,
@@ -360,8 +352,6 @@ class BestsellerProductCard extends StatelessWidget {
               ),
             ),
           ),
-          
-          // Plus button
           _buildQuantityButton(
             icon: Icons.add,
             onPressed: () {
@@ -377,7 +367,6 @@ class BestsellerProductCard extends StatelessWidget {
     }
   }
 
-  // Helper method to build quantity control buttons
   Widget _buildQuantityButton({
     required IconData icon,
     required VoidCallback onPressed,
