@@ -3,15 +3,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../domain/entities/product.dart';
+import '../../../domain/entities/bestseller_item.dart';
+import '../../../domain/entities/bestseller_product.dart';
 import '../../../data/repositories/bestseller_repository_simple.dart';
 import '../../../services/logging_service.dart';
 import '../../../services/product/shared_product_service.dart';
 import '../../../services/category/shared_category_service.dart';
 import '../cards/simple_product_card.dart';
+import '../cards/bestseller_product_card.dart';
 import '../../../core/constants/app_theme.dart';
 
-/// A simplified grid that displays bestseller products
-/// Gets product IDs first, then loads each product from cache or Firestore
+/// A simplified grid that displays bestseller products with their special discounts
 class SimpleBestsellerGrid extends StatefulWidget {
   final Function(Product)? onProductTap;
   final Function(Product, int)? onQuantityChanged;
@@ -19,6 +21,7 @@ class SimpleBestsellerGrid extends StatefulWidget {
   final int limit;
   final bool ranked;
   final int crossAxisCount;
+  final bool showBestsellerBadge;
 
   const SimpleBestsellerGrid({
     Key? key,
@@ -28,6 +31,7 @@ class SimpleBestsellerGrid extends StatefulWidget {
     this.limit = 12,
     this.ranked = false,
     this.crossAxisCount = 2,
+    this.showBestsellerBadge = true,
   }) : super(key: key);
 
   @override
@@ -39,8 +43,7 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
   final SharedProductService _productService = GetIt.instance<SharedProductService>();
   final SharedCategoryService _categoryService = GetIt.instance<SharedCategoryService>();
   
-  List<String> _productIds = [];
-  Map<String, Product> _products = {};
+  List<BestsellerProduct> _bestsellerProducts = [];
   Map<String, Color> _productColors = {};
   bool _isLoading = true;
   bool _hasError = false;
@@ -54,42 +57,47 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
 
   Future<void> _loadBestsellerProducts() async {
     try {
-      LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Starting to load bestseller products');
-      print('BESTSELLER_SIMPLE_GRID: Starting to load bestseller products');
+      LoggingService.logFirestore('BESTSELLER_GRID: Starting to load bestseller products');
+      print('BESTSELLER_GRID: Starting to load bestseller products');
       
       setState(() {
         _isLoading = true;
         _hasError = false;
       });
 
-      // Step 1: Get bestseller product IDs
-      final productIds = await _bestsellerRepository.getBestsellerProductIds(
+      // Step 1: Get bestseller items with discount information
+      final bestsellerItems = await _bestsellerRepository.getBestsellerItems(
         limit: widget.limit,
         ranked: widget.ranked,
       );
       
-      LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Retrieved ${productIds.length} bestseller product IDs');
-      print('BESTSELLER_SIMPLE_GRID: Retrieved ${productIds.length} bestseller product IDs');
+      LoggingService.logFirestore('BESTSELLER_GRID: Retrieved ${bestsellerItems.length} bestseller items');
+      print('BESTSELLER_GRID: Retrieved ${bestsellerItems.length} bestseller items');
+      
+      // Debug log all retrieved bestseller items
+      bestsellerItems.forEach((item) {
+        print('BESTSELLER_GRID_DEBUG: Bestseller Item - ProductID: ${item.productId}, Rank: ${item.rank}, ' +
+              'DiscountType: ${item.discountType}, DiscountValue: ${item.discountValue}');
+      });
       
       // Clear existing data
-      _products.clear();
+      _bestsellerProducts = [];
       _productColors.clear();
       
-      // Step 2: Load product details and category colors for each ID
-      for (final productId in productIds) {
-        await _loadProductDetails(productId);
+      // Step 2: Load product details and category colors for each bestseller item
+      for (final item in bestsellerItems) {
+        await _loadProductDetailsForBestseller(item);
       }
       
       setState(() {
-        _productIds = productIds;
         _isLoading = false;
       });
 
-      LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Successfully loaded ${_products.length} bestseller products');
-      print('BESTSELLER_SIMPLE_GRID: Successfully loaded ${_products.length} bestseller products');
+      LoggingService.logFirestore('BESTSELLER_GRID: Successfully loaded ${_bestsellerProducts.length} bestseller products');
+      print('BESTSELLER_GRID: Successfully loaded ${_bestsellerProducts.length} bestseller products');
     } catch (e) {
-      LoggingService.logError('BESTSELLER_SIMPLE_GRID', 'Error loading bestseller products: $e');
-      print('BESTSELLER_SIMPLE_GRID ERROR: Failed to load bestsellers - $e');
+      LoggingService.logError('BESTSELLER_GRID', 'Error loading bestseller products: $e');
+      print('BESTSELLER_GRID ERROR: Failed to load bestsellers - $e');
       
       setState(() {
         _hasError = true;
@@ -99,22 +107,39 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
     }
   }
 
-  Future<void> _loadProductDetails(String productId) async {
+  Future<void> _loadProductDetailsForBestseller(BestsellerItem bestsellerItem) async {
     try {
-      LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Loading details for product ID: $productId');
-      print('BESTSELLER_SIMPLE_GRID: Loading details for product ID: $productId');
+      final productId = bestsellerItem.productId;
+      
+      LoggingService.logFirestore('BESTSELLER_GRID: Loading details for product ID: $productId');
+      print('BESTSELLER_GRID: Loading details for product ID: $productId');
       
       // Get product from cache or Firestore
       final product = await _productService.getProductById(productId);
       
       if (product == null) {
-        LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Product not found for ID: $productId');
-        print('BESTSELLER_SIMPLE_GRID: Product not found for ID: $productId');
+        LoggingService.logFirestore('BESTSELLER_GRID: Product not found for ID: $productId');
+        print('BESTSELLER_GRID: ⚠️ WARNING - Product not found for ID: $productId');
+        // Print debug info about what's happening in SharedProductService
+        print('BESTSELLER_GRID_DEBUG: Checking SharedProductService implementation for: $productId');
         return;
       }
       
-      LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Found product: ${product.name}, CategoryName: ${product.categoryName}');
-      print('BESTSELLER_SIMPLE_GRID: Found product: ${product.name}, CategoryName: ${product.categoryName}');
+      LoggingService.logFirestore(
+        'BESTSELLER_GRID: Found product: ${product.name}, CategoryName: ${product.categoryName}, '
+        'Bestseller discount: ${bestsellerItem.discountType ?? 'None'} ${bestsellerItem.discountValue ?? '0'}'
+      );
+      
+      print(
+        'BESTSELLER_GRID: Found product: ${product.name}, CategoryName: ${product.categoryName}, '
+        'Bestseller discount: ${bestsellerItem.discountType ?? 'None'} ${bestsellerItem.discountValue ?? '0'}'
+      );
+      
+      // Create a BestsellerProduct combining the product and bestseller information
+      final bestsellerProduct = BestsellerProduct(
+        product: product,
+        bestsellerInfo: bestsellerItem,
+      );
       
       // Get background color from category
       if (product.categoryName != null) {
@@ -122,28 +147,35 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
         
         if (mounted) {
           setState(() {
-            _products[productId] = product;
+            _bestsellerProducts.add(bestsellerProduct);
             _productColors[productId] = color;
           });
         }
       } else {
         if (mounted) {
           setState(() {
-            _products[productId] = product;
+            _bestsellerProducts.add(bestsellerProduct);
             _productColors[productId] = AppTheme.secondaryColor; // Default color
           });
         }
       }
+      
+      // Sort products by rank if needed
+      if (widget.ranked && mounted) {
+        setState(() {
+          _bestsellerProducts.sort((a, b) => a.rank.compareTo(b.rank));
+        });
+      }
     } catch (e) {
-      LoggingService.logError('BESTSELLER_SIMPLE_GRID', 'Error loading product $productId: $e');
-      print('BESTSELLER_SIMPLE_GRID ERROR: Failed to load product $productId - $e');
+      LoggingService.logError('BESTSELLER_GRID', 'Error loading product ${bestsellerItem.productId}: $e');
+      print('BESTSELLER_GRID ERROR: Failed to load product ${bestsellerItem.productId} - $e');
     }
   }
 
   Future<Color> _getProductBackgroundColor(Product product) async {
     try {
-      LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Getting background color for ${product.name}');
-      print('BESTSELLER_SIMPLE_GRID: Getting background color for ${product.name}');
+      LoggingService.logFirestore('BESTSELLER_GRID: Getting background color for ${product.name}');
+      print('BESTSELLER_GRID: Getting background color for ${product.name}');
       
       // Default color if we can't determine a better one
       Color bgColor = AppTheme.secondaryColor;
@@ -156,23 +188,23 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
       final categoryGroup = await _categoryService.getCategoryById(product.categoryName!);
       
       if (categoryGroup != null) {
-        LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Found category group: ${categoryGroup.title}');
-        print('BESTSELLER_SIMPLE_GRID: Found category group: ${categoryGroup.title}');
+        LoggingService.logFirestore('BESTSELLER_GRID: Found category group: ${categoryGroup.title}');
+        print('BESTSELLER_GRID: Found category group: ${categoryGroup.title}');
         
         // Use the itemBackgroundColor from the category group
         bgColor = categoryGroup.itemBackgroundColor;
         
-        LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Using background color from category: ${bgColor.toString()}');
-        print('BESTSELLER_SIMPLE_GRID: Using background color from category: ${bgColor.toString()}');
+        LoggingService.logFirestore('BESTSELLER_GRID: Using background color from category: ${bgColor.toString()}');
+        print('BESTSELLER_GRID: Using background color from category: ${bgColor.toString()}');
       } else {
-        LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Category group not found, using default color');
-        print('BESTSELLER_SIMPLE_GRID: Category group not found, using default color');
+        LoggingService.logFirestore('BESTSELLER_GRID: Category group not found, using default color');
+        print('BESTSELLER_GRID: Category group not found, using default color');
       }
       
       return bgColor;
     } catch (e) {
-      LoggingService.logError('BESTSELLER_SIMPLE_GRID', 'Error getting background color: $e');
-      print('BESTSELLER_SIMPLE_GRID ERROR: Failed to get background color - $e');
+      LoggingService.logError('BESTSELLER_GRID', 'Error getting background color: $e');
+      print('BESTSELLER_GRID ERROR: Failed to get background color - $e');
       return AppTheme.secondaryColor; // Default color on error
     }
   }
@@ -187,7 +219,7 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
       return _buildErrorState();
     }
 
-    if (_productIds.isEmpty) {
+    if (_bestsellerProducts.isEmpty) {
       return _buildEmptyState();
     }
 
@@ -337,8 +369,8 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
   Widget _buildGrid() {
     final quantities = widget.cartQuantities ?? <String, int>{};
     
-    LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Building grid with ${_productIds.length} products');
-    print('BESTSELLER_SIMPLE_GRID: Building grid with ${_productIds.length} products');
+    LoggingService.logFirestore('BESTSELLER_GRID: Building grid with ${_bestsellerProducts.length} products');
+    print('BESTSELLER_GRID: Building grid with ${_bestsellerProducts.length} products');
 
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -349,28 +381,37 @@ class _SimpleBestsellerGridState extends State<SimpleBestsellerGrid> {
       ),
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: _productIds.length,
+      itemCount: _bestsellerProducts.length,
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       itemBuilder: (context, index) {
-        final productId = _productIds[index];
-        final product = _products[productId];
+        final bestsellerProduct = _bestsellerProducts[index];
+        final product = bestsellerProduct.product;
+        final productId = product.id;
         final color = _productColors[productId] ?? AppTheme.secondaryColor;
         final quantity = quantities[productId] ?? 0;
         
-        if (product == null) {
-          // Return empty container if product details not loaded yet
-          return Container();
-        }
+        LoggingService.logFirestore(
+          'BESTSELLER_GRID: Building product card at position ${index + 1} for ${product.name}, '
+          'Regular price: ${product.price}, Bestseller price: ${bestsellerProduct.finalPrice}, '
+          'Discount: ${bestsellerProduct.hasSpecialDiscount ? "${bestsellerProduct.discountType}: ${bestsellerProduct.discountValue}" : "None"}'
+        );
         
-        LoggingService.logFirestore('BESTSELLER_SIMPLE_GRID: Building product card at position ${index + 1} for ${product.name}');
-        print('BESTSELLER_SIMPLE_GRID: Building product card at position ${index + 1} for ${product.name}');
+        print(
+          'BESTSELLER_GRID: Building product card at position ${index + 1} for ${product.name}, '
+          'Regular price: ${product.price}, Bestseller price: ${bestsellerProduct.finalPrice}, '
+          'Discount: ${bestsellerProduct.hasSpecialDiscount ? "${bestsellerProduct.discountType}: ${bestsellerProduct.discountValue}" : "None"}'
+        );
 
-        return SimpleProductCard(
-          product: product,
+        // Use the BestsellerProductCard for enhanced display
+        return BestsellerProductCard(
+          bestsellerProduct: bestsellerProduct,
           backgroundColor: color,
-          onTap: widget.onProductTap,
-          onQuantityChanged: widget.onQuantityChanged,
+          onTap: widget.onProductTap != null ? 
+            (bestsellerProduct) => widget.onProductTap!(bestsellerProduct.product) : null,
+          onQuantityChanged: widget.onQuantityChanged != null ?
+            (bestsellerProduct, qty) => widget.onQuantityChanged!(bestsellerProduct.product, qty) : null,
           quantity: quantity,
+          showBestsellerBadge: widget.showBestsellerBadge,
         );
       },
     );

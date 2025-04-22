@@ -75,6 +75,7 @@ class AppConstants {
   static const String imageTestRoute = '/dev/image-test';
   static const String productCardTestRoute = '/dev/product-card-test';
   static const String firestoreSyncRoute = '/dev/firestore-sync';
+  static const String bestsellerExampleRoute = '/dev/bestseller-example';
   
   // Admin Routes
   static const String adminLoginRoute = '/admin/login';

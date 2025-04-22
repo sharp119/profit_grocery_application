@@ -108,6 +108,15 @@ class DeveloperMenuPage extends StatelessWidget {
             _buildSectionHeader('Visual Tools'),
             _buildDevOption(
               context,
+              title: 'Bestseller Example',
+              icon: Icons.star,
+              description: 'Test enhanced bestseller feature with discounts',
+              onTap: () {
+                Navigator.pushNamed(context, AppConstants.bestsellerExampleRoute);
+              },
+            ),
+            _buildDevOption(
+              context,
               title: 'Grid Overlay',
               icon: Icons.grid_on,
               description: 'Toggle layout grid for UI alignment',

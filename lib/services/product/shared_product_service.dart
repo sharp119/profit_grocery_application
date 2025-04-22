@@ -74,79 +74,87 @@ class SharedProductService {
   /// Find a product in Firestore by searching all categories and subcategories
   Future<ProductModel?> _findProductInFirestore(String productId) async {
     try {
+      // First try the direct approach - look in the "products" collection
       // Method 1: Direct query if we know the path
       try {
-        // Check in bestsellers collection first for direct reference
-        final bestsellerDoc = await _firestore.collection('bestsellers')
-            .where('productId', isEqualTo: productId)
-            .limit(1)
-            .get();
+        // Try to get a product directly from all categories
+        final categoriesSnapshot = await _firestore.collection('products').get();
         
-        if (bestsellerDoc.docs.isNotEmpty) {
-          final data = bestsellerDoc.docs.first.data();
-          final ref = data['ref'] as String?;
+        for (final categoryDoc in categoriesSnapshot.docs) {
+          final categoryId = categoryDoc.id;
           
-          if (ref != null) {
-            // Format: "products/fruits_vegetables/items/exotic_vegetables/products/fjVKtTrytyzem9yK5qVK"
-            final pathParts = ref.split('/');
-            if (pathParts.length >= 6) {
-              final categoryId = pathParts[1]; 
-              final subcategoryId = pathParts[3];
-              final prodId = pathParts[5];
-              
-              // Get the product from the exact path
+          // Get subcategories in this category
+          final subcategoriesSnapshot = await _firestore.collection('products')
+              .doc(categoryId)
+              .collection('items')
+              .get();
+          
+          for (final subcategoryDoc in subcategoriesSnapshot.docs) {
+            final subcategoryId = subcategoryDoc.id;
+            
+            // Try to find the product in this subcategory
+            try {
               final productDoc = await _firestore.collection('products')
                   .doc(categoryId)
                   .collection('items')
                   .doc(subcategoryId)
                   .collection('products')
-                  .doc(prodId)
+                  .doc(productId)
                   .get();
               
               if (productDoc.exists) {
+                print('SharedProductService: Found product $productId in category $categoryId, subcategory $subcategoryId');
                 return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
+              }
+            } catch (e) {
+              // Continue searching in other subcategories
+              LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
+            }
+          }
+        }
+        
+        // If direct approach fails, check if it exists in bestsellers and get information from there
+        final bestsellerDoc = await _firestore.collection('bestsellers').doc(productId).get();
+        if (bestsellerDoc.exists) {
+          print('SharedProductService: Found product ID $productId in bestsellers collection');
+          
+          // Since the product isn't found in the normal structure, but exists in bestsellers,
+          // we need to search for it using a query by ID
+          final querySnapshot = await _firestore.collectionGroup('products')
+              .where(FieldPath.documentId, isEqualTo: productId)
+              .limit(1)
+              .get();
+              
+          if (querySnapshot.docs.isNotEmpty) {
+            final productDoc = querySnapshot.docs.first;
+            // Extract category info from the reference path
+            final path = productDoc.reference.path;
+            print('SharedProductService: Found product through query by ID - Path: $path');
+            
+            // Parse path "products/categoryId/items/subcategoryId/products/productId"
+            final pathSegments = path.split('/');
+            if (pathSegments.length >= 6) {
+              final categoryId = pathSegments[1];
+              final subcategoryId = pathSegments[3];
+              return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
+            }
+          } else {
+            print('SharedProductService: Product ID $productId exists in bestsellers but not found in products collection');
+            
+            // If we have a "products" doc with the same ID, try to get its data directly
+            final productDoc = await _firestore.collection('products').doc(productId).get();
+            if (productDoc.exists) {
+              final data = productDoc.data() as Map<String, dynamic>?;
+              if (data != null) {
+                print('SharedProductService: Found product data in direct products collection');
+                // Create a basic product model from whatever data is available
+                return _createBasicProductModelFromData(productId, data);
               }
             }
           }
         }
       } catch (e) {
-        LoggingService.logError('SharedProductService', 'Error checking bestsellers: $e');
-        // Continue with general search
-      }
-      
-      // Method 2: Search across all categories and subcategories
-      final categoriesSnapshot = await _firestore.collection('products').get();
-      
-      for (final categoryDoc in categoriesSnapshot.docs) {
-        final categoryId = categoryDoc.id;
-        
-        // Get subcategories in this category
-        final subcategoriesSnapshot = await _firestore.collection('products')
-            .doc(categoryId)
-            .collection('items')
-            .get();
-        
-        for (final subcategoryDoc in subcategoriesSnapshot.docs) {
-          final subcategoryId = subcategoryDoc.id;
-          
-          // Try to find the product in this subcategory
-          try {
-            final productDoc = await _firestore.collection('products')
-                .doc(categoryId)
-                .collection('items')
-                .doc(subcategoryId)
-                .collection('products')
-                .doc(productId)
-                .get();
-            
-            if (productDoc.exists) {
-              return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
-            }
-          } catch (e) {
-            // Continue searching in other subcategories
-            LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
-          }
-        }
+        LoggingService.logError('SharedProductService', 'Error during direct product lookup: $e');
       }
       
       // If we get here, the product was not found
@@ -155,6 +163,28 @@ class SharedProductService {
       LoggingService.logError('SharedProductService', 'Error finding product in Firestore: $e');
       return null;
     }
+  }
+  
+  /// Create a basic product model from partial data
+  /// Used when we only have limited information about a product
+  ProductModel _createBasicProductModelFromData(String productId, Map<String, dynamic> data) {
+    return ProductModel(
+      id: productId,
+      name: data['name'] ?? 'Product $productId',
+      description: data['description'] ?? '',
+      price: (data['price'] is int)
+          ? (data['price'] as int).toDouble()
+          : (data['price'] as num?)?.toDouble() ?? 0.0,
+      mrp: (data['mrp'] is int)
+          ? (data['mrp'] as int).toDouble()
+          : (data['mrp'] as num?)?.toDouble() ?? 0.0,
+      image: data['image'] ?? data['imagePath'] ?? '',
+      inStock: data['inStock'] ?? true,
+      categoryId: data['categoryId'] ?? '',
+      categoryName: data['categoryName'] ?? '',
+      brand: data['brand'] as String?,
+      weight: data['weight'] as String?,
+    );
   }
   
   /// Create a ProductModel from a DocumentSnapshot, handling image URL resolution
