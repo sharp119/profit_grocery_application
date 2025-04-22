@@ -108,13 +108,14 @@ class BestsellerProductCard extends StatelessWidget {
                   ),
                 ),
 
-                // Percentage discount badge (top right)
-                if (bestsellerProduct.discountType == 'percentage')
+                // Unified Discount Label (top right) - VERTICAL LAYOUT
+                if (bestsellerProduct.hasSpecialDiscount || discountPercentage > 0)
                   Positioned(
                     top: 0,
                     right: 0,
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                      width: 48.w, // Fixed width for vertical layout
+                      padding: EdgeInsets.symmetric(vertical: 8.h),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         boxShadow: [
@@ -129,47 +130,32 @@ class BestsellerProductCard extends StatelessWidget {
                           bottomLeft: Radius.circular(12.r),
                         ),
                       ),
-                      child: Text(
-                        '$discountVal% OFF',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12.sp,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                  
-                // Flat amount discount badge (top right)
-                if (bestsellerProduct.hasSpecialDiscount && bestsellerProduct.discountType == "flat")
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
-                      decoration: BoxDecoration(
-                        color: Colors.red, // Gold color
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 3.r,
-                            offset: Offset(0, 1.h),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Discount Value on top - Shows either percentage or flat amount
+                          Text(
+                            bestsellerProduct.discountType == 'percentage' 
+                              ? '$discountVal%'
+                              : '₹${bestsellerProduct.discountValue?.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w900,
+                              fontSize: 14.sp,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          // OFF text below
+                          Text(
+                            'OFF',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12.sp,
+                            ),
+                            textAlign: TextAlign.center,
                           ),
                         ],
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(12.r),
-                          bottomLeft: Radius.circular(12.r),
-                        ),
-                      ),
-                      child: Text(
-                        '₹${bestsellerProduct.discountValue?.toStringAsFixed(0)} OFF',
-                        style: TextStyle(
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w900,
-                          fontSize: 12.sp,
-                          letterSpacing: 0.5,
-                        ),
                       ),
                     ),
                   ),
