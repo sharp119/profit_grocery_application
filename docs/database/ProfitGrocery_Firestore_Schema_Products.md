@@ -26,6 +26,7 @@ collection('products')
               categoryItem: String,       # "bakery_snacks"
               createdAt: Timestamp,       # April 20, 2025 at 1:25:53 AM UTC+5:30
               description: String,        # "Soft and chewy cookies loaded with premium chocolate chips"
+              hasDiscount: Boolean,       # false
               imagePath: String,          # URL to Firebase Storage
               inStock: Boolean,           # true
               ingredients: String,        # "Refined flour, chocolate chips, butter, sugar, eggs"

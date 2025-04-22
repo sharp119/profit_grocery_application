@@ -70,6 +70,52 @@ async function getAllDiscountIds() {
 }
 
 /**
+ * Verify category groups exist in Firestore
+ * @returns {Promise<Array<string>>} List of verified category groups
+ */
+async function verifyCategoryGroups() {
+  console.log('\n🔍 Verifying category groups in Firestore...');
+  
+  // Initial list of potential category groups
+  const potentialGroups = [
+    'bakeries_biscuits',
+    'beauty_personal_care',
+    'beauty_hygiene',
+    'dairy_bread',
+    'dairy_eggs',
+    'fruits_vegetables',
+    'grocery_kitchen',
+    'snacks_drinks'
+  ];
+  
+  const verifiedGroups = [];
+  
+  for (const group of potentialGroups) {
+    try {
+      const docRef = doc(db, 'products', group);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        console.log(`  ✅ Verified category group: ${group}`);
+        verifiedGroups.push(group);
+      } else {
+        console.log(`  ❌ Category group does not exist: ${group}`);
+      }
+    } catch (error) {
+      console.error(`  ❌ Error checking category group ${group}:`, error);
+    }
+  }
+  
+  if (verifiedGroups.length === 0) {
+    console.error('  ❌ No valid category groups found. Please check your Firestore structure.');
+  } else {
+    console.log(`  ✅ Found ${verifiedGroups.length} valid category groups`);
+  }
+  
+  return verifiedGroups;
+}
+
+/**
  * Update all products with the hasDiscount field
  * @param {Set<string>} discountIds Set of product IDs that have discounts
  * @returns {Promise<Object>} Statistics about the update operation
@@ -85,22 +131,24 @@ async function updateProductDiscountFlags(discountIds) {
     skipped: 0
   };
   
-  // List of all category groups based on the documentation
-  const CATEGORY_GROUPS = [
-    'bakeries_biscuits',
-    'beauty_hygiene',
-    'dairy_eggs',
-    'fruits_vegetables',
-    'grocery_kitchen',
-    'snacks_drinks'
-  ];
+  // Get verified category groups from Firestore
+  const CATEGORY_GROUPS = await verifyCategoryGroups();
   
   for (const categoryGroup of CATEGORY_GROUPS) {
     console.log(`\n🔍 Processing category group: ${categoryGroup}`);
     
     try {
+      console.log(`  🔍 Checking category group path: products/${categoryGroup}/items`);
+      
       // Get all items under this category
       const itemsSnapshot = await getDocs(collection(db, 'products', categoryGroup, 'items'));
+      
+      if (itemsSnapshot.empty) {
+        console.log(`  ⚠️ Warning: No items found in category group: ${categoryGroup}`);
+        continue;
+      }
+      
+      console.log(`  ✅ Found ${itemsSnapshot.docs.length} items in category group: ${categoryGroup}`);
       
       for (const itemDoc of itemsSnapshot.docs) {
         const categoryItem = itemDoc.id;
@@ -219,7 +267,7 @@ async function updateDiscountFlags() {
     console.log('🔍 Fetching discount IDs...');
     const discountIds = await getAllDiscountIds();
     
-    console.log('\n📝 Updating product discount flags...');
+    // Use the discount IDs to update products
     const stats = await updateProductDiscountFlags(discountIds);
     
     // Display summary
