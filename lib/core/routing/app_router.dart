@@ -22,7 +22,7 @@ import '../../presentation/pages/main_navigation.dart';
 import '../../presentation/pages/profile/developer_menu_page.dart';
 import '../../presentation/pages/test/image_test_page.dart';
 import '../../presentation/pages/test/product_card_test_page.dart';
-import '../../presentation/pages/category_products/firestore/firestore_category_products_page.dart';
+import '../../presentation/pages/category_products/category_products_page.dart';
 import '../../presentation/pages/dev/firestore_sync_page.dart';
 import '../../presentation/pages/home/bestseller_example.dart';
 
@@ -53,7 +53,7 @@ class AppRouter {
       case AppConstants.firestoreCategoryProductsRoute:
         final categoryId = settings.arguments as String?;
         return MaterialPageRoute(
-          builder: (_) => FirestoreCategoryProductsPage(categoryId: categoryId),
+          builder: (_) => CategoryProductsPage(categoryId: categoryId),
         );
         
       // Profile routes
