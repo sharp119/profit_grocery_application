@@ -207,6 +207,8 @@ class _HomePageContentState extends State<_HomePageContent> {
       ),
     );
   }
+  
+
 
   void _onProductTap(Product product) {
     // Navigate to product details screen
@@ -1425,8 +1427,8 @@ class _HomePageContentState extends State<_HomePageContent> {
                 onProductTap: _onProductTap,
                 onQuantityChanged: _onProductQuantityChanged,
                 cartQuantities: state.cartQuantities,
-                limit: 12,  // Show 12 bestsellers (increased from 6)
-                ranked: false,  // Randomize instead of sorting by rank
+                limit: AppConstants.bestsellerLimit ,  // Show 12 bestsellers (increased from 6)
+                ranked: AppConstants.bestsellerRanked,  // Randomize instead of sorting by rank
                 crossAxisCount: 2,  // 2 products per row
               ),
             ],

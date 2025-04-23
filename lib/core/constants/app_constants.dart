@@ -118,6 +118,10 @@ class AppConstants {
   static const String couponTypeFixedAmount = 'fixed';
   static const String couponTypeFreeProduct = 'free_product';
   static const String couponTypeConditional = 'conditional';
+
+  static bool bestsellerRanked = false;
+
+  static int bestsellerLimit = 4;
   
   AppConstants._(); // Private constructor to prevent instantiation
 }

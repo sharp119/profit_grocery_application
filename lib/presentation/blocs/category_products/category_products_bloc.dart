@@ -48,53 +48,33 @@ class CategoryProductsBloc extends Bloc<CategoryProductsEvent, CategoryProductsS
       print('CATEGORY_BLOC: Loading category products for ${event.categoryId ?? "all categories"}');
       
       // Get all category items using the CategoryRepository
-      List<Category> categories;
+      List<Category> categories = [];
       Map<String, Color> subcategoryColors = {};
       
-      // If categoryId is specified, load just that category group
-      if (event.categoryId != null) {
-        final categoryGroups = await _categoryRepository.fetchCategories();
+      // Always load all category groups
+      final categoryGroups = await _categoryRepository.fetchCategories();
+      
+      LoggingService.logFirestore('CATEGORY_BLOC: Found ${categoryGroups.length} category groups');
+      print('CATEGORY_BLOC: Found ${categoryGroups.length} category groups');
+      
+      // Process all category groups
+      for (final group in categoryGroups) {
+        LoggingService.logFirestore('CATEGORY_BLOC: Processing group ${group.id} with ${group.items.length} items');
+        print('CATEGORY_BLOC: Processing group ${group.id} with ${group.items.length} items');
         
-        // Find the specific group
-        final group = categoryGroups.firstWhere(
-          (group) => group.id == event.categoryId,
-          orElse: () => categoryGroups.first,
-        );
-        
-        // Convert category items to Category entities
-        categories = group.items.map((item) => Category(
+        final groupCategories = group.items.map((item) => Category(
           id: item.id,
           name: item.label,
           image: item.imagePath, 
           type: 'subcategory',
         )).toList();
         
-        // Get colors for subcategories
+        categories.addAll(groupCategories);
+        
+        // Store colors for all subcategories
         for (final item in group.items) {
           subcategoryColors[item.id] = group.itemBackgroundColor;
         }
-      } else {
-        // If no categoryId specified, get all categories
-        final categoryGroups = await _categoryRepository.fetchCategories();
-        List<Category> allCategories = [];
-        
-        for (final group in categoryGroups) {
-          final groupCategories = group.items.map((item) => Category(
-            id: item.id,
-            name: item.label,
-            image: item.imagePath, 
-            type: 'subcategory',
-          )).toList();
-          
-          allCategories.addAll(groupCategories);
-          
-          // Store colors for all subcategories
-          for (final item in group.items) {
-            subcategoryColors[item.id] = group.itemBackgroundColor;
-          }
-        }
-        
-        categories = allCategories;
       }
       
       // If no categories were found, show error
@@ -103,8 +83,8 @@ class CategoryProductsBloc extends Bloc<CategoryProductsEvent, CategoryProductsS
         return;
       }
       
-      LoggingService.logFirestore('CATEGORY_BLOC: Found ${categories.length} categories');
-      print('CATEGORY_BLOC: Found ${categories.length} categories');
+      LoggingService.logFirestore('CATEGORY_BLOC: Found ${categories.length} categories across all groups');
+      print('CATEGORY_BLOC: Found ${categories.length} categories across all groups');
       
       // Load products for the first category
       final firstCategory = categories.first;

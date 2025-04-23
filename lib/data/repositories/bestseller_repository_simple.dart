@@ -18,7 +18,7 @@ class BestsellerRepositorySimple {
   /// - [limit]: Maximum number of products to return (default: 12)
   /// - [ranked]: Whether to sort products by rank or randomize (default: false)
   Future<List<BestsellerItem>> getBestsellerItems({
-    int limit = 12,
+    int limit = 2,
     bool ranked = false,
   }) async {
     try {
@@ -197,7 +197,7 @@ class BestsellerRepositorySimple {
   /// Legacy method to maintain backward compatibility
   /// Returns just the product IDs without discount information
   Future<List<String>> getBestsellerProductIds({
-    int limit = 12,
+    int limit = 2,
     bool ranked = false,
   }) async {
     try {

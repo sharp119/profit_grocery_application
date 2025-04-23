@@ -100,7 +100,8 @@ class CategoryProductsPage extends StatelessWidget {
   Widget _buildAppBarTitle() {
     return BlocBuilder<CategoryProductsBloc, CategoryProductsState>(
       builder: (context, state) {
-        String title = categoryId != null ? 'All Categories' : 'Browse Products';
+        // Always set to "All Categories" since we now show all categories across groups
+        String title = "All Categories";
         
         // Map category ID to display title if provided
         if (categoryId != null) {
@@ -114,8 +115,6 @@ class CategoryProductsPage extends StatelessWidget {
           };
           
           title = categoryTitles[categoryId] ?? 'All Categories';
-        } else {
-          title = 'All Categories';
         }
         
         return Row(

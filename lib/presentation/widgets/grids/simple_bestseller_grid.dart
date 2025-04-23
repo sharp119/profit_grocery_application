@@ -28,11 +28,12 @@ class SimpleBestsellerGrid extends StatefulWidget {
     this.onProductTap,
     this.onQuantityChanged,
     this.cartQuantities,
-    this.limit = 12,
+    this.limit = 4,
     this.ranked = false,
     this.crossAxisCount = 2,
     this.showBestsellerBadge = true,
   }) : super(key: key);
+
 
   @override
   State<SimpleBestsellerGrid> createState() => _SimpleBestsellerGridState();
