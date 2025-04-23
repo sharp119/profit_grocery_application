@@ -16,7 +16,26 @@ class ImageLoader {
     // Validate URL
     String validUrl = url;
     
-    // Check if path is a Firestore storage path
+    // Check if path is a Firebase Storage URL (gs://)
+    if (url.startsWith('gs://')) {
+      // This is a Firebase Storage URL, but we can't use it directly
+      print('Firebase Storage URL detected: $url - These should be converted to HTTPS URLs');
+      
+      // Use a default placeholder image
+      return errorWidget ??
+          Container(
+            width: width,
+            height: height,
+            color: Colors.grey.shade800,
+            child: Icon(
+              Icons.image_not_supported,
+              color: Colors.grey,
+              size: (width ?? 100) / 2,
+            ),
+          );
+    }
+    
+    // Check if path is a valid HTTP URL
     if (url.startsWith('https://firebasestorage.googleapis.com') == false &&
         url.startsWith('http') == false) {
       // Use a default placeholder image

@@ -289,10 +289,11 @@ class EnhancedProductCard extends StatelessWidget {
     );
   }
 
-  // Helper to build product image with correct asset/network handling
+  // Helper to build product image with correct handling for different URL types
   Widget _buildProductImage() {
-    // Check if image is a network URL or an asset path
+    // Check if image is a network URL, Firebase Storage URL, or an asset path
     bool isNetworkImage = image.startsWith('http') || image.startsWith('https');
+    bool isFirebaseStorageUrl = image.startsWith('gs://');
     
     // Create a container with padding for consistent sizing and spacing
     return Container(
@@ -304,7 +305,7 @@ class EnhancedProductCard extends StatelessWidget {
       child: Center( // Center the image within the container
         child: ClipRRect(
           borderRadius: BorderRadius.circular(3.r),
-          child: isNetworkImage
+          child: isNetworkImage || isFirebaseStorageUrl
             ? _buildNetworkImage()
             : _buildAssetImage(),
         ),
@@ -312,11 +313,24 @@ class EnhancedProductCard extends StatelessWidget {
     );
   }
   
-  // Specifically for network images with better error handling
+  // Specifically for network images and Firebase Storage URLs with better error handling
   Widget _buildNetworkImage() {
+    // For Firebase Storage URLs, we need to convert or handle them differently
+    String imageUrl = image;
+    bool isFirebaseStorageUrl = image.startsWith('gs://');
+    
+    if (isFirebaseStorageUrl) {
+      // In a proper implementation, you would use Firebase Storage to get download URL
+      // For now, we'll use a placeholder and show the error in console
+      print('Firebase Storage URL detected: $image - These should be converted to HTTPS URLs');
+      
+      // For debugging: show the placeholder but log the error
+      return _buildErrorPlaceholder();
+    }
+    
     return inStock
       ? ImageLoader.network(
-          image,
+          imageUrl,
           fit: BoxFit.contain, // Changed to contain to ensure full image is visible
           width: double.infinity,
           height: double.infinity,
@@ -325,7 +339,7 @@ class EnhancedProductCard extends StatelessWidget {
       : Opacity(
           opacity: 0.5,
           child: ImageLoader.network(
-            image,
+            imageUrl,
             fit: BoxFit.contain, // Changed to contain to ensure full image is visible
             width: double.infinity,
             height: double.infinity,

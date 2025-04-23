@@ -42,6 +42,32 @@ class FirestoreProductRepository {
 
       return nonNullPath;
     }
+    
+    // Handle Firebase Storage gs:// URLs
+    if (nonNullPath.startsWith('gs://')) {
+      try {
+        print('Converting gs:// URL to HTTPS URL for product $productId: $nonNullPath');
+        
+        // Parse the gs:// URL to extract path
+        // Format: gs://bucket-name/path/to/file.ext
+        final gsUri = Uri.parse(nonNullPath);
+        String path = gsUri.path;
+        if (path.startsWith('/')) {
+          path = path.substring(1);
+        }
+        
+        // Create a reference directly to the gs:// URL
+        final ref = FirebaseStorage.instance.refFromURL(nonNullPath);
+        final downloadUrl = await ref.getDownloadURL();
+        
+        print('Successfully converted gs:// URL to HTTPS URL: $downloadUrl');
+        return downloadUrl;
+      } catch (e) {
+        print('Error converting gs:// URL for product $productId: $e');
+        // Return an empty string or placeholder instead of the gs:// URL
+        return '';
+      }
+    }
 
     // Otherwise treat it as a storage path
     try {
