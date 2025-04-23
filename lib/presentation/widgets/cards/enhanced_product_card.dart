@@ -108,182 +108,182 @@ class EnhancedProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // More compact fixed height to make card less tall
-    return Container(
-      height: 210.h, // Even more reduced height
-      child: GestureDetector(
-        onTap: inStock ? onTap : null,
-        child: Container(
-          decoration: BoxDecoration(
-            color: AppTheme.secondaryColor,
-            borderRadius: BorderRadius.circular(8.r),
-            border: Border.all(
-              color: AppTheme.accentColor.withOpacity(0.1),
-              width: 1,
-            ),
+    // Use a more flexible layout approach without fixed height constraint
+    return GestureDetector(
+      onTap: inStock ? onTap : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+          borderRadius: BorderRadius.circular(8.r),
+          border: Border.all(
+            color: AppTheme.accentColor.withOpacity(0.1),
+            width: 1,
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Discount badge and image - Reduced fixed height
-              SizedBox(
-                height: 100.h, // Smaller image area
-                child: Stack(
-                  children: [
-                    // Product image
-                    Container(
-                      width: double.infinity,
-                      height: 100.h, // Smaller image container
-                      padding: EdgeInsets.all(6.r), // Reduced padding
-                      child: _buildProductImage(),
-                    ),
-                    
-                    // Discount badge - Same position
-                    if (hasDiscount)
-                      Positioned(
-                        top: 6.r,
-                        left: 6.r,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 5.r, vertical: 1.r),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
-                            borderRadius: BorderRadius.circular(3.r),
-                          ),
-                          child: Text(
-                            '${discountPercentage!.toInt()}% OFF',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // Add this to prevent unnecessary expansion
+          children: [
+            // Discount badge and image - Use aspectRatio with shorter height
+            AspectRatio(
+              aspectRatio: 1.2, // Wider than tall for image container
+              child: Stack(
+                children: [
+                  // Product image
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(6.r),
+                    child: _buildProductImage(),
+                  ),
+                  
+                  // Discount badge - Same position
+                  if (hasDiscount)
+                    Positioned(
+                      top: 6.r,
+                      left: 6.r,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(horizontal: 5.r, vertical: 1.r),
+                        decoration: BoxDecoration(
+                          color: Colors.green,
+                          borderRadius: BorderRadius.circular(3.r),
                         ),
-                      ),
-                    
-                    // Out of stock overlay - Same styling
-                    if (!inStock)
-                      Positioned.fill(
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(8.r),
-                              topRight: Radius.circular(8.r),
-                            ),
-                          ),
-                          child: Center(
-                            child: Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 6.r,
-                                vertical: 3.r,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.red.withOpacity(0.9),
-                                borderRadius: BorderRadius.circular(3.r),
-                              ),
-                              child: Text(
-                                'Out of Stock',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              
-              // Product details - Compact layout with minimal spacing
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.fromLTRB(6.r, 4.r, 6.r, 6.r), // Tighter padding
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // Product name - Limited height and lines
-                      Text(
-                        name,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                          height: 1.1, // Tighter line height
-                        ),
-                      ),
-                      
-                      SizedBox(height: 2.h), // Minimal spacing
-                      
-                      // Weight/quantity - if available
-                      if (weight != null && unit != null)
-                        Text(
-                          '$weight $unit',
+                        child: Text(
+                          '${discountPercentage!.toInt()}% OFF',
                           style: TextStyle(
-                            fontSize: 11.sp,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.w400,
-                            height: 1.0, // Tighter line height
+                            color: Colors.white,
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.bold,
                           ),
                         ),
-                      
-                      SizedBox(height: 2.h), // Minimal spacing
-                      
-                      // Price section - Compact
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.baseline,
-                        textBaseline: TextBaseline.alphabetic,
-                        children: [
-                          // Current price
-                          Text(
-                            '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
+                      ),
+                    ),
+                  
+                  // Out of stock overlay - Same styling
+                  if (!inStock)
+                    Positioned.fill(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(8.r),
+                            topRight: Radius.circular(8.r),
+                          ),
+                        ),
+                        child: Center(
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.r,
+                              vertical: 3.r,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(3.r),
+                            ),
+                            child: Text(
+                              'Out of Stock',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            
+            // Product details - Compact layout with minimal spacing
+            Padding(
+              padding: EdgeInsets.fromLTRB(6.r, 2.r, 6.r, 4.r), // Even tighter padding
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min, // Prevent unnecessary expansion
+                children: [
+                  // Product name - Limited height and lines
+                  Text(
+                    name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white,
+                      height: 1.1, // Tighter line height
+                    ),
+                  ),
+                  
+                  // Combine name and weight in a single line
+                  if (weight != null && unit != null)
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '$weight $unit',
                             style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.accentColor,
+                              fontSize: 10.sp,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.w400,
                               height: 1.0, // Tighter line height
                             ),
                           ),
-                          
-                          SizedBox(width: 4.w),
-                          
-                          // Original price if there's a discount
-                          if (hasDiscount)
-                            Flexible(
-                              child: Text(
-                                '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
-                                style: TextStyle(
-                                  fontSize: 11.sp,
-                                  decoration: TextDecoration.lineThrough,
-                                  color: Colors.grey,
-                                  height: 1.0, // Tighter line height
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        ),
+                      ],
+                    ),
+                  
+                  SizedBox(height: 1.h), // Even less spacing
+                  
+                  // Price section - Compact
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    children: [
+                      // Current price
+                      Text(
+                        '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.accentColor,
+                          height: 1.0, // Tighter line height
+                        ),
+                      ),
+                      
+                      SizedBox(width: 4.w),
+                      
+                      // Original price if there's a discount
+                      if (hasDiscount)
+                        Flexible(
+                          child: Text(
+                            '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              decoration: TextDecoration.lineThrough,
+                              color: Colors.grey,
+                              height: 1.0, // Tighter line height
                             ),
-                        ],
-                      ),
-                      
-                      Spacer(flex: 1), // Push button to bottom
-                      
-                      // Add to cart button - Fixed height at bottom
-                      SizedBox(
-                        height: 28.h, // Even smaller button
-                        child: quantity > 0
-                            ? _buildQuantitySelector()
-                            : _buildAddButton(),
-                      ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
                     ],
                   ),
-                ),
+                  
+                  SizedBox(height: 2.h), // Reduced space before button
+                  
+                  // Add to cart button - Fixed height at bottom
+                  SizedBox(
+                    height: 28.h, // Even smaller button
+                    width: double.infinity, // Ensure button takes full width
+                    child: quantity > 0
+                        ? _buildQuantitySelector()
+                        : _buildAddButton(),
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );

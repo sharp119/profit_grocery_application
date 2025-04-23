@@ -543,89 +543,103 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   
   /// Build loading placeholder for products
   Widget _buildLoadingProductsGrid() {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.68,
-        crossAxisSpacing: 12.w,
-        mainAxisSpacing: 12.h,
-      ),
-      itemCount: 4, // Show 4 loading placeholders
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    // Use a simpler layout to avoid overflow issues
+    return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
-      itemBuilder: (context, index) {
-        return Container(
-          decoration: BoxDecoration(
+      child: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.63, // Same as product grid
+          crossAxisSpacing: 12.w,
+          mainAxisSpacing: 12.h,
+        ),
+        itemCount: 4, // Show 4 loading placeholders
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        itemBuilder: (context, index) {
+          return Card(
+            margin: EdgeInsets.zero,
             color: AppTheme.secondaryColor,
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Image placeholder
-              Container(
-                height: 120.h,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade800,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(8.r),
-                    topRight: Radius.circular(8.r),
-                  ),
-                ),
-                child: Center(
-                  child: SizedBox(
-                    width: 32.w,
-                    height: 32.h,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        AppTheme.accentColor,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              
-              // Content placeholders
-              Padding(
-                padding: EdgeInsets.all(8.w),
-                child: Column(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8.r),
+            ),
+            // Use Clip to ensure nothing exceeds the Card boundaries
+            clipBehavior: Clip.antiAlias, 
+            child: Stack(
+              children: [
+                // Use a Column with loose constraints to avoid overflow
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Container(
-                      width: double.infinity,
-                      height: 12.h,
-                      decoration: BoxDecoration(
+                    // Image area - fixed aspect ratio
+                    AspectRatio(
+                      aspectRatio: 1.2,
+                      child: Container(
                         color: Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(4.r),
+                        child: Center(
+                          child: SizedBox(
+                            width: 32.w,
+                            height: 32.h,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                AppTheme.accentColor,
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                     ),
-                    SizedBox(height: 8.h),
-                    Container(
-                      width: 80.w,
-                      height: 12.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(4.r),
-                      ),
-                    ),
-                    SizedBox(height: 16.h),
-                    Container(
-                      width: double.infinity,
-                      height: 32.h,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade800,
-                        borderRadius: BorderRadius.circular(4.r),
+                    
+                    // Text placeholders with minimal height
+                    Padding(
+                      padding: EdgeInsets.all(8.w),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Title placeholder
+                          Container(
+                            width: double.infinity,
+                            height: 10.h,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade800,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          
+                          // Price placeholder
+                          Container(
+                            width: 80.w,
+                            height: 10.h,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade800,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          
+                          // Button placeholder
+                          Container(
+                            width: double.infinity,
+                            height: 24.h, // Slightly shorter
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade800,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
-        );
-      },
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
   
@@ -666,7 +680,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.68,
+        childAspectRatio: 0.63, // Decreased to provide more height for the content
         crossAxisSpacing: 12.w,
         mainAxisSpacing: 12.h,
       ),
