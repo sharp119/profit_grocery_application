@@ -16,6 +16,7 @@ import '../../../presentation/blocs/cart/cart_state.dart';
 import '../../../services/cart/unified_cart_service.dart';
 import '../../../utils/cart_logger.dart';
 import 'enhanced_product_card.dart';
+import '../../../utils/add_button_handler.dart';
 
 /// A universal product card that works consistently across all screens
 class UniversalProductCard extends StatefulWidget {

@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../image_loader.dart';
+import '../../../utils/add_button_handler.dart';
 
 /// An enhanced product card with improved UI following the design in Image 2
 /// but keeping the dark theme from the original app
@@ -21,6 +22,7 @@ class EnhancedProductCard extends StatelessWidget {
   final Color? backgroundColor;
   final String? weight;
   final String? unit;
+  final String? categoryId;
 
   const EnhancedProductCard({
     Key? key,
@@ -36,6 +38,7 @@ class EnhancedProductCard extends StatelessWidget {
     this.backgroundColor,
     this.weight,
     this.unit,
+    this.categoryId,
   }) : super(key: key);
 
   /// Create a ProductCard from a Product entity
@@ -92,6 +95,7 @@ class EnhancedProductCard extends StatelessWidget {
       backgroundColor: backgroundColor,
       weight: weight,
       unit: unit,
+      categoryId: product.categoryId,
     );
   }
 
@@ -399,7 +403,29 @@ class EnhancedProductCard extends StatelessWidget {
       width: double.infinity,
       height: 28.h,
       child: ElevatedButton(
-        onPressed: inStock ? () => onQuantityChanged(1) : null,
+        onPressed: inStock ? () {
+          // Use the centralized AddButtonHandler
+          AddButtonHandler().handleAddButtonClick(
+            product: Product(
+              id: id,
+              name: name,
+              price: price,
+              mrp: mrp,
+              image: image,
+              inStock: inStock,
+              weight: weight,
+              categoryId: categoryId ?? '', // Provide default empty string for null categoryId
+              description: '', // Not needed for this flow
+              rating: 0, // Not needed for this flow
+            ),
+            quantity: 1,
+            originalCallback: (product, quantity) {
+              if (onQuantityChanged != null) {
+                onQuantityChanged(quantity);
+              }
+            },
+          );
+        } : null,
         style: ElevatedButton.styleFrom(
           backgroundColor: AppTheme.accentColor,
           foregroundColor: Colors.black,

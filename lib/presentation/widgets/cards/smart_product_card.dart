@@ -511,6 +511,7 @@ class _SmartProductCardState extends State<SmartProductCard> {
                       alignHorizontal: true,
                       accentColor: AppTheme.accentColor,
                       backgroundColor: Colors.black26,
+                      product: product,
                     )
                   : ElevatedButton(
                       onPressed: null,

@@ -5,6 +5,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/logging_service.dart';
+import '../../../utils/add_button_handler.dart';
 
 /// A reusable product card that can be used across the app
 /// Uses the new vertical layout with product name at top, quantity/price in middle, and action button at bottom
@@ -316,10 +317,12 @@ class ReusableProductCard extends StatelessWidget {
         width: double.infinity,
         child: ElevatedButton(
           onPressed: () {
-            LoggingService.logFirestore('PRODUCT_CARD: Add button pressed for ${product.name}');
-            if (onQuantityChanged != null) {
-              onQuantityChanged!(product, 1);
-            }
+            // Use the centralized AddButtonHandler
+            AddButtonHandler().handleAddButtonClick(
+              product: product,
+              quantity: 1,
+              originalCallback: onQuantityChanged,
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: AppTheme.accentColor,

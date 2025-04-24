@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_theme.dart';
+import '../../../utils/add_button_handler.dart';
+import '../../../domain/entities/product.dart';
 
 /// A reusable quantity selector widget with increment and decrement buttons
 class QuantitySelector extends StatelessWidget {
@@ -12,6 +14,7 @@ class QuantitySelector extends StatelessWidget {
   final Color? backgroundColor;
   final double? width;
   final double? height;
+  final Product? product; // Add product parameter for the AddButtonHandler
 
   const QuantitySelector({
     Key? key,
@@ -22,12 +25,28 @@ class QuantitySelector extends StatelessWidget {
     this.backgroundColor,
     this.width,
     this.height,
+    this.product,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     final color = accentColor ?? AppTheme.accentColor;
     final bgColor = backgroundColor ?? Colors.black26;
+
+    // Function to handle quantity change with AddButtonHandler integration
+    void handleQuantityChange(int newQuantity) {
+      // If changing from 0 to 1 and product is available, use AddButtonHandler
+      if (quantity == 0 && newQuantity == 1 && product != null) {
+        AddButtonHandler().handleAddButtonClick(
+          product: product!,
+          quantity: newQuantity,
+          originalCallback: (_, qty) => onChanged(qty),
+        );
+      } else {
+        // Otherwise, proceed with normal flow
+        onChanged(newQuantity);
+      }
+    }
 
     if (alignHorizontal) {
       return Container(
@@ -43,7 +62,7 @@ class QuantitySelector extends StatelessWidget {
             // Decrement button
             IconButton(
               onPressed: quantity > 0 
-                ? () => onChanged(quantity - 1)
+                ? () => handleQuantityChange(quantity - 1)
                 : null,
               icon: Icon(
                 Icons.remove,
@@ -72,7 +91,7 @@ class QuantitySelector extends StatelessWidget {
             
             // Increment button
             IconButton(
-              onPressed: () => onChanged(quantity + 1),
+              onPressed: () => handleQuantityChange(quantity + 1),
               icon: Icon(
                 Icons.add,
                 color: color,
@@ -100,7 +119,7 @@ class QuantitySelector extends StatelessWidget {
           children: [
             // Increment button
             IconButton(
-              onPressed: () => onChanged(quantity + 1),
+              onPressed: () => handleQuantityChange(quantity + 1),
               icon: Icon(
                 Icons.add,
                 color: color,
@@ -131,7 +150,7 @@ class QuantitySelector extends StatelessWidget {
             // Decrement button
             IconButton(
               onPressed: quantity > 0 
-                ? () => onChanged(quantity - 1)
+                ? () => handleQuantityChange(quantity - 1)
                 : null,
               icon: Icon(
                 Icons.remove,

@@ -27,6 +27,7 @@ import '../../blocs/product_details/product_details_state.dart';
 import '../../widgets/buttons/cart_fab.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../cart/cart_page.dart';
+import '../../../utils/add_button_handler.dart';
 
 class ProductDetailsPage extends StatelessWidget {
   final String productId;
@@ -156,23 +157,30 @@ class _ProductDetailsContentState extends State<_ProductDetailsContent> {
   }
 
   void _addToCart(Product product) {
-    // Add to ProductDetailsBloc for local state
-    context.read<ProductDetailsBloc>().add(AddToCart(product, _quantity));
-    
-    // Also add to CartBloc for global state
-    context.read<CartBloc>().add(cart_events.AddToCart(product, _quantity));
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added ${product.name} to cart'),
-        duration: const Duration(seconds: 2),
-        backgroundColor: AppTheme.secondaryColor,
-        action: SnackBarAction(
-          label: 'VIEW CART',
-          textColor: AppTheme.accentColor,
-          onPressed: _navigateToCart,
-        ),
-      ),
+    // Use the centralized AddButtonHandler
+    AddButtonHandler().handleAddButtonClick(
+      product: product,
+      quantity: _quantity,
+      originalCallback: (product, quantity) {
+        // Add to ProductDetailsBloc for local state
+        context.read<ProductDetailsBloc>().add(AddToCart(product, quantity));
+        
+        // Also add to CartBloc for global state
+        context.read<CartBloc>().add(cart_events.AddToCart(product, quantity));
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added ${product.name} to cart'),
+            duration: const Duration(seconds: 2),
+            backgroundColor: AppTheme.secondaryColor,
+            action: SnackBarAction(
+              label: 'VIEW CART',
+              textColor: AppTheme.accentColor,
+              onPressed: _navigateToCart,
+            ),
+          ),
+        );
+      },
     );
   }
   
