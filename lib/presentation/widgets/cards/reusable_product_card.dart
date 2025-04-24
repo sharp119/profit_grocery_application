@@ -312,9 +312,7 @@ class ReusableProductCard extends StatelessWidget {
         onPressed: () {
           // Use the centralized AddButtonHandler
           AddButtonHandler().handleAddButtonClick(
-            product: product,
-            quantity: 1,
-            originalCallback: null, // No callback needed anymore
+            productId: product.id,
           );
         },
         style: ElevatedButton.styleFrom(

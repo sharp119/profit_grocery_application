@@ -396,20 +396,7 @@ class EnhancedProductCard extends StatelessWidget {
         onPressed: inStock ? () {
           // Use the centralized AddButtonHandler
           AddButtonHandler().handleAddButtonClick(
-            product: Product(
-              id: id,
-              name: name,
-              price: price,
-              mrp: mrp,
-              image: image,
-              inStock: inStock,
-              weight: weight,
-              categoryId: categoryId ?? '', // Provide default empty string for null categoryId
-              description: '', // Not needed for this flow
-              rating: 0, // Not needed for this flow
-            ),
-            quantity: 1,
-            originalCallback: null, // No callback needed anymore
+            productId: id,
           );
         } : null,
         style: ElevatedButton.styleFrom(

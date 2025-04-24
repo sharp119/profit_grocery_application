@@ -85,9 +85,8 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   void _addToCart(Product product) {
     // Use the centralized AddButtonHandler
     AddButtonHandler().handleAddButtonClick(
-      product: product,
+      productId: product.id,
       quantity: _quantity,
-      originalCallback: null, // No cart functionality
     );
   }
 

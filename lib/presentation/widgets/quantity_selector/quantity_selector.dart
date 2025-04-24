@@ -36,9 +36,7 @@ class QuantitySelector extends StatelessWidget {
           if (product != null) {
             // Use the centralized AddButtonHandler
             AddButtonHandler().handleAddButtonClick(
-              product: product!,
-              quantity: 1,
-              originalCallback: null, // No callback needed
+              productId: product!.id,
             );
           }
         },

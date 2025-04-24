@@ -1,6 +1,4 @@
 import 'package:flutter/foundation.dart';
-import '../domain/entities/product.dart';
-import '../utils/cart_logger.dart';
 
 /// A centralized handler for all ADD button clicks across the application
 class AddButtonHandler {
@@ -20,14 +18,10 @@ class AddButtonHandler {
   /// This method will be called whenever an ADD button is clicked
   /// from anywhere in the application.
   void handleAddButtonClick({
-    required Product product,
-    required int quantity,
-    required Function(Product, int)? originalCallback,
+    required String productId,
+    int quantity = 1,
   }) {
-    // ONLY print the required message to the console
-    print('hello its me bob');
-    
-    // No longer logging to Firebase or calling the original callback
-    // This ensures we're just printing the message and nothing else
+    // Log the product ID to the console
+    print('Product added to cart: $productId');
   }
 } 
