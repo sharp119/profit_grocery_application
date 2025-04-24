@@ -42,8 +42,8 @@ class FeaturedProductCard extends StatelessWidget {
       discountValue: discountPercentage,
       backgroundColor: backgroundColor,
       onTap: onTap,
-      onQuantityChanged: onQuantityChanged,
-      quantity: quantity,
+      // onQuantityChanged: onQuantityChanged,
+      // quantity: quantity,
     );
   }
 }

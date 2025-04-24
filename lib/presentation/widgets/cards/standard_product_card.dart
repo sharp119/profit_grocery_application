@@ -62,8 +62,8 @@ class StandardProductCard extends StatelessWidget {
       discountValue: discountValue,
       backgroundColor: backgroundColor,
       onTap: onTap,
-      onQuantityChanged: onQuantityChanged,
-      quantity: quantity,
+      // onQuantityChanged: onQuantityChanged,
+      // quantity: quantity,
     );
   }
 }

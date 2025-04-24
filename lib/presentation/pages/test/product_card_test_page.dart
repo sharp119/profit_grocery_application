@@ -266,12 +266,12 @@ class _ProductCardTestPageState extends State<ProductCardTestPage> {
                 child: EnhancedProductCard.fromEntity(
                   product: testProduct,
                   onTap: () {},
-                  onQuantityChanged: (quantity) {
-                    setState(() {
-                      _cartQuantities[testProduct.id] = quantity;
-                    });
-                  },
-                  quantity: _cartQuantities[testProduct.id] ?? 0,
+                  // onQuantityChanged: (quantity) {
+                  //   setState(() {
+                  //     _cartQuantities[testProduct.id] = quantity;
+                  //   });
+                  // },
+                  // quantity: _cartQuantities[testProduct.id] ?? 0,
                 ),
               ),
             ),

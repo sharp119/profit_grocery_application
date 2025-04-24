@@ -46,7 +46,7 @@ import '../../widgets/section_header.dart';
 import '../../widgets/tabs/horizontal_category_tabs.dart';
 import '../cart/cart_page.dart';
 import '../category_products/category_products_page.dart';
-import '../product_details/product_details_page.dart';
+// import '../product_details/product_details_page.dart';
 import '../../blocs/categories/categories_bloc.dart';
 import '../../../data/repositories/category_repository.dart';
 import '../../../data/repositories/product/firestore_product_repository.dart';
@@ -212,12 +212,12 @@ class _HomePageContentState extends State<_HomePageContent> {
 
   void _onProductTap(Product product) {
     // Navigate to product details screen
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProductDetailsPage(productId: product.id),
-      ),
-    );
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(
+    //     builder: (context) => ProductDetailsPage(productId: product.id),
+    //   ),
+    // );
   }
 
   void _onProductQuantityChanged(Product product, int quantity) {
@@ -1290,8 +1290,8 @@ class _HomePageContentState extends State<_HomePageContent> {
                   right: 0,
                   child: Center(
                     child: CartFAB(
-                      itemCount: cartItemCount,
-                      totalAmount: totalAmount,
+                      // itemCount: cartItemCount,
+                      // totalAmount: totalAmount,
                       onTap: _navigateToCart,
                       previewImagePath: cartPreviewImage,
                     ),

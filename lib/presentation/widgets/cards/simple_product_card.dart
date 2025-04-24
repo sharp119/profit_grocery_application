@@ -12,16 +12,12 @@ class SimpleProductCard extends StatelessWidget {
   final Product product;
   final Color backgroundColor;
   final Function(Product)? onTap;
-  final Function(Product, int)? onQuantityChanged;
-  final int quantity;
 
   const SimpleProductCard({
     Key? key,
     required this.product,
     required this.backgroundColor,
     this.onTap,
-    this.onQuantityChanged,
-    this.quantity = 0,
   }) : super(key: key);
 
   @override
@@ -221,9 +217,9 @@ class SimpleProductCard extends StatelessWidget {
 
                   SizedBox(height: 8.h),
 
-                  // Add to cart button or quantity selector
+                  // Add button (cart functionality removed but button preserved)
                   if (product.inStock)
-                    _buildQuantityControl()
+                    _buildAddButton()
                   else
                     ElevatedButton(
                       onPressed: null,
@@ -250,102 +246,32 @@ class SimpleProductCard extends StatelessWidget {
     );
   }
 
-  // Build quantity control based on current quantity
-  Widget _buildQuantityControl() {
-    if (quantity <= 0) {
-      // Show "Add" button if not in cart
-      return SizedBox(
-        height: 36.h, // Fixed height
-        width: double.infinity,
-        child: ElevatedButton(
-          onPressed: () {
-            // Use the centralized AddButtonHandler
-            AddButtonHandler().handleAddButtonClick(
-              product: product,
-              quantity: 1,
-              originalCallback: onQuantityChanged,
-            );
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.accentColor,
-            foregroundColor: Colors.black,
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-          ),
-          child: Text(
-            'ADD',
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14.sp,
-            ),
+  // Build the ADD button that uses AddButtonHandler
+  Widget _buildAddButton() {
+    return SizedBox(
+      height: 36.h, // Fixed height
+      width: double.infinity,
+      child: ElevatedButton(
+        onPressed: () {
+          // Use the centralized AddButtonHandler
+          AddButtonHandler().handleAddButtonClick(
+            product: product,
+            quantity: 1,
+            originalCallback: null, // No callback needed anymore
+          );
+        },
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppTheme.accentColor,
+          foregroundColor: Colors.black,
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+        ),
+        child: Text(
+          'ADD',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14.sp,
           ),
         ),
-      );
-    } else {
-      // Show quantity selector if in cart
-      return Row(
-        children: [
-          // Minus button
-          _buildQuantityButton(
-            icon: Icons.remove,
-            onPressed: () {
-              LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Decrease quantity for ${product.name} to ${quantity - 1}');
-              print('PRODUCT_CARD_SIMPLE: Decrease quantity for ${product.name} to ${quantity - 1}');
-              if (onQuantityChanged != null) {
-                onQuantityChanged!(product, quantity - 1);
-              }
-            },
-          ),
-          
-          // Quantity display
-          Expanded(
-            child: Container(
-              height: 36.h,
-              alignment: Alignment.center,
-              child: Text(
-                quantity.toString(),
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.sp,
-                ),
-              ),
-            ),
-          ),
-          
-          // Plus button
-          _buildQuantityButton(
-            icon: Icons.add,
-            onPressed: () {
-              LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Increase quantity for ${product.name} to ${quantity + 1}');
-              print('PRODUCT_CARD_SIMPLE: Increase quantity for ${product.name} to ${quantity + 1}');
-              if (onQuantityChanged != null) {
-                onQuantityChanged!(product, quantity + 1);
-              }
-            },
-          ),
-        ],
-      );
-    }
-  }
-
-  // Helper method to build quantity control buttons
-  Widget _buildQuantityButton({
-    required IconData icon,
-    required VoidCallback onPressed,
-  }) {
-    return Container(
-      width: 36.w,
-      height: 36.h,
-      decoration: BoxDecoration(
-        color: AppTheme.accentColor,
-        borderRadius: BorderRadius.circular(4.r),
-      ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        icon: Icon(icon),
-        color: Colors.black,
-        iconSize: 18.r,
-        onPressed: onPressed,
       ),
     );
   }

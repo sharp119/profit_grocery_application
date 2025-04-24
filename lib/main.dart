@@ -16,16 +16,14 @@ import 'package:profit_grocery_application/services/product/shared_product_servi
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/data/repositories/bestseller_repository_simple.dart';
 import 'services/asset_cache_service.dart';
-import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
-import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/services/session_manager_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:dartz/dartz.dart';
 
-import 'core/di/cart_injection.dart';
 import 'core/di/product_injection.dart';
 import 'core/di/firestore_service_injection.dart';
+import 'core/di/cart_injection.dart';
 import 'core/network/network_info.dart';
 import 'data/datasources/firebase/coupon/coupon_remote_datasource.dart';
 import 'data/repositories/coupon/coupon_repository_impl.dart';
@@ -39,8 +37,6 @@ import 'core/routing/app_router.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
 import 'services/session_manager_firestore.dart';
-import 'services/cart/cart_initializer.dart';
-import 'services/cart/home_cart_bridge.dart';
 import 'services/user_service.dart';
 import 'services/user_service_hybrid.dart';
 import 'services/user_service_interface.dart';
@@ -61,6 +57,8 @@ import 'presentation/blocs/navigation/navigation_bloc.dart';
 import 'presentation/blocs/orders/orders_bloc.dart';
 import 'presentation/blocs/products/products_bloc.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
+import 'presentation/blocs/cart/cart_bloc.dart';
+import 'presentation/blocs/cart/cart_event.dart';
 
 // GetIt instance for dependency injection
 final GetIt sl = GetIt.instance;
@@ -105,9 +103,6 @@ void main() async {
     options: DefaultFirebaseOptions.currentPlatform,
   );
   
-  // Database persistence is now handled in CartRemoteDataSourceImpl
-  // to ensure it's only called once and properly tracked
-  
   // Setup Firebase Remote Config
   await setupRemoteConfig();
   
@@ -125,9 +120,6 @@ void main() async {
   
   // Initialize service locator for shared services
   setupServiceLocator();
-  
-  // Run the cart initializer to ensure cart is loaded at startup
-  await sl<CartInitializer>().initialize();
   
   print('App initialized - starting with MyApp');
   runApp(const MyApp());
@@ -168,7 +160,7 @@ Future<void> setupDependencyInjection() async {
   
   // Shared services will be registered by setupServiceLocator()
   
-  // Cart dependencies
+  // Cart dependencies initialization
   await initCartDependencies();
   
   // Coupon dependencies
@@ -336,23 +328,6 @@ class MyApp extends StatelessWidget {
         BlocProvider<NavigationBloc>(
           create: (context) => sl<NavigationBloc>(),
         ),
-        BlocProvider<CartBloc>(
-          create: (context) {
-            // Create and initialize cart bloc
-            final cartBloc = sl<CartBloc>();
-            
-            // Get current user ID and if valid, load cart data
-            final prefs = sl<SharedPreferences>();
-            final userId = prefs.getString(AppConstants.userTokenKey);
-            
-            if (userId != null && userId.isNotEmpty) {
-              // Load cart data when the app starts
-              cartBloc.add(const LoadCart());
-            }
-            
-            return cartBloc;
-          },
-        ),
         BlocProvider<ProductsBloc>(
           create: (context) {
             // Create and initialize products bloc
@@ -363,6 +338,9 @@ class MyApp extends StatelessWidget {
             
             return productsBloc;
           },
+        ),
+        BlocProvider<CartBloc>(
+          create: (context) => sl<CartBloc>()..add(const LoadCart()),
         ),
       ],
       child: ScreenUtilInit(

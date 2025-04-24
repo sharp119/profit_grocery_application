@@ -17,8 +17,6 @@ class EnhancedProductCard extends StatelessWidget {
   final double? mrp;
   final bool inStock;
   final VoidCallback onTap;
-  final Function(int) onQuantityChanged;
-  final int quantity;
   final Color? backgroundColor;
   final String? weight;
   final String? unit;
@@ -33,8 +31,6 @@ class EnhancedProductCard extends StatelessWidget {
     this.mrp,
     required this.inStock,
     required this.onTap,
-    required this.onQuantityChanged,
-    this.quantity = 0,
     this.backgroundColor,
     this.weight,
     this.unit,
@@ -45,8 +41,6 @@ class EnhancedProductCard extends StatelessWidget {
   factory EnhancedProductCard.fromEntity({
     required Product product,
     required VoidCallback onTap,
-    required Function(int) onQuantityChanged,
-    int quantity = 0,
     Color? backgroundColor,
   }) {
     // Extract weight and unit if available in the product name
@@ -90,8 +84,6 @@ class EnhancedProductCard extends StatelessWidget {
       mrp: product.mrp,
       inStock: product.inStock,
       onTap: onTap,
-      onQuantityChanged: onQuantityChanged,
-      quantity: quantity,
       backgroundColor: backgroundColor,
       weight: weight,
       unit: unit,
@@ -276,13 +268,11 @@ class EnhancedProductCard extends StatelessWidget {
                   
                   SizedBox(height: 2.h), // Reduced space before button
                   
-                  // Add to cart button - Fixed height at bottom
+                  // Add button (cart functionality removed but button preserved)
                   SizedBox(
                     height: 28.h, // Even smaller button
                     width: double.infinity, // Ensure button takes full width
-                    child: quantity > 0
-                        ? _buildQuantitySelector()
-                        : _buildAddButton(),
+                    child: _buildAddButton(),
                   ),
                 ],
               ),
@@ -419,11 +409,7 @@ class EnhancedProductCard extends StatelessWidget {
               rating: 0, // Not needed for this flow
             ),
             quantity: 1,
-            originalCallback: (product, quantity) {
-              if (onQuantityChanged != null) {
-                onQuantityChanged(quantity);
-              }
-            },
+            originalCallback: null, // No callback needed anymore
           );
         } : null,
         style: ElevatedButton.styleFrom(
@@ -445,112 +431,6 @@ class EnhancedProductCard extends StatelessWidget {
             letterSpacing: 0.5,
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildQuantitySelector() {
-    return Container(
-      height: 28.h,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4.r),
-        // Add subtle gradient for depth
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            AppTheme.primaryColor.withOpacity(0.8),
-            AppTheme.primaryColor,
-          ],
-        ),
-        // Add thin border for definition
-        border: Border.all(
-          color: AppTheme.accentColor.withOpacity(0.8),
-          width: 1,
-        ),
-        // Add subtle shadow for elevation
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 2,
-            offset: Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          // Decrease quantity - improved tap target
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: inStock ? () => onQuantityChanged(quantity - 1) : null,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(3.r),
-                bottomLeft: Radius.circular(3.r),
-              ),
-              child: Container(
-                width: 26.w, // Slightly smaller for better spacing
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentColor,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(3.r),
-                    bottomLeft: Radius.circular(3.r),
-                  ),
-                ),
-                child: Icon(
-                  Icons.remove,
-                  color: Colors.black,
-                  size: 16.r, // Smaller icon
-                ),
-              ),
-            ),
-          ),
-          
-          // Quantity - improved display
-          Expanded(
-            child: Container(
-              alignment: Alignment.center,
-              child: Text(
-                quantity.toString(),
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ),
-          ),
-          
-          // Increase quantity - improved tap target
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: inStock ? () => onQuantityChanged(quantity + 1) : null,
-              borderRadius: BorderRadius.only(
-                topRight: Radius.circular(3.r),
-                bottomRight: Radius.circular(3.r),
-              ),
-              child: Container(
-                width: 26.w, // Slightly smaller for better spacing
-                height: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppTheme.accentColor,
-                  borderRadius: BorderRadius.only(
-                    topRight: Radius.circular(3.r),
-                    bottomRight: Radius.circular(3.r),
-                  ),
-                ),
-                child: Icon(
-                  Icons.add,
-                  color: Colors.black,
-                  size: 16.r, // Smaller icon
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

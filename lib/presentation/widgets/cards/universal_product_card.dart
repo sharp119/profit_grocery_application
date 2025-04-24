@@ -1,22 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:get_it/get_it.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
-import '../../../core/constants/app_constants.dart';
+import '../../../domain/entities/product.dart';
 import '../../../data/inventory/product_inventory.dart';
 import '../../../data/inventory/similar_products.dart';
 import '../../../data/models/product_model.dart';
-import '../../../domain/entities/cart.dart';
-import '../../../domain/entities/product.dart';
-import '../../../domain/repositories/cart_repository.dart';
-import '../../../presentation/blocs/cart/cart_bloc.dart';
-import '../../../presentation/blocs/cart/cart_event.dart';
-import '../../../presentation/blocs/cart/cart_state.dart';
-import '../../../services/cart/unified_cart_service.dart';
-import '../../../utils/cart_logger.dart';
 import 'enhanced_product_card.dart';
-import '../../../utils/add_button_handler.dart';
 
 /// A universal product card that works consistently across all screens
 class UniversalProductCard extends StatefulWidget {
@@ -24,7 +11,6 @@ class UniversalProductCard extends StatefulWidget {
   final Product? product;
   final String? productId;
   final VoidCallback onTap;
-  final int quantity;
   final Color? backgroundColor;
   final bool useBackgroundColor;
 
@@ -33,7 +19,6 @@ class UniversalProductCard extends StatefulWidget {
     this.product,
     this.productId,
     required this.onTap,
-    this.quantity = 0,
     this.backgroundColor,
     this.useBackgroundColor = true,
   }) : assert(product != null || productId != null, "Either product or productId must be provided"),
@@ -44,20 +29,14 @@ class UniversalProductCard extends StatefulWidget {
 }
 
 class _UniversalProductCardState extends State<UniversalProductCard> {
-  // Services and repositories
-  late final UnifiedCartService _cartService = UnifiedCartService();
-  
   // Local state
   late Product _displayProduct;
-  String? _userId;
-  int _currentQuantity = 0;
   bool _isInitialized = false;
   
   @override
   void initState() {
     super.initState();
     _resolveProduct();
-    _fetchUserId();
   }
   
   @override
@@ -68,11 +47,6 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
     if (widget.product != oldWidget.product || widget.productId != oldWidget.productId) {
       _resolveProduct();
     }
-    
-    // If quantity explicitly changed from outside, update current quantity
-    if (widget.quantity != oldWidget.quantity) {
-      _currentQuantity = widget.quantity;
-    }
   }
   
   // Resolve the product from either direct product or product ID
@@ -81,9 +55,6 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
       if (widget.product != null) {
         _displayProduct = widget.product!;
         _isInitialized = true;
-        
-        // Once we have a product, fetch its quantity in cart
-        _fetchProductQuantity();
       } else if (widget.productId != null) {
         // Get product from product inventory
         final products = ProductInventory.getAllProducts();
@@ -91,131 +62,12 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
           final fetchedProduct = products.firstWhere((p) => p.id == widget.productId);
           _displayProduct = fetchedProduct;
           _isInitialized = true;
-          
-          // Once we have a product, fetch its quantity in cart
-          _fetchProductQuantity();
         } catch (e) {
-          // Product not found
-          CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'Product not found with ID: ${widget.productId}');
+          print('Product not found with ID: ${widget.productId}');
         }
       }
     } catch (e) {
-      CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'Error resolving product', e);
-    }
-  }
-  
-  // Fetch the user ID from SharedPreferences
-  Future<void> _fetchUserId() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString(AppConstants.userTokenKey);
-      
-      if (userId != null && userId.isNotEmpty) {
-        _userId = userId;
-        
-        // Once we have a user ID, fetch product quantity
-        _fetchProductQuantity();
-      }
-    } catch (e) {
-      CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'Error getting user ID', e);
-    }
-  }
-  
-  // Fetch the current quantity of this product in the cart
-  Future<void> _fetchProductQuantity() async {
-    if (!_isInitialized || !mounted) return;
-    
-    try {
-      if (widget.quantity > 0) {
-        // If quantity is provided and > 0, use it
-        setState(() {
-          _currentQuantity = widget.quantity;
-        });
-        return;
-      }
-      
-      // Try to get quantity from cart bloc first (for reactivity)
-      try {
-        final cartBloc = BlocProvider.of<CartBloc>(context);
-        final cartState = cartBloc.state;
-        
-        if (cartState.status == CartStatus.loaded) {
-          final cartItem = cartState.items.where((item) => 
-              item.productId == _displayProduct.id).toList();
-          
-          if (cartItem.isNotEmpty) {
-            setState(() {
-              _currentQuantity = cartItem.first.quantity;
-            });
-            return;
-          }
-        }
-      } catch (_) {
-        // CartBloc not available, continue to repository
-      }
-      
-      // If we have the user ID, try to get quantity from repository
-      if (_userId != null && _userId!.isNotEmpty) {
-        final quantity = await _cartService.getProductQuantity(_userId!, _displayProduct.id);
-        
-        if (mounted) {
-          setState(() {
-            _currentQuantity = quantity;
-          });
-        }
-      }
-    } catch (e) {
-      CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'Error fetching product quantity', e);
-    }
-  }
-  
-  // Handle quantity changes
-  void _handleQuantityChanged(int newQuantity) {
-    try {
-      if (_userId == null || _userId!.isEmpty) {
-        CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'User ID not available for updating cart');
-        return;
-      }
-      
-      CartLogger.log('UNIVERSAL_PRODUCT_CARD', 'Quantity changed: ${_displayProduct.name} from $_currentQuantity to $newQuantity');
-      
-      // Update local state immediately for responsive UI
-      setState(() {
-        _currentQuantity = newQuantity;
-      });
-      
-      // Use EITHER CartBloc OR UnifiedCartService, not both (which causes double updates)
-      try {
-        // Try to use CartBloc first
-        final cartBloc = BlocProvider.of<CartBloc>(context);
-        
-        if (newQuantity <= 0) {
-          cartBloc.add(RemoveFromCart(_displayProduct.id));
-        } else {
-          // First check if item exists in cart
-          final cartState = cartBloc.state;
-          final existingItem = cartState.items.where((item) => 
-              item.productId == _displayProduct.id).toList();
-          
-          if (existingItem.isEmpty) {
-            // Add to cart
-            cartBloc.add(AddToCart(_displayProduct, newQuantity));
-          } else {
-            // Update quantity
-            cartBloc.add(UpdateCartItemQuantity(_displayProduct.id, newQuantity));
-          }
-        }
-      } catch (_) {
-        // CartBloc not available, use unified cart service instead
-        _cartService.updateCartQuantity(
-          context: context,
-          userId: _userId!,
-          product: _displayProduct,
-          quantity: newQuantity,
-        );
-      }
-    } catch (e) {
-      CartLogger.error('UNIVERSAL_PRODUCT_CARD', 'Error handling quantity change', e);
+      print('Error resolving product: $e');
     }
   }
   
@@ -232,31 +84,11 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
       cardBackgroundColor = widget.backgroundColor ?? _getBackgroundColor(_displayProduct);
     }
     
-    // Main widget with bloc listener to keep in sync with cart changes
-    return BlocListener<CartBloc, CartState>(
-      listener: (context, state) {
-        if (state.status == CartStatus.loaded) {
-          // Update product quantity when cart changes
-          final cartItem = state.items.where((item) => 
-              item.productId == _displayProduct.id).toList();
-          
-          final newQuantity = cartItem.isEmpty ? 0 : cartItem.first.quantity;
-          
-          if (_currentQuantity != newQuantity) {
-            setState(() {
-              _currentQuantity = newQuantity;
-            });
-          }
-        }
-      },
-      listenWhen: (previous, current) => true, // Always listen for changes
-      child: EnhancedProductCard.fromEntity(
-        product: _displayProduct,
-        onTap: widget.onTap,
-        onQuantityChanged: _handleQuantityChanged,
-        quantity: _currentQuantity,
-        backgroundColor: cardBackgroundColor,
-      ),
+    // Simple card without cart functionality 
+    return EnhancedProductCard.fromEntity(
+      product: _displayProduct,
+      onTap: widget.onTap,
+      backgroundColor: cardBackgroundColor,
     );
   }
   

@@ -1,50 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:badges/badges.dart' as badges;
 
 import '../../../core/constants/app_theme.dart';
-import '../../../utils/cart_logger.dart';
 
-/// An enhanced floating action button for cart functionality
-/// Supports item count badge, item preview, and price display
+/// A simple button with no cart functionality (cart not yet implemented)
 class CartFAB extends StatelessWidget {
-  final int itemCount;
-  final double? totalAmount;
   final VoidCallback onTap;
   final String? previewImagePath;
-  final bool showPreview;
 
   const CartFAB({
     Key? key,
-    required this.itemCount,
-    this.totalAmount,
     required this.onTap,
     this.previewImagePath,
-    this.showPreview = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // Make sure we don't show the FAB when cart is empty
-    CartLogger.log('CART_FAB', 'Building CartFAB with itemCount: $itemCount, totalAmount: $totalAmount');
-    
-    // Detailed logging for debugging
-    CartLogger.info('CART_FAB', 'CartFAB build details - itemCount type: ${itemCount.runtimeType}, value: $itemCount');
-    CartLogger.info('CART_FAB', 'CartFAB build details - totalAmount type: ${totalAmount?.runtimeType}, value: $totalAmount');
-    
-    // Check if cart has items
-    if (itemCount <= 0) {
-      CartLogger.info('CART_FAB', 'Cart is empty, not showing FAB');
-      return const SizedBox.shrink(); // Don't show when cart is empty
-    }
-    
-    CartLogger.info('CART_FAB', 'Building cart FAB with $itemCount items and ₹$totalAmount');
-    
-    // Calculate responsive image size based on screen width
-    final screenWidth = MediaQuery.of(context).size.width;
-    final imageSize = (screenWidth * 0.12).clamp(42.0, 54.0);
-    final badgeSize = (imageSize * 0.35).clamp(16.0, 22.0);
-    
+    // Show "Coming Soon" button
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -88,181 +60,35 @@ class CartFAB extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Item preview with badge
-              if (showPreview && previewImagePath != null)
-                badges.Badge(
-                  position: badges.BadgePosition.topEnd(top: -6, end: -6),
-                  badgeAnimation: const badges.BadgeAnimation.slide(),
-                  badgeStyle: badges.BadgeStyle(
-                    badgeColor: Colors.black,
-                    padding: EdgeInsets.all(badgeSize * 0.25),
-                    borderSide: BorderSide(
-                      color: AppTheme.accentColor,
-                      width: 1.5,
-                    ),
-                    elevation: 2,
-                  ),
-                  badgeContent: Text(
-                    itemCount.toString(),
-                    style: TextStyle(
-                      color: AppTheme.accentColor,
-                      fontSize: (badgeSize * 0.5).clamp(10.0, 14.0),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  child: Container(
-                    width: imageSize,
-                    height: imageSize,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 1.5,
-                      ),
-                      // Enhanced shadow for depth - premium look
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.1),
-                          blurRadius: 2,
-                          offset: const Offset(0, -1),
-                        ),
-                      ],
-                    ),
-                    child: ClipOval(
-                      child: Padding(
-                        padding: EdgeInsets.all(imageSize * 0.05), // Minimal padding for maximum image
-                        child: Image.asset(
-                          previewImagePath!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            CartLogger.error('CART_FAB', 'Error loading image: $error');
-                            // Return a fallback icon if image fails to load
-                            return Icon(
-                              Icons.shopping_bag,
-                              color: Colors.black,
-                              size: imageSize * 0.6,
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-              else
-                badges.Badge(
-                  position: badges.BadgePosition.topEnd(top: -6, end: -6),
-                  badgeAnimation: const badges.BadgeAnimation.slide(),
-                  badgeStyle: badges.BadgeStyle(
-                    badgeColor: Colors.black,
-                    padding: EdgeInsets.all(badgeSize * 0.25),
-                    borderSide: BorderSide(
-                      color: AppTheme.accentColor,
-                      width: 1.5,
-                    ),
-                    elevation: 2,
-                  ),
-                  badgeContent: Text(
-                    itemCount.toString(),
-                    style: TextStyle(
-                      color: AppTheme.accentColor,
-                      fontSize: (badgeSize * 0.5).clamp(10.0, 14.0),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  child: Container(
-                    width: imageSize,
-                    height: imageSize,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: Colors.black,
-                        width: 1.5,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.shopping_cart,
-                      color: Colors.black,
-                      size: imageSize * 0.6,
-                    ),
+              // Shopping cart icon
+              Container(
+                width: 36.w,
+                height: 36.h,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Colors.black,
+                    width: 1.5,
                   ),
                 ),
+                child: Icon(
+                  Icons.shopping_cart,
+                  color: Colors.black,
+                  size: 20.r,
+                ),
+              ),
               
               SizedBox(width: 12.w),
               
               // View cart text with enhanced typography
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    'View cart',
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  
-                  // Show total amount with premium styling
-                  if (totalAmount != null)
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 6.w,
-                        vertical: 2.h,
-                      ),
-                      margin: EdgeInsets.only(top: 2.h),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(4.r),
-                        border: Border.all(
-                          color: Colors.black.withOpacity(0.2),
-                          width: 0.5,
-                        ),
-                      ),
-                      child: Text(
-                        '₹${totalAmount!.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          color: Colors.black,
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              
-              SizedBox(width: 8.w),
-              
-              // Enhanced arrow icon
-              Container(
-                width: 24.w,
-                height: 24.w,
-                decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.arrow_forward_ios,
-                    color: Colors.black,
-                    size: 14.sp,
-                  ),
+              Text(
+                'Coming Soon',
+                style: TextStyle(
+                  color: Colors.black,
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.3,
                 ),
               ),
             ],

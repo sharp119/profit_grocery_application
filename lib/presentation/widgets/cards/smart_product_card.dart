@@ -16,17 +16,13 @@ import '../../widgets/quantity_selector/quantity_selector.dart';
 class SmartProductCard extends StatefulWidget {
   final String productId;
   final Function(Product)? onTap;
-  final Function(Product, int)? onQuantityChanged;
   final Function(Product?)? onProductLoaded;
-  final int quantity;
 
   const SmartProductCard({
     Key? key,
     required this.productId,
     this.onTap,
-    this.onQuantityChanged,
     this.onProductLoaded,
-    this.quantity = 0,
   }) : super(key: key);
 
   @override
@@ -57,56 +53,9 @@ class _SmartProductCardState extends State<SmartProductCard> {
         _hasError = false;
       });
 
-      // Log start of product loading
-      LoggingService.logFirestore('SmartProductCard: Loading product details for ID: ${widget.productId}');
-      print('PRODUCT_CARD: Loading product details for ID: ${widget.productId}');
-
       final product = await _productService.getProductById(widget.productId);
       
       if (product != null) {
-        // Enhanced logging for product details with detailed category information
-        LoggingService.logFirestore('PRODUCT_CARD: Successfully loaded product ${product.id} (${product.name})');
-        LoggingService.logFirestore('PRODUCT_CARD: Category info - Name: ${product.categoryName ?? "Unknown"}, ID: ${product.categoryId ?? "Unknown"}, Subcategory: ${product.subcategoryId ?? "Unknown"}');
-        
-        print('PRODUCT_CARD: Successfully loaded product ${product.id} (${product.name})');
-        print('PRODUCT_CARD: Category info - Name: ${product.categoryName ?? "Unknown"}, ID: ${product.categoryId ?? "Unknown"}, Subcategory: ${product.subcategoryId ?? "Unknown"}');
-        
-        // Get detailed category group information
-        if (product.categoryName != null) {
-          try {
-            final categoryGroup = await _categoryService.getCategoryById(product.categoryName ?? "");
-            if (categoryGroup != null) {
-              // Log detailed category group information
-              LoggingService.logFirestore('PRODUCT_CARD: Category Group Details - Title: ${categoryGroup.title}, ID: ${categoryGroup.id}, BgColor: ${categoryGroup.backgroundColor}, ItemBgColor: ${categoryGroup.itemBackgroundColor}');
-              print('PRODUCT_CARD: Category Group Details - Title: ${categoryGroup.title}, ID: ${categoryGroup.id}, BgColor: ${categoryGroup.backgroundColor}, ItemBgColor: ${categoryGroup.itemBackgroundColor}');
-              
-              // Log number of items in this category group
-              LoggingService.logFirestore('PRODUCT_CARD: Category Group contains ${categoryGroup.items.length} subcategories');
-              print('PRODUCT_CARD: Category Group contains ${categoryGroup.items.length} subcategories');
-              
-              // Try to find this product's subcategory in the category group
-              final matchingSubcategories = categoryGroup.items.where(
-                (item) => item.id == product.subcategoryId
-              ).toList();
-              
-              if (matchingSubcategories.isNotEmpty) {
-                final subcategory = matchingSubcategories.first;
-                LoggingService.logFirestore('PRODUCT_CARD: Product belongs to subcategory - Label: ${subcategory.label}, ID: ${subcategory.id}, ImagePath: ${subcategory.imagePath}');
-                print('PRODUCT_CARD: Product belongs to subcategory - Label: ${subcategory.label}, ID: ${subcategory.id}, ImagePath: ${subcategory.imagePath}');
-              } else {
-                LoggingService.logFirestore('PRODUCT_CARD: Could not find matching subcategory with ID ${product.subcategoryId} in category group');
-                print('PRODUCT_CARD: Could not find matching subcategory with ID ${product.subcategoryId} in category group');
-              }
-            } else {
-              LoggingService.logFirestore('PRODUCT_CARD: Could not find category group for ${product.categoryName}');
-              print('PRODUCT_CARD: Could not find category group for ${product.categoryName}');
-            }
-          } catch (e) {
-            LoggingService.logError('PRODUCT_CARD', 'Error getting category details: $e');
-            print('PRODUCT_CARD: Error getting category details: $e');
-          }
-        }
-        
         // Get the category colors
         final colors = await _categoryService.getSubcategoryColors();
 
@@ -117,18 +66,12 @@ class _SmartProductCardState extends State<SmartProductCard> {
           final combinedKey = '${product.categoryName}/${product.subcategoryId}';
           if (colors.containsKey(combinedKey)) {
             bgColor = colors[combinedKey]!;
-            LoggingService.logFirestore('PRODUCT_CARD: Using combined key color for ${combinedKey}');
           } else if (colors.containsKey(product.subcategoryId)) {
             bgColor = colors[product.subcategoryId]!;
-            LoggingService.logFirestore('PRODUCT_CARD: Using subcategory color for ${product.subcategoryId}');
           } else if (colors.containsKey(product.categoryId)) {
             bgColor = colors[product.categoryId]!;
-            LoggingService.logFirestore('PRODUCT_CARD: Using category ID color for ${product.categoryId}');
           } else if (colors.containsKey(product.categoryName)) {
             bgColor = colors[product.categoryName]!;
-            LoggingService.logFirestore('PRODUCT_CARD: Using category name color for ${product.categoryName}');
-          } else {
-            LoggingService.logFirestore('PRODUCT_CARD: No specific color found, using default');
           }
         }
 
@@ -142,13 +85,7 @@ class _SmartProductCardState extends State<SmartProductCard> {
         if (widget.onProductLoaded != null) {
           widget.onProductLoaded!(product);
         }
-        
-        LoggingService.logFirestore('PRODUCT_CARD: Product card ready for display: ${product.id}');
-        print('PRODUCT_CARD: Product card ready for display: ${product.id}');
       } else {
-        LoggingService.logFirestore('PRODUCT_CARD: Product not found for ID: ${widget.productId}');
-        print('PRODUCT_CARD: Product not found for ID: ${widget.productId}');
-        
         setState(() {
           _hasError = true;
           _errorMessage = 'Product not found';
@@ -161,9 +98,6 @@ class _SmartProductCardState extends State<SmartProductCard> {
         }
       }
     } catch (e) {
-      LoggingService.logError('SmartProductCard', 'Error loading product ${widget.productId}: $e');
-      print('PRODUCT_CARD ERROR: Failed to load product ${widget.productId} - $e');
-      
       setState(() {
         _hasError = true;
         _errorMessage = 'Failed to load product';
@@ -180,12 +114,6 @@ class _SmartProductCardState extends State<SmartProductCard> {
   void _handleTap() {
     if (_product != null && widget.onTap != null) {
       widget.onTap!(_product!);
-    }
-  }
-
-  void _handleQuantityChanged(int value) {
-    if (_product != null && widget.onQuantityChanged != null) {
-      widget.onQuantityChanged!(_product!, value);
     }
   }
 
@@ -503,15 +431,12 @@ class _SmartProductCardState extends State<SmartProductCard> {
 
               SizedBox(height: 8.h),
 
-              // Add to cart button or quantity selector
+              // Add button (cart functionality not yet implemented)
               product.inStock
                   ? QuantitySelector(
-                      quantity: widget.quantity,
-                      onChanged: _handleQuantityChanged,
-                      alignHorizontal: true,
+                      product: product,
                       accentColor: AppTheme.accentColor,
                       backgroundColor: Colors.black26,
-                      product: product,
                     )
                   : ElevatedButton(
                       onPressed: null,

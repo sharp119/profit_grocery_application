@@ -6,7 +6,6 @@ import '../../presentation/pages/authentication/otp_verification_page.dart';
 import '../../presentation/pages/authentication/phone_entry_page.dart';
 import '../../presentation/pages/authentication/splash_screen.dart';
 import '../../presentation/pages/authentication/user_registration_page.dart';
-import '../../presentation/pages/cart/cart_page.dart';
 import '../../presentation/pages/checkout/checkout_page.dart';
 import '../../presentation/pages/checkout/address_selection_page.dart';
 import '../../presentation/pages/home/home_page.dart';
@@ -82,7 +81,18 @@ class AppRouter {
         
       // Cart and checkout routes
       case AppConstants.cartRoute:
-        return MaterialPageRoute(builder: (_) => const CartPage());
+        // Cart functionality not implemented yet
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Cart')),
+            body: const Center(
+              child: Text(
+                'Cart functionality coming soon!',
+                style: TextStyle(fontSize: 18, color: Colors.white),
+              ),
+            ),
+          ),
+        );
         
       case AppConstants.checkoutRoute:
         return MaterialPageRoute(builder: (_) => const CheckoutPage());

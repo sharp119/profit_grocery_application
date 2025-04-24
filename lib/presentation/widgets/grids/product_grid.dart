@@ -139,7 +139,7 @@ class ProductGrid extends StatelessWidget {
             return UniversalProductCard(
               product: product,
               onTap: () => onProductTap(product),
-              quantity: quantity,
+              // quantity: quantity,
               backgroundColor: backgroundColor,
               useBackgroundColor: backgroundColor != null,
             );

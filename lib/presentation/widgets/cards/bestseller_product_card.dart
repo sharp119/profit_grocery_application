@@ -62,8 +62,8 @@ class BestsellerProductCard extends StatelessWidget {
       discountValue: bestsellerProduct.discountValue,
       backgroundColor: backgroundColor,
       onTap: _handleTap,
-      onQuantityChanged: _handleQuantityChanged,
-      quantity: quantity,
+      // onQuantityChanged: _handleQuantityChanged,
+      // quantity: quantity,
     );
   }
 }

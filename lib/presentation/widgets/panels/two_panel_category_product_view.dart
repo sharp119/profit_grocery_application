@@ -530,8 +530,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           right: 0,
           child: Center(
             child: CartFAB(
-              itemCount: widget.cartItemCount,
-              totalAmount: widget.totalAmount,
+              // itemCount: widget.cartItemCount,
+              // totalAmount: widget.totalAmount,
               onTap: widget.onCartTap,
               previewImagePath: widget.cartPreviewImage,
             ),
@@ -714,7 +714,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
         return UniversalProductCard(
           product: productEntity,
           onTap: () => widget.onProductTap(productEntity),
-          quantity: quantity,
+          // quantity: quantity,
           backgroundColor: backgroundColor,
           useBackgroundColor: backgroundColor != Colors.transparent,
         );

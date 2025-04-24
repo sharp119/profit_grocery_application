@@ -72,8 +72,8 @@ class FirebaseProductGrid extends StatelessWidget {
             return EnhancedProductCard.fromEntity(
               product: product,
               onTap: () => onProductTap(product),
-              onQuantityChanged: (newQuantity) => onQuantityChanged(product, newQuantity),
-              quantity: quantity,
+              // onQuantityChanged: (newQuantity) => onQuantityChanged(product, newQuantity),
+              // quantity: quantity,
               backgroundColor: backgroundColor,
               // showAddButton: showAddButton,
             );

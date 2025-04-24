@@ -10,7 +10,7 @@ import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/cart_repository.dart';
 import '../../../services/cart/cart_sync_service.dart';
 import '../../../services/logging_service.dart';
-import '../product_details/product_details_page.dart';
+// import '../product_details/product_details_page.dart';
 import '../../blocs/cart/cart_bloc.dart';
 import '../../blocs/cart/cart_event.dart';
 import '../../blocs/cart/cart_state.dart';
@@ -320,15 +320,15 @@ class CategoryProductsPage extends StatelessWidget {
                 },
                 onProductTap: (product) {
                   // Navigate to product details
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ProductDetailsPage(
-                        productId: product.id,
-                        categoryId: product.categoryId, // Use product's categoryId to preserve color
-                      ),
-                    ),
-                  );
+                  // Navigator.push(
+                  //   context,
+                  //   MaterialPageRoute(
+                  //     builder: (context) => ProductDetailsPage(
+                  //       productId: product.id,
+                  //       categoryId: product.categoryId, // Use product's categoryId to preserve color
+                  //     ),
+                  //   ),
+                  // );
                 },
                 onQuantityChanged: (product, quantity) {
                   // Add to CategoryProductsBloc for local state
