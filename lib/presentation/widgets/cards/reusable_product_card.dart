@@ -4,10 +4,12 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
+import '../../../services/discount/discount_calculator.dart';
 import '../../../services/logging_service.dart';
 
 /// A reusable product card that can be used across the app
 /// Uses the new vertical layout with product name at top, quantity/price in middle, and action button at bottom
+/// Compatible with the new modular discount system
 class ReusableProductCard extends StatelessWidget {
   // Product data
   final Product product;
@@ -47,6 +49,14 @@ class ReusableProductCard extends StatelessWidget {
       'Price: $finalPrice, '
       'Discount: ${hasDiscount ? "$discountType: $discountValue" : "None"}'
     );
+    
+    // Get formatted discount for display using our calculator
+    final String formattedDiscount = hasDiscount && discountType != null && discountValue != null
+        ? DiscountCalculator.formatDiscountForDisplay(
+            discountType: discountType,
+            discountValue: discountValue,
+          )
+        : '';
     
     return GestureDetector(
       onTap: () {

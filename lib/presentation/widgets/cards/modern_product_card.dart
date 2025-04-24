@@ -1,36 +1,33 @@
 import 'package:flutter/material.dart';
-import '../../../domain/entities/bestseller_product.dart';
 import '../../../domain/entities/product.dart';
 import '../../../models/discount_model.dart';
 import '../../../services/discount/discount_provider.dart';
 import '../../../services/logging_service.dart';
 import 'reusable_product_card.dart';
 
-/// A specialized product card for bestseller products
-/// Uses the reusable product card component with the new discount system
-class BestsellerProductCard extends StatefulWidget {
-  final BestsellerProduct bestsellerProduct;
+/// A modern product card that uses the new discount system
+/// This card fetches discount information automatically for any product
+class ModernProductCard extends StatefulWidget {
+  final Product product;
   final Color backgroundColor;
-  final Function(BestsellerProduct)? onTap;
-  final Function(BestsellerProduct, int)? onQuantityChanged;
+  final Function(Product)? onTap;
+  final Function(Product, int)? onQuantityChanged;
   final int quantity;
-  final bool showBestsellerBadge; // Kept for backward compatibility
 
-  const BestsellerProductCard({
+  const ModernProductCard({
     Key? key,
-    required this.bestsellerProduct,
+    required this.product,
     required this.backgroundColor,
     this.onTap,
     this.onQuantityChanged,
     this.quantity = 0,
-    this.showBestsellerBadge = true,
   }) : super(key: key);
 
   @override
-  State<BestsellerProductCard> createState() => _BestsellerProductCardState();
+  State<ModernProductCard> createState() => _ModernProductCardState();
 }
 
-class _BestsellerProductCardState extends State<BestsellerProductCard> {
+class _ModernProductCardState extends State<ModernProductCard> {
   final DiscountProvider _discountProvider = DiscountProvider();
   DiscountModel? _discountModel;
   bool _isLoading = true;
@@ -42,25 +39,23 @@ class _BestsellerProductCardState extends State<BestsellerProductCard> {
   }
 
   @override
-  void didUpdateWidget(BestsellerProductCard oldWidget) {
+  void didUpdateWidget(ModernProductCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     // Reload discount if product changed
-    if (oldWidget.bestsellerProduct.id != widget.bestsellerProduct.id) {
+    if (oldWidget.product.id != widget.product.id) {
       _loadDiscount();
     }
   }
 
-  // Load discount information using the new discount provider
+  // Load discount information using the discount provider
   Future<void> _loadDiscount() async {
     setState(() {
       _isLoading = true;
     });
 
     try {
-      final Product product = widget.bestsellerProduct.product;
-      
       // Get discount from the discount provider
-      final discount = await _discountProvider.getDiscount(product);
+      final discount = await _discountProvider.getDiscount(widget.product);
       
       if (mounted) {
         setState(() {
@@ -69,14 +64,14 @@ class _BestsellerProductCardState extends State<BestsellerProductCard> {
         });
       }
     } catch (e) {
-      LoggingService.logError('BESTSELLER_CARD', 'Error loading discount: $e');
+      LoggingService.logError('PRODUCT_CARD', 'Error loading discount: $e');
       
       if (mounted) {
         setState(() {
           // Create a fallback model with no discount
           _discountModel = DiscountModel.noDiscount(
-            productId: widget.bestsellerProduct.id,
-            price: widget.bestsellerProduct.product.price,
+            productId: widget.product.id,
+            price: widget.product.price,
           );
           _isLoading = false;
         });
@@ -86,49 +81,29 @@ class _BestsellerProductCardState extends State<BestsellerProductCard> {
 
   @override
   Widget build(BuildContext context) {
-    final product = widget.bestsellerProduct.product;
-    
-    // Log the bestseller-specific info
-    LoggingService.logFirestore(
-      'BESTSELLER_CARD: Using bestseller product ${product.name} with rank ${widget.bestsellerProduct.rank}'
-    );
-
-    // Handle callbacks by wrapping them to pass BestsellerProduct instead of Product
-    void _handleTap(dynamic _) {
-      if (widget.onTap != null) {
-        widget.onTap!(widget.bestsellerProduct);
-      }
-    }
-
-    void _handleQuantityChanged(dynamic _, int newQuantity) {
-      if (widget.onQuantityChanged != null) {
-        widget.onQuantityChanged!(widget.bestsellerProduct, newQuantity);
-      }
-    }
-
     // If discount is still loading, show loading state
     if (_isLoading) {
       return _buildLoadingCard();
     }
 
     // Calculate original price to show (either MRP or product price)
-    final originalPrice = product.mrp != null && product.mrp! > _discountModel!.finalPrice 
-        ? product.mrp 
+    final originalPrice = widget.product.mrp != null && widget.product.mrp! > _discountModel!.finalPrice 
+        ? widget.product.mrp 
         : _discountModel!.hasDiscount 
             ? _discountModel!.originalPrice 
             : null;
 
-    // Use the reusable product card with discount data from our new system
+    // Use the reusable product card with discount data from our system
     return ReusableProductCard(
-      product: product,
+      product: widget.product,
       finalPrice: _discountModel!.finalPrice,
       originalPrice: originalPrice,
       hasDiscount: _discountModel!.hasDiscount,
       discountType: _discountModel!.discountType,
       discountValue: _discountModel!.discountValue,
       backgroundColor: widget.backgroundColor,
-      onTap: _handleTap,
-      onQuantityChanged: _handleQuantityChanged,
+      onTap: widget.onTap,
+      onQuantityChanged: widget.onQuantityChanged,
       quantity: widget.quantity,
     );
   }
