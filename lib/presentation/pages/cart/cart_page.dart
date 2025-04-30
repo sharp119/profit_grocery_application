@@ -324,35 +324,36 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
               )
             : Column(
                 children: [
-                  // Savings banner if cart has items
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 10.r),
-                    color: AppTheme.accentColor.withOpacity(0.8),
-                    child: Row(
-                      children: [
-                        Text(
-                          '₹${(_getTotalSavings() > 0 ? _getTotalSavings() : 0).toStringAsFixed(0)}',
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            'SAVINGS ON THIS ORDER',
+                  // Savings banner if cart has items and there are savings
+                  if (_getTotalSavings() > 0)
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 10.r),
+                      color: Colors.green.shade700,
+                      child: Row(
+                        children: [
+                          Text(
+                            '₹${_getTotalSavings().toInt()}',
                             style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: AppTheme.primaryColor,
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              'TOTAL SAVINGS',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
                   
                   // Cart items list (takes remaining space minus the button height)
                   Expanded(
@@ -460,7 +461,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   
   // Calculate total savings (original price minus discounted price)
   double _getTotalSavings() {
-    double savings = 0;
+    double totalOriginalCost = 0;
+    double totalDiscountedCost = 0;
     
     for (var entry in _cartEntries) {
       final productId = entry.key;
@@ -468,32 +470,61 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       final product = _productDetails[productId];
       
       if (product != null) {
+        // Get the original price (MRP if available, otherwise regular price)
+        double originalPrice = product.price;
+        
+        // Start with regular price as the final price
+        double finalPrice = product.price;
+        
+        // Apply discount if available
         final hasDiscount = _discountDetails.containsKey(productId) && 
-                            _discountDetails[productId]?['hasDiscount'] == true;
-        final originalPrice = product.mrp ?? product.price;
+                          _discountDetails[productId]?['hasDiscount'] == true;
         
         if (hasDiscount) {
           final discountInfo = _discountDetails[productId]!;
-          
-          // Calculate the final price with discount
-          double finalPrice = product.price;
           final discountType = discountInfo['discountType'];
           final discountValue = discountInfo['discountValue'];
           
-          if (discountType == 'percentage' && discountValue is num) {
-            finalPrice = product.price - (product.price * (discountValue / 100));
-          } else if (discountType == 'flat' && discountValue is num) {
-            finalPrice = product.price - discountValue;
+          // Convert discount value to double
+          double discountValueDouble = 0;
+          if (discountValue is int) {
+            discountValueDouble = discountValue.toDouble();
+          } else if (discountValue is double) {
+            discountValueDouble = discountValue;
+          } else if (discountValue is String && double.tryParse(discountValue) != null) {
+            discountValueDouble = double.parse(discountValue);
           }
           
-          savings += (originalPrice - finalPrice) * quantity;
-        } else if (product.mrp != null && product.mrp! > product.price) {
-          savings += (product.mrp! - product.price) * quantity;
+          // Apply discount to the regular price (not MRP)
+          if (discountType == 'percentage' && discountValueDouble > 0) {
+            finalPrice = product.price - (product.price * (discountValueDouble / 100.0));
+          } else if (discountType == 'flat' && discountValueDouble > 0) {
+            finalPrice = product.price - discountValueDouble;
+          }
+          
+          // Ensure price doesn't go negative
+          if (finalPrice < 0) finalPrice = 0;
         }
+        
+        // Add to running totals (multiplied by quantity)
+        totalOriginalCost += originalPrice * quantity;
+        totalDiscountedCost += finalPrice * quantity;
+        
+        print('Product: ${product.name}, Quantity: $quantity');
+        print('  Original price: ₹$originalPrice x $quantity = ₹${(originalPrice * quantity).toStringAsFixed(2)}');
+        print('  Final price: ₹$finalPrice x $quantity = ₹${(finalPrice * quantity).toStringAsFixed(2)}');
       }
     }
     
-    return savings;
+    // Calculate total savings as the difference
+    double totalSavings = totalOriginalCost - totalDiscountedCost;
+    
+    print('SAVINGS CALCULATION:');
+    print('  Total original cost: ₹${totalOriginalCost.toStringAsFixed(2)}');
+    print('  Total discounted cost: ₹${totalDiscountedCost.toStringAsFixed(2)}');
+    print('  Total savings: ₹${totalSavings.toStringAsFixed(2)}');
+    
+    return totalSavings;
   }
   
   // New compact cart item design
