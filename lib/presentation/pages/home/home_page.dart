@@ -1282,21 +1282,18 @@ class _HomePageContentState extends State<_HomePageContent> {
                 ),
               ),
               
-              // Cart FAB - Only show when cart has items
-              if (cartItemCount > 0)
-                Positioned(
-                  bottom: 16.h,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: CartFAB(
-                      // itemCount: cartItemCount,
-                      // totalAmount: totalAmount,
-                      onTap: _navigateToCart,
-                      previewImagePath: cartPreviewImage,
-                    ),
+              // Cart FAB - Always show it
+              Positioned(
+                bottom: 16.h,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: CartFAB(
+                    onTap: _navigateToCart,
+                    backgroundColor: AppTheme.accentColor,
                   ),
                 ),
+              ),
             ],
           ),
         );

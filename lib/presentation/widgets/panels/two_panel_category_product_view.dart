@@ -514,8 +514,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
         
         // Back to top button
         Positioned(
-          bottom: 80.h,
-          right: 16.w,
+          bottom: 80.h, // Adjust to position above the cart FAB
+          right: 20.w,
           child: BackToTopButton.scrollAware(
             scrollController: _productScrollController,
             onTap: _scrollToTop,
@@ -523,17 +523,15 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           ),
         ),
         
-        // Cart FAB - Always create it regardless of item count
+        // Cart FAB using the updated implementation
         Positioned(
           bottom: 16.h,
           left: 0,
           right: 0,
           child: Center(
             child: CartFAB(
-              // itemCount: widget.cartItemCount,
-              // totalAmount: widget.totalAmount,
               onTap: widget.onCartTap,
-              previewImagePath: widget.cartPreviewImage,
+              backgroundColor: AppTheme.accentColor,
             ),
           ),
         ),
