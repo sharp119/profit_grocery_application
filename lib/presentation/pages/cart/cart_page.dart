@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'dart:convert';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/cart_provider.dart';
@@ -9,6 +10,18 @@ import '../../../services/discount/discount_service.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/image_loader.dart';
 import '../../widgets/buttons/add_button.dart';
+import '../../../domain/entities/user.dart';
+import '../../../services/cart_provider.dart';
+import '../../../services/product/shared_product_service.dart';
+import '../../../services/simple_cart_service.dart';
+import '../../../services/discount/discount_service.dart';
+import '../../widgets/loaders/shimmer_loader.dart';
+import '../../widgets/image_loader.dart';
+import '../../widgets/buttons/add_button.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../blocs/user/user_bloc.dart';
+import '../../blocs/user/user_event.dart';
+import 'package:provider/provider.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -37,6 +50,12 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   
   // Final list of products after filtering out unavailable ones
   late List<MapEntry<String, dynamic>> _cartEntries = [];
+  
+  // Address and total payment information
+  Address? _defaultAddress;
+  bool _addressLoading = true;
+  double _totalCartValue = 0;
+  double _totalSavings = 0;
 
   @override
   void initState() {
@@ -50,6 +69,9 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
     // Listen for cart changes to update the UI
     _cartProvider.addListener(_onCartChanged);
+    
+    // Load user's default address
+    _loadDefaultAddress();
   }
   
   @override
@@ -282,9 +304,163 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     }
   }
 
+  // Load the default address for the user
+  Future<void> _loadDefaultAddress() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final userId = prefs.getString('user_token');
+      
+      if (userId != null && userId.isNotEmpty) {
+        // Check if we need to fetch user data from Firebase
+        final cachedAddressData = prefs.getString('default_address');
+        
+        if (cachedAddressData != null) {
+          // Use cached address data if available
+          final addressData = Map<String, dynamic>.from(
+            Map<String, dynamic>.from(
+              jsonDecode(cachedAddressData)
+            )
+          );
+          
+          setState(() {
+            _defaultAddress = Address(
+              id: addressData['id'] ?? '',
+              name: addressData['name'] ?? '',
+              addressLine: addressData['addressLine'] ?? '',
+              city: addressData['city'] ?? '',
+              state: addressData['state'] ?? '',
+              pincode: addressData['pincode'] ?? '',
+              landmark: addressData['landmark'],
+              isDefault: true,
+              addressType: addressData['addressType'] ?? 'home',
+            );
+            _addressLoading = false;
+          });
+        } else {
+          // Trigger user data loading if needed
+          if (mounted && context.read<UserBloc>().state.user == null) {
+            context.read<UserBloc>().add(LoadUserProfileEvent(userId));
+          }
+          
+          // Listen to user bloc state changes
+          Future.delayed(Duration.zero, () {
+            final userState = context.read<UserBloc>().state;
+            if (userState.user != null) {
+              _updateAddressFromUserState(userState.user!);
+            }
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading default address: $e');
+      setState(() {
+        _addressLoading = false;
+      });
+    }
+  }
+  
+  // Update address from user state
+  void _updateAddressFromUserState(User user) {
+    if (user.addresses.isNotEmpty) {
+      // Find default address or use the first one
+      final defaultAddress = user.addresses.firstWhere(
+        (address) => address.isDefault,
+        orElse: () => user.addresses.first,
+      );
+      
+      setState(() {
+        _defaultAddress = defaultAddress;
+        _addressLoading = false;
+      });
+      
+      // Cache the default address
+      _cacheDefaultAddress(defaultAddress);
+    } else {
+      setState(() {
+        _addressLoading = false;
+      });
+    }
+  }
+  
+  // Cache the default address in SharedPreferences
+  Future<void> _cacheDefaultAddress(Address address) async {
+    try {
+      final addressData = {
+        'id': address.id,
+        'name': address.name,
+        'addressLine': address.addressLine,
+        'city': address.city,
+        'state': address.state,
+        'pincode': address.pincode,
+        'landmark': address.landmark,
+        'addressType': address.addressType,
+      };
+      
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('default_address', jsonEncode(addressData));
+    } catch (e) {
+      print('Error caching default address: $e');
+    }
+  }
+
+  // Calculate total cart value
+  double _calculateTotalCartValue() {
+    double total = 0.0;
+    
+    for (var entry in _cartEntries) {
+      final productId = entry.key;
+      final quantity = entry.value['quantity'] as int? ?? 0;
+      final product = _productDetails[productId];
+      
+      if (product != null) {
+        // Get the final price after discount
+        double finalPrice = product.price;
+        
+        // Apply discount if available
+        final hasDiscount = _discountDetails.containsKey(productId) && 
+                          _discountDetails[productId]?['hasDiscount'] == true;
+        
+        if (hasDiscount) {
+          final discountInfo = _discountDetails[productId]!;
+          final discountType = discountInfo['discountType'];
+          final discountValue = discountInfo['discountValue'];
+          
+          // Convert discount value to double
+          double discountValueDouble = 0;
+          if (discountValue is int) {
+            discountValueDouble = discountValue.toDouble();
+          } else if (discountValue is double) {
+            discountValueDouble = discountValue;
+          } else if (discountValue is String && double.tryParse(discountValue) != null) {
+            discountValueDouble = double.parse(discountValue);
+          }
+          
+          // Apply discount to the regular price
+          if (discountType == 'percentage' && discountValueDouble > 0) {
+            finalPrice = product.price - (product.price * (discountValueDouble / 100.0));
+          } else if (discountType == 'flat' && discountValueDouble > 0) {
+            finalPrice = product.price - discountValueDouble;
+          }
+          
+          // Ensure price doesn't go negative
+          if (finalPrice < 0) finalPrice = 0;
+        }
+        
+        // Add to total (price multiplied by quantity)
+        total += finalPrice * quantity;
+      }
+    }
+    
+    return total;
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartItems = _cartProvider.cartItems;
+    
+    // Calculate total values when rendering
+    _totalCartValue = _calculateTotalCartValue();
+    _totalSavings = _getTotalSavings();
     
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -355,7 +531,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       ),
                     ),
                   
-                  // Cart items list (takes remaining space minus the button height)
+                  // Cart items list (takes remaining space minus the button height and bottom sections)
                   Expanded(
                     child: _cartEntries.isEmpty && _allItemsLoaded
                       ? Center(
@@ -367,49 +543,60 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                             ),
                           ),
                         )
-                      : ListView.separated(
-                          padding: EdgeInsets.only(bottom: 80.h, top: 10.h), // Added top padding
-                          itemCount: _showAllItems ? _cartEntries.length : 
-                            (_cartEntries.length > 4 ? 5 : _cartEntries.length),
-                          separatorBuilder: (context, index) => SizedBox(height: 8.h), // Gap between elevated cards
-                          itemBuilder: (context, index) {
-                            // Handle "show more" button
-                            if (!_showAllItems && index == 4 && _cartEntries.length > 4) {
-                              return _buildShowMoreButton();
-                            }
-                            
-                            if (index >= (_showAllItems ? _cartEntries.length : 
-                                (_cartEntries.length > 4 ? 4 : _cartEntries.length))) {
-                              return const SizedBox.shrink();
-                            }
-                            
-                            final entry = _cartEntries[index];
-                            final productId = entry.key;
-                            final quantity = entry.value['quantity'] as int? ?? 0;
-                            final isLoading = _loadingState[productId] ?? true;
-                            final product = _productDetails[productId];
-                            
-                            // Wrap both loading and product cards in an elevated container
-                            return Card(
-                              elevation: 2.0,
-                              margin: EdgeInsets.symmetric(horizontal: 10.r),
-                              color: AppTheme.secondaryColor,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.r),
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: ListView.separated(
+                                padding: EdgeInsets.only(bottom: 10.h, top: 10.h),
+                                itemCount: _showAllItems ? _cartEntries.length : 
+                                  (_cartEntries.length > 4 ? 5 : _cartEntries.length),
+                                separatorBuilder: (context, index) => SizedBox(height: 1.h), // Reduced gap to 1 value
+                                itemBuilder: (context, index) {
+                                  // Handle "show more" button
+                                  if (!_showAllItems && index == 4 && _cartEntries.length > 4) {
+                                    return _buildShowMoreButton();
+                                  }
+                                  
+                                  if (index >= (_showAllItems ? _cartEntries.length : 
+                                      (_cartEntries.length > 4 ? 4 : _cartEntries.length))) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  final entry = _cartEntries[index];
+                                  final productId = entry.key;
+                                  final quantity = entry.value['quantity'] as int? ?? 0;
+                                  final isLoading = _loadingState[productId] ?? true;
+                                  final product = _productDetails[productId];
+                                  
+                                  // Wrap both loading and product cards in an elevated container
+                                  return Card(
+                                    elevation: 2.0,
+                                    margin: EdgeInsets.symmetric(horizontal: 20.r), // Increased horizontal margin to 20
+                                    color: AppTheme.secondaryColor,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(4.r), // Reduced border radius from 8.r to 4.r
+                                    ),
+                                    child: isLoading
+                                        ? _buildLoadingCartItem()
+                                        : (product != null)
+                                            ? _buildCartItemCompact(productId, product, quantity)
+                                            : const SizedBox.shrink(),
+                                  );
+                                },
                               ),
-                              child: isLoading
-                                  ? _buildLoadingCartItem()
-                                  : (product != null)
-                                      ? _buildCartItemCompact(productId, product, quantity)
-                                      : const SizedBox.shrink(),
-                            );
-                          },
+                            ),
+                            
+                            // Bottom sections for address and payment info
+                            if (_cartEntries.isNotEmpty)
+                              _buildBottomSections(),
+                          ],
                         ),
                   ),
                 ],
               ),
           
-          // Fixed "Select Address" button at the bottom
+          // Remove the fixed button at the bottom since we now have the bottom sections
+          /*
           Positioned(
             bottom: 0,
             left: 0,
@@ -439,7 +626,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                   padding: EdgeInsets.symmetric(vertical: 12.h),
                 ),
                 child: Text(
-                  'Select Address',
+                  'Click to Pay',
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
@@ -448,6 +635,246 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 ),
               ),
             ),
+          ),
+          */
+        ],
+      ),
+    );
+  }
+
+  // Build bottom sections for address and payment info
+  Widget _buildBottomSections() {
+    return Container(
+      color: Colors.black,
+      child: Column(
+        children: [
+          // Delivering to section
+          Container(
+            margin: EdgeInsets.only(left: 20.r, right: 20.r, bottom: 1.h, top: 10.h),
+            decoration: BoxDecoration(
+              color: Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(4.r),
+            ),
+            child: _buildDeliveryAddressSection(),
+          ),
+          
+          // To Pay section
+          Container(
+            margin: EdgeInsets.only(left: 20.r, right: 20.r, bottom: 10.h),
+            decoration: BoxDecoration(
+              color: Color(0xFF1A1A1A),
+              borderRadius: BorderRadius.circular(4.r),
+            ),
+            child: _buildPaymentSummarySection(),
+          ),
+          
+          // Click to Pay button
+          Container(
+            margin: EdgeInsets.fromLTRB(20.r, 5.h, 20.r, 80.h),
+            width: double.infinity,
+            height: 50.h,
+            child: ElevatedButton(
+              onPressed: () {
+                // No functionality for now
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFFFC107), // More vibrant amber
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              child: Text(
+                'Click to Pay',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Build the delivery address section
+  Widget _buildDeliveryAddressSection() {
+    return Padding(
+      padding: EdgeInsets.all(12.r),
+      child: Row(
+        children: [
+          Container(
+            width: 40.w,
+            height: 40.h,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Icon(
+              Icons.location_on_outlined,
+              color: Color(0xFFFFC107), // More vibrant amber
+              size: 22.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Delivering to ${_defaultAddress?.addressType.capitalize() ?? 'Other'}',
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const Spacer(),
+                    InkWell(
+                      onTap: () {
+                        // Navigate to address edit
+                      },
+                      child: Text(
+                        'Edit',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.pink.shade400,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4.h),
+                if (_addressLoading)
+                  ShimmerLoader(child: Container(
+                    height: 14.h,
+                    width: 250.w,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ))
+                else if (_defaultAddress != null)
+                  Text(
+                    '${_defaultAddress!.addressLine.split(',').first}, ${_defaultAddress!.city}',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.grey.shade400,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    maxLines: 1,
+                  )
+                else
+                  Text(
+                    'No address found. Add an address to proceed.',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          Icon(
+            Icons.chevron_right,
+            color: Colors.grey.shade400,
+            size: 22.sp,
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Build the payment summary section
+  Widget _buildPaymentSummarySection() {
+    return Padding(
+      padding: EdgeInsets.all(12.r),
+      child: Row(
+        children: [
+          Container(
+            width: 40.w,
+            height: 40.h,
+            decoration: BoxDecoration(
+              color: Colors.black,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Icon(
+              Icons.receipt_long_outlined,
+              color: Color(0xFFFFC107), // More vibrant amber
+              size: 22.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'To Pay',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Incl. all taxes and charges',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                children: [
+                  if (_totalSavings > 0)
+                    Text(
+                      '₹${(_totalCartValue + _totalSavings).toInt()}',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        decoration: TextDecoration.lineThrough,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  if (_totalSavings > 0)
+                    SizedBox(width: 6.w),
+                  Text(
+                    '₹${_totalCartValue.toInt()}',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFFFFC107), // More vibrant amber
+                    ),
+                  ),
+                ],
+              ),
+              if (_totalSavings > 0)
+                Text(
+                  'SAVING ₹${_totalSavings.toInt()}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.green.shade400,
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(width: 8.w),
+          Icon(
+            Icons.chevron_right,
+            color: Colors.grey.shade400,
+            size: 22.sp,
           ),
         ],
       ),
@@ -567,7 +994,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     String quantityInfo = product.weight ?? '';
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 12.r), // Adjusted padding
+      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 8.r), // Reduced vertical padding
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -576,13 +1003,13 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             children: [
               // Product image (approximately 25% of total)
               SizedBox(
-                width: 75.w,
+                width: 65.w, // Reduced width
                 child: Center(
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(4.r),
+                    borderRadius: BorderRadius.circular(2.r), // Reduced border radius from 4.r to 2.r
                     child: SizedBox(
-                      width: 55.w,
-                      height: 55.h,
+                      width: 45.w, // Reduced image size
+                      height: 45.h, // Reduced image size
                       child: _buildProductImage(product),
                     ),
                   ),
@@ -591,7 +1018,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
               
               // Product details (approximately 45% of total)
               SizedBox(
-                width: 140.w,
+                width: 130.w, // Reduced width
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
@@ -600,7 +1027,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                     Text(
                       product.name,
                       style: TextStyle(
-                        fontSize: 13.sp,
+                        fontSize: 12.sp, // Reduced font size
                         fontWeight: FontWeight.w500,
                         color: AppTheme.textPrimaryColor,
                       ),
@@ -608,14 +1035,14 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       overflow: TextOverflow.ellipsis,
                     ),
                     
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h), // Reduced spacing
                     
                     // Product quantity
                     if (quantityInfo.isNotEmpty)
                       Text(
                         quantityInfo,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 10.sp, // Reduced font size
                           color: AppTheme.textSecondaryColor,
                         ),
                       ),
@@ -630,13 +1057,13 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             width: 75.w,
             child: Center(
               child: SizedBox(
-                width: 68.w,
-                height: 28.h,
+                width: 65.w, // Slightly reduced
+                height: 25.h, // Reduced height
                 child: AddButton(
                   productId: productId,
                   sourceCardType: ProductCardType.productDetails,
                   inStock: product.inStock,
-                  fontSize: 11.sp,
+                  fontSize: 10.sp, // Reduced font size
                 ),
               ),
             ),
@@ -654,20 +1081,20 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                   Text(
                     '₹${finalPrice.toStringAsFixed(0)}',
                     style: TextStyle(
-                      fontSize: 15.sp,
+                      fontSize: 14.sp, // Reduced font size
                       fontWeight: FontWeight.bold,
                       color: hasDiscount && finalPrice < product.price ? Colors.green[700] : AppTheme.accentColor,
                     ),
                     textAlign: TextAlign.right, // Ensure text is right-aligned
                   ),
                   
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 1.h), // Reduced spacing
                   
                   if (hasDiscount && finalPrice < product.price || (product.mrp != null && product.mrp! > finalPrice))
                     Text(
                       '₹${hasDiscount && finalPrice < product.price ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontSize: 12.sp,
+                        fontSize: 11.sp, // Reduced font size
                         color: AppTheme.textSecondaryColor,
                         decoration: TextDecoration.lineThrough,
                       ),
@@ -687,10 +1114,10 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     
     return Card(
       elevation: 2.0,
-      margin: EdgeInsets.symmetric(horizontal: 10.r),
+      margin: EdgeInsets.symmetric(horizontal: 20.r), // Increased horizontal margin to 20
       color: AppTheme.secondaryColor,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8.r),
+        borderRadius: BorderRadius.circular(4.r), // Reduced border radius from 8.r to 4.r
       ),
       child: GestureDetector(
         onTap: () {
@@ -702,7 +1129,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
           padding: EdgeInsets.symmetric(vertical: 16.r),
           decoration: BoxDecoration(
             color: AppTheme.secondaryColor,
-            borderRadius: BorderRadius.circular(8.r),
+            borderRadius: BorderRadius.circular(4.r), // Reduced border radius from 8.r to 4.r
           ),
           child: Center(
             child: Row(
@@ -731,9 +1158,9 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
   Widget _buildLoadingCartItem() {
     return Padding(
-      padding: EdgeInsets.all(12.h),
+      padding: EdgeInsets.all(8.h), // Reduced padding
       child: ShimmerLoader.cartItem(
-        height: 80.h,
+        height: 60.h, // Reduced height
       ),
     );
   }
@@ -752,12 +1179,12 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     }
     
     return ClipRRect(
-      borderRadius: BorderRadius.circular(8.r),
+      borderRadius: BorderRadius.circular(4.r), // Reduced border radius from 8.r to 4.r
       child: ImageLoader.network(
         imageUrl,
         fit: BoxFit.contain,
-        width: 80.w,
-        height: 80.h,
+        width: 65.w, // Reduced size
+        height: 65.h, // Reduced size
         errorWidget: _buildImageErrorWidget(),
       ),
     );
@@ -768,7 +1195,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       child: Icon(
         Icons.image_not_supported_outlined,
         color: AppTheme.textSecondaryColor,
-        size: 24.sp,
+        size: 20.sp, // Reduced size
       ),
     );
   }
@@ -799,5 +1226,12 @@ class DashedLinePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+
+// Extension method to capitalize the first letter of a string
+extension StringExtension on String {
+  String capitalize() {
+    return this.isNotEmpty ? '${this[0].toUpperCase()}${this.substring(1)}' : '';
+  }
 }
 
