@@ -1384,73 +1384,73 @@ class _HomePageContentState extends State<_HomePageContent> {
           SizedBox(height: 24.h),
           
           // Developer/Test Section
-          if (_userService.getCurrentUserId() != null) ...[
-            const Divider(color: Colors.white24),
-            Padding(
-              padding: EdgeInsets.all(16.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Developer Testing',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(
-                        context, 
-                        AppConstants.firestoreCategoryProductsRoute,
-                        arguments: 'bakeries_biscuits',
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentColor,
-                      foregroundColor: Colors.black,
-                    ),
-                    child: const Text('Bakery & Biscuits (Firestore)'),
-                  ),
-                  SizedBox(height: 8.h),
-                  ElevatedButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, AppConstants.developerMenuRoute);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text('Developer Menu'),
-                  ),
-                  SizedBox(height: 8.h),
-                  ElevatedButton.icon(
-                    onPressed: () => _showFirestoreDataExplorer(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.accentColor,
-                      foregroundColor: Colors.black,
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                    ),
-                    icon: Icon(Icons.data_exploration),
-                    label: const Text('Explore Firestore Data'),
-                  ),
-                  SizedBox(height: 8.h),
-                  ElevatedButton.icon(
-                    onPressed: () => _showCachedCategoriesInfo(context),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.teal,
-                      foregroundColor: Colors.white,
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                    ),
-                    icon: Icon(Icons.category),
-                    label: const Text('Show Cached Categories'),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          // if (_userService.getCurrentUserId() != null) ...[
+          //   const Divider(color: Colors.white24),
+          //   Padding(
+          //     padding: EdgeInsets.all(16.r),
+          //     child: Column(
+          //       crossAxisAlignment: CrossAxisAlignment.start,
+          //       children: [
+          //         Text(
+          //           'Developer Testing',
+          //           style: TextStyle(
+          //             color: Colors.white,
+          //             fontSize: 18.sp,
+          //             fontWeight: FontWeight.bold,
+          //           ),
+          //         ),
+          //         SizedBox(height: 16.h),
+          //         ElevatedButton(
+          //           onPressed: () {
+          //             Navigator.pushNamed(
+          //               context, 
+          //               AppConstants.firestoreCategoryProductsRoute,
+          //               arguments: 'bakeries_biscuits',
+          //             );
+          //           },
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: AppTheme.accentColor,
+          //             foregroundColor: Colors.black,
+          //           ),
+          //           child: const Text('Bakery & Biscuits (Firestore)'),
+          //         ),
+          //         SizedBox(height: 8.h),
+          //         ElevatedButton(
+          //           onPressed: () {
+          //             Navigator.pushNamed(context, AppConstants.developerMenuRoute);
+          //           },
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: Colors.purple,
+          //             foregroundColor: Colors.white,
+          //           ),
+          //           child: const Text('Developer Menu'),
+          //         ),
+          //         SizedBox(height: 8.h),
+          //         ElevatedButton.icon(
+          //           onPressed: () => _showFirestoreDataExplorer(context),
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: AppTheme.accentColor,
+          //             foregroundColor: Colors.black,
+          //             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          //           ),
+          //           icon: Icon(Icons.data_exploration),
+          //           label: const Text('Explore Firestore Data'),
+          //         ),
+          //         SizedBox(height: 8.h),
+          //         ElevatedButton.icon(
+          //           onPressed: () => _showCachedCategoriesInfo(context),
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: Colors.teal,
+          //             foregroundColor: Colors.white,
+          //             padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          //           ),
+          //           icon: Icon(Icons.category),
+          //           label: const Text('Show Cached Categories'),
+          //         ),
+          //       ],
+          //     ),
+          //   ),
+          // ],
           
           SizedBox(height: 100.h),
         ],

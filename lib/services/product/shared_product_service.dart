@@ -175,9 +175,9 @@ class SharedProductService {
       price: (data['price'] is int)
           ? (data['price'] as int).toDouble()
           : (data['price'] as num?)?.toDouble() ?? 0.0,
-      mrp: (data['mrp'] is int)
-          ? (data['mrp'] as int).toDouble()
-          : (data['mrp'] as num?)?.toDouble() ?? 0.0,
+      // mrp: (data['mrp'] is int)
+      //     ? (data['mrp'] as int).toDouble()
+      //     : (data['mrp'] as num?)?.toDouble() ?? 0.0,
       image: data['image'] ?? data['imagePath'] ?? '',
       inStock: data['inStock'] ?? true,
       categoryId: data['categoryId'] ?? '',
