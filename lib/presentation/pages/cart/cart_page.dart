@@ -670,7 +670,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
           
           // Click to Pay button
           Container(
-            margin: EdgeInsets.fromLTRB(20.r, 5.h, 20.r, 80.h),
+            margin: EdgeInsets.fromLTRB(20.r, 5.h, 20.r, 30.h),
             width: double.infinity,
             height: 50.h,
             child: ElevatedButton(
@@ -700,92 +700,81 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   
   // Build the delivery address section
   Widget _buildDeliveryAddressSection() {
-    return Padding(
-      padding: EdgeInsets.all(12.r),
-      child: Row(
-        children: [
-          Container(
-            width: 40.w,
-            height: 40.h,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(20.r),
+    return InkWell(
+      onTap: () {
+        // Navigate to address selection
+        // This will be implemented later to select from existing addresses
+        print('Navigate to address selection');
+      },
+      child: Padding(
+        padding: EdgeInsets.all(12.r),
+        child: Row(
+          children: [
+            Container(
+              width: 40.w,
+              height: 40.h,
+              decoration: BoxDecoration(
+                color: Colors.black,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Icon(
+                Icons.location_on_outlined,
+                color: Color(0xFFFFC107), // More vibrant amber
+                size: 22.sp,
+              ),
             ),
-            child: Icon(
-              Icons.location_on_outlined,
-              color: Color(0xFFFFC107), // More vibrant amber
-              size: 22.sp,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      'Delivering to ${_defaultAddress?.addressType.capitalize() ?? 'Other'}',
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const Spacer(),
-                    InkWell(
-                      onTap: () {
-                        // Navigate to address edit
-                      },
-                      child: Text(
-                        'Edit',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.pink.shade400,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 4.h),
-                if (_addressLoading)
-                  ShimmerLoader(child: Container(
-                    height: 14.h,
-                    width: 250.w,
-                    decoration: BoxDecoration(
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Delivering to ${_defaultAddress?.addressType.capitalize() ?? 'Other'}',
+                    style: TextStyle(
+                      fontSize: 14.sp, // Match product name size
+                      fontWeight: FontWeight.w500,
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(2.r),
-                    ),
-                  ))
-                else if (_defaultAddress != null)
-                  Text(
-                    '${_defaultAddress!.addressLine.split(',').first}, ${_defaultAddress!.city}',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: Colors.grey.shade400,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    maxLines: 1,
-                  )
-                else
-                  Text(
-                    'No address found. Add an address to proceed.',
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      color: Colors.grey.shade400,
                     ),
                   ),
-              ],
+                  SizedBox(height: 2.h), // Match product card spacing
+                  if (_addressLoading)
+                    ShimmerLoader(child: Container(
+                      height: 10.h, // Smaller height to match product weight
+                      width: 250.w,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ))
+                  else if (_defaultAddress != null)
+                    Text(
+                      '${_defaultAddress!.addressLine.split(',').first}, ${_defaultAddress!.city}',
+                      style: TextStyle(
+                        fontSize: 10.sp, // Match product weight/quantity size
+                        color: Colors.grey.shade400,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      maxLines: 1,
+                    )
+                  else
+                    Text(
+                      'No address found. Add an address to proceed.',
+                      style: TextStyle(
+                        fontSize: 10.sp, // Match product weight/quantity size
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: 8.w),
-          Icon(
-            Icons.chevron_right,
-            color: Colors.grey.shade400,
-            size: 22.sp,
-          ),
-        ],
+            SizedBox(width: 8.w),
+            Icon(
+              Icons.chevron_right,
+              color: Colors.grey.shade400,
+              size: 22.sp,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -817,16 +806,16 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 Text(
                   'To Pay',
                   style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
+                    fontSize: 14.sp, // Match product name size
+                    fontWeight: FontWeight.w500,
                     color: Colors.white,
                   ),
                 ),
-                SizedBox(height: 4.h),
+                SizedBox(height: 2.h), // Match product card spacing
                 Text(
                   'Incl. all taxes and charges',
                   style: TextStyle(
-                    fontSize: 13.sp,
+                    fontSize: 10.sp, // Match product weight/quantity size
                     color: Colors.grey.shade400,
                   ),
                 ),
@@ -842,7 +831,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                     Text(
                       '₹${(_totalCartValue + _totalSavings).toInt()}',
                       style: TextStyle(
-                        fontSize: 14.sp,
+                        fontSize: 11.sp, // Match strikethrough price in cart item
                         decoration: TextDecoration.lineThrough,
                         color: Colors.grey.shade400,
                       ),
@@ -852,7 +841,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                   Text(
                     '₹${_totalCartValue.toInt()}',
                     style: TextStyle(
-                      fontSize: 18.sp,
+                      fontSize: 14.sp, // Match price font size in cart item
                       fontWeight: FontWeight.bold,
                       color: Color(0xFFFFC107), // More vibrant amber
                     ),
@@ -863,7 +852,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 Text(
                   'SAVING ₹${_totalSavings.toInt()}',
                   style: TextStyle(
-                    fontSize: 12.sp,
+                    fontSize: 10.sp, // Match product weight/quantity size
                     fontWeight: FontWeight.w500,
                     color: Colors.green.shade400,
                   ),
