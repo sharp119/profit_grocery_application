@@ -30,6 +30,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   bool _allItemsLoaded = false;
   bool _showRemovedMessage = true;
   bool _productsRemoved = false;
+  bool _showAllItems = false;
   
   // Final list of products after filtering out unavailable ones
   late List<MapEntry<String, dynamic>> _cartEntries = [];
@@ -358,48 +359,140 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                             ),
                           ),
                         )
-                      : AnimatedList(
-                          key: GlobalKey<AnimatedListState>(),
-                          initialItemCount: _cartEntries.length,
-                          padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
-                          itemBuilder: (context, index, animation) {
-                            if (index >= _cartEntries.length) {
-                              return const SizedBox.shrink();
-                            }
-
-                            final entry = _cartEntries[index];
-                            final productId = entry.key;
-                            final quantity = entry.value['quantity'] as int? ?? 0;
-                            final isLoading = _loadingState[productId] ?? true;
-                            final product = _productDetails[productId];
-                            
-                            return SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(1, 0),
-                                end: Offset.zero,
-                              ).animate(
-                                CurvedAnimation(
-                                  parent: animation,
-                                  curve: Curves.easeOut,
-                                ),
+                      : Column(
+                          children: [
+                            Expanded(
+                              child: AnimatedList(
+                                key: GlobalKey<AnimatedListState>(),
+                                initialItemCount: _getVisibleItemCount(),
+                                padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
+                                itemBuilder: (context, index, animation) {
+                                  // Check if this is the "+ x more" button
+                                  if (!_showAllItems && index == 4 && _cartEntries.length > 4) {
+                                    return _buildShowMoreButton(animation);
+                                  }
+                                  
+                                  if (index >= _getVisibleEntriesLength()) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  final entry = _cartEntries[index];
+                                  final productId = entry.key;
+                                  final quantity = entry.value['quantity'] as int? ?? 0;
+                                  final isLoading = _loadingState[productId] ?? true;
+                                  final product = _productDetails[productId];
+                                  
+                                  return SlideTransition(
+                                    position: Tween<Offset>(
+                                      begin: const Offset(1, 0),
+                                      end: Offset.zero,
+                                    ).animate(
+                                      CurvedAnimation(
+                                        parent: animation,
+                                        curve: Curves.easeOut,
+                                      ),
+                                    ),
+                                    child: FadeTransition(
+                                      opacity: animation,
+                                      child: AnimatedSwitcher(
+                                        duration: const Duration(milliseconds: 300),
+                                        child: isLoading
+                                            ? _buildLoadingCartItem()
+                                            : (product != null)
+                                                ? _buildCartItem(productId, product, quantity)
+                                                : const SizedBox.shrink(),
+                                      ),
+                                    ),
+                                  );
+                                },
                               ),
-                              child: FadeTransition(
-                                opacity: animation,
-                                child: AnimatedSwitcher(
-                                  duration: const Duration(milliseconds: 300),
-                                  child: isLoading
-                                      ? _buildLoadingCartItem()
-                                      : (product != null)
-                                          ? _buildCartItem(productId, product, quantity)
-                                          : const SizedBox.shrink(),
-                                ),
-                              ),
-                            );
-                          },
+                            ),
+                          ],
                         ),
                 ),
               ],
             ),
+    );
+  }
+  
+  // Get count of items to display in the list
+  int _getVisibleItemCount() {
+    if (_showAllItems) {
+      return _cartEntries.length;
+    } else {
+      return _cartEntries.length > 4 ? 5 : _cartEntries.length; // 4 items + "show more" button
+    }
+  }
+  
+  // Get length of visible entries
+  int _getVisibleEntriesLength() {
+    if (_showAllItems) {
+      return _cartEntries.length;
+    } else {
+      return _cartEntries.length > 4 ? 4 : _cartEntries.length;
+    }
+  }
+  
+  // Build "show more" button
+  Widget _buildShowMoreButton(Animation<double> animation) {
+    final remainingItems = _cartEntries.length - 4;
+    
+    return SlideTransition(
+      position: Tween<Offset>(
+        begin: const Offset(1, 0),
+        end: Offset.zero,
+      ).animate(
+        CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOut,
+        ),
+      ),
+      child: FadeTransition(
+        opacity: animation,
+        child: GestureDetector(
+          onTap: () {
+            setState(() {
+              _showAllItems = true;
+            });
+          },
+          child: Container(
+            margin: EdgeInsets.only(bottom: 12.h),
+            padding: EdgeInsets.all(16.r),
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withOpacity(0.8),
+              borderRadius: BorderRadius.circular(12.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 4.r,
+                  offset: Offset(0, 2.h),
+                ),
+              ],
+            ),
+            child: Center(
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    '+ $remainingItems more ${remainingItems == 1 ? 'item' : 'items'}',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.white,
+                    size: 24.r,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 
