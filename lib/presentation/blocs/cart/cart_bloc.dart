@@ -7,24 +7,22 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/errors/failures.dart';
 import '../../../core/errors/exceptions.dart';
 import '../../../domain/entities/cart.dart';
-import '../../../domain/entities/cart_enums.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/cart_repository.dart';
-import '../../../services/cart/cart_sync_service.dart';
+import '../../../services/simple_cart_service.dart';
 import '../../../utils/cart_logger.dart';
 import 'cart_event.dart';
 import 'cart_state.dart';
 
 class CartBloc extends Bloc<CartEvent, CartState> {
   final CartRepository _cartRepository;
-  final CartSyncService _cartSyncService;
-  StreamSubscription<CartSyncStatus>? _syncSubscription;
+  final SimpleCartService _simpleCartService;
 
   CartBloc({
     required CartRepository cartRepository,
-    required CartSyncService cartSyncService,
+    required SimpleCartService simpleCartService,
   }) : _cartRepository = cartRepository,
-       _cartSyncService = cartSyncService,
+       _simpleCartService = simpleCartService,
        super(const CartState()) {
     on<LoadCart>(_onLoadCart);
     on<AddToCart>(_onAddToCart);
@@ -34,19 +32,7 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     on<ApplyCoupon>(_onApplyCoupon);
     on<RemoveCoupon>(_onRemoveCoupon);
     on<ForceSync>(_onForceSync);
-    on<UpdateSyncStatus>(_onUpdateSyncStatus);
     on<UpdateCartItems>(_onUpdateCartItems); // Register the UpdateCartItems handler
-    
-    // Subscribe to sync status changes from the cart sync service
-    _syncSubscription = _cartSyncService.syncStream.listen((status) {
-      this.add(UpdateSyncStatus(status));
-    });
-  }
-  
-  @override
-  Future<void> close() {
-    _syncSubscription?.cancel();
-    return super.close();
   }
 
   Future<void> _onLoadCart(
@@ -84,11 +70,8 @@ class CartBloc extends Bloc<CartEvent, CartState> {
           ));
         },
         (cart) {
-          // Get current sync status from the sync service
-          _cartSyncService.getCurrentSyncStatus().then((syncStatus) {
-            CartLogger.info('BLOC', 'Cart sync status: $syncStatus');
-            this.add(UpdateSyncStatus(syncStatus));
-          });
+          // Sync with SimpleCartService
+          _simpleCartService.syncWithFirestore();
           
           CartLogger.success('BLOC', 'Cart loaded successfully: ${cart.items.length} items, total: ${cart.total}');
           emit(state.copyWith(
@@ -651,62 +634,23 @@ class CartBloc extends Bloc<CartEvent, CartState> {
     Emitter<CartState> emit,
   ) async {
     try {
-      CartLogger.log('BLOC', 'Force syncing cart');
-      emit(state.copyWith(syncStatus: CartSyncStatus.syncing));
+      CartLogger.log('BLOC', 'Force syncing cart...');
+      emit(state.copyWith(status: CartStatus.syncing));
       
-      // Get user ID from SharedPreferences
-      final prefs = await SharedPreferences.getInstance();
-      final userId = prefs.getString(AppConstants.userTokenKey);
+      // Use SimpleCartService to sync with Firestore
+      await _simpleCartService.syncWithFirestore();
       
-      if (userId == null || userId.isEmpty) {
-        CartLogger.error('BLOC', 'User not authenticated');
-        emit(state.copyWith(
-          syncStatus: CartSyncStatus.error,
-        ));
-        return;
-      }
+      // Then reload the cart
+      this.add(const LoadCart());
       
-      // In the new system, we simply reload from repository
-      final result = await _cartRepository.getCart(userId);
-      
-      result.fold(
-        (failure) {
-          CartLogger.error('BLOC', 'Sync failed: ${failure.message}');
-          emit(state.copyWith(
-            syncStatus: CartSyncStatus.error,
-          ));
-        },
-        (cart) {
-          CartLogger.success('BLOC', 'Sync completed successfully');
-          emit(state.copyWith(
-            status: CartStatus.loaded,
-            items: cart.items,
-            subtotal: cart.subtotal,
-            discount: cart.discount,
-            deliveryFee: cart.deliveryFee,
-            total: cart.total,
-            itemCount: cart.itemCount,
-            couponCode: cart.appliedCouponCode,
-            couponApplied: cart.appliedCouponCode != null,
-            syncStatus: CartSyncStatus.synced,
-          ));
-        },
-      );
+      CartLogger.success('BLOC', 'Cart force sync completed');
     } catch (e) {
       CartLogger.error('BLOC', 'Error during force sync', e);
       emit(state.copyWith(
-        syncStatus: CartSyncStatus.error,
+        status: CartStatus.error,
+        errorMessage: 'Failed to sync cart: $e',
       ));
     }
-  }
-  
-  void _onUpdateSyncStatus(
-    UpdateSyncStatus event,
-    Emitter<CartState> emit,
-  ) {
-    emit(state.copyWith(
-      syncStatus: event.status,
-    ));
   }
   
   // New handler for the UpdateCartItems event

@@ -6,9 +6,8 @@ import '../../data/datasources/local/local_cart_data_source.dart';
 import '../../data/repositories/cart_repository_impl.dart';
 import '../../domain/repositories/cart_repository.dart';
 import '../../presentation/blocs/cart/cart_bloc.dart';
-import '../../services/cart/cart_initializer.dart';
-import '../../services/cart/cart_sync_service.dart';
-import '../../services/cart/unified_cart_service.dart';
+import '../../services/simple_cart_service.dart';
+import '../../services/cart_provider.dart';
 
 final sl = GetIt.instance;
 
@@ -29,35 +28,17 @@ Future<void> initCartDependencies() async {
     ),
   );
 
-  // Services
-  // For backward compatibility, but using the new implementation under the hood
-  final cartSyncService = CartSyncService(
-    cartRepository: sl<CartRepository>(),
-    sharedPreferences: sl<SharedPreferences>(),
-    database: sl<FirebaseDatabase>(),
-  );
-  
-  // Register the cart sync service
-  sl.registerLazySingleton<CartSyncService>(() => cartSyncService);
-  
-  // Register the unified cart service (it's a singleton itself, but register for DI)
-  final unifiedCartService = UnifiedCartService();
-  unifiedCartService.initialize();
-  sl.registerLazySingleton<UnifiedCartService>(() => unifiedCartService);
+  // Register SimpleCartService (it's a singleton itself, but register for DI)
+  sl.registerLazySingleton<SimpleCartService>(() => SimpleCartService());
+
+  // Register CartProvider (it's a singleton itself, but register for DI)
+  sl.registerLazySingleton<CartProvider>(() => CartProvider());
 
   // BLoC
   sl.registerFactory(
     () => CartBloc(
       cartRepository: sl<CartRepository>(),
-      cartSyncService: sl<CartSyncService>(),
-    ),
-  );
-  
-  // Cart Initializer - create last after CartBloc is registered
-  sl.registerLazySingleton<CartInitializer>(
-    () => CartInitializer(
-      cartBloc: sl<CartBloc>(),
-      sharedPreferences: sl<SharedPreferences>(),
+      simpleCartService: sl<SimpleCartService>(),
     ),
   );
 }

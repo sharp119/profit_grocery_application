@@ -8,7 +8,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import '../../../domain/repositories/cart_repository.dart';
-import '../../../services/cart/cart_sync_service.dart';
+import '../../../services/simple_cart_service.dart';
 import '../../../services/logging_service.dart';
 // import '../product_details/product_details_page.dart';
 import '../../blocs/cart/cart_bloc.dart';
@@ -40,7 +40,7 @@ class CategoryProductsPage extends StatelessWidget {
       return BlocProvider(
         create: (context) => CartBloc(
           cartRepository: GetIt.instance<CartRepository>(),
-          cartSyncService: GetIt.instance<CartSyncService>(),
+          simpleCartService: GetIt.instance<SimpleCartService>(),
         )..add(const LoadCart()),
         child: _buildMainContent(context),
       );

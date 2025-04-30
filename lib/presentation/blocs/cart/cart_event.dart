@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../domain/entities/cart.dart';
-import '../../../domain/entities/cart_enums.dart';
 import '../../../domain/entities/product.dart';
 
 abstract class CartEvent extends Equatable {
@@ -63,15 +62,6 @@ class RemoveCoupon extends CartEvent {
 
 class ForceSync extends CartEvent {
   const ForceSync();
-}
-
-class UpdateSyncStatus extends CartEvent {
-  final CartSyncStatus status;
-
-  const UpdateSyncStatus(this.status);
-
-  @override
-  List<Object?> get props => [status];
 }
 
 /// Event to directly update cart items from an external source

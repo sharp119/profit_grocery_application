@@ -2,8 +2,6 @@ import 'package:badges/badges.dart' as badges;
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:profit_grocery_application/domain/entities/cart_enums.dart';
-import 'package:profit_grocery_application/services/cart/cart_sync_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
 
 import '../../../core/constants/app_theme.dart';
@@ -73,8 +71,7 @@ class FloatingCartBadge extends StatelessWidget {
     return BlocBuilder<CartBloc, CartState>(
       buildWhen: (previous, current) => 
           previous.itemCount != current.itemCount ||
-          previous.total != current.total ||
-          previous.syncStatus != current.syncStatus,
+          previous.total != current.total,
       builder: (context, state) {
         // Log cart state for debugging
         CartLogger.log('CART_BADGE', 'Building FloatingCartBadge with state: ${state.status}, itemCount: ${state.itemCount}');
@@ -180,29 +177,20 @@ class FloatingCartBadge extends StatelessWidget {
                             fontSize: smallFontSize,
                           ),
                         ),
-                        if (state.syncStatus == CartSyncStatus.pending ||
-                            state.syncStatus == CartSyncStatus.syncing)
+                        if (state.status == CartStatus.syncing)
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                state.syncStatus == CartSyncStatus.syncing
-                                    ? Icons.sync
-                                    : Icons.sync_problem,
-                                color: state.syncStatus == CartSyncStatus.syncing
-                                    ? Colors.amber
-                                    : Colors.orange,
+                                Icons.sync,
+                                color: Colors.amber,
                                 size: smallFontSize,
                               ),
                               SizedBox(width: 4.w),
                               Text(
-                                state.syncStatus == CartSyncStatus.syncing
-                                    ? 'Syncing...'
-                                    : 'Pending sync',
+                                'Syncing...',
                                 style: TextStyle(
-                                  color: state.syncStatus == CartSyncStatus.syncing
-                                      ? Colors.amber
-                                      : Colors.orange,
+                                  color: Colors.amber,
                                   fontSize: smallFontSize * 0.8,
                                 ),
                               ),
@@ -254,10 +242,10 @@ class CartSyncIndicator extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<CartBloc, CartState>(
-      buildWhen: (previous, current) => previous.syncStatus != current.syncStatus,
+      buildWhen: (previous, current) => previous.status != current.status,
       builder: (context, state) {
-        // Don't show if synced
-        if (state.syncStatus == CartSyncStatus.synced) {
+        // Only show if syncing or error
+        if (state.status != CartStatus.syncing && state.status != CartStatus.error) {
           return const SizedBox.shrink();
         }
         
@@ -266,30 +254,16 @@ class CartSyncIndicator extends StatelessWidget {
         IconData icon;
         String message;
         
-        switch (state.syncStatus) {
-          case CartSyncStatus.syncing:
-            color = Colors.amber;
-            icon = Icons.sync;
-            message = 'Syncing cart...';
-            break;
-          case CartSyncStatus.pending:
-            color = Colors.orange;
-            icon = Icons.sync_problem;
-            message = 'Cart will sync when online';
-            break;
-          case CartSyncStatus.offline:
-            color = Colors.red.shade300;
-            icon = Icons.cloud_off;
-            message = 'Offline mode';
-            break;
-          case CartSyncStatus.error:
-            color = Colors.red;
-            icon = Icons.error_outline;
-            message = 'Sync error';
-            break;
-          case CartSyncStatus.synced:
-          default:
-            return const SizedBox.shrink();
+        if (state.status == CartStatus.syncing) {
+          color = Colors.amber;
+          icon = Icons.sync;
+          message = 'Syncing cart...';
+        } else if (state.status == CartStatus.error) {
+          color = Colors.red;
+          icon = Icons.error_outline;
+          message = 'Sync error';
+        } else {
+          return const SizedBox.shrink();
         }
         
         return Container(
@@ -314,8 +288,7 @@ class CartSyncIndicator extends StatelessWidget {
                   fontSize: 12.sp,
                 ),
               ),
-              if (state.syncStatus == CartSyncStatus.pending ||
-                  state.syncStatus == CartSyncStatus.error)
+              if (state.status == CartStatus.error)
                 IconButton(
                   iconSize: 14.r,
                   padding: EdgeInsets.all(4.r),

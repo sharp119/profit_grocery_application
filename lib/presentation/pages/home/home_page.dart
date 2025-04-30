@@ -8,11 +8,11 @@ import 'package:profit_grocery_application/core/errors/global_error_handler.dart
 import 'package:profit_grocery_application/main.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_state.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/promotional_category_card.dart';
 import 'package:profit_grocery_application/presentation/widgets/profile/profile_completion_banner.dart';
-import 'package:profit_grocery_application/services/cart/home_cart_bridge.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
 import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
@@ -129,13 +129,6 @@ class _HomePageContentState extends State<_HomePageContent> {
       final cartBloc = context.read<CartBloc>();
       final homeBloc = context.read<HomeBloc>();
       
-      // Create a HomeCartBridge and initialize it
-      final bridge = HomeCartBridge(
-        cartBloc: cartBloc,
-        homeBloc: homeBloc,
-      );
-      bridge.initialize();
-      
       // Listen to CartBloc state changes to update HomeBloc
       cartBloc.stream.listen((state) {
         if (state.status == CartStatus.loaded && mounted) {
@@ -187,8 +180,6 @@ class _HomePageContentState extends State<_HomePageContent> {
     });
   }
 
-
-
   @override
   void dispose() {
     _scrollController.dispose();
@@ -208,8 +199,6 @@ class _HomePageContentState extends State<_HomePageContent> {
     );
   }
   
-
-
   void _onProductTap(Product product) {
     // Navigate to product details screen
     // Navigator.push(
@@ -220,73 +209,34 @@ class _HomePageContentState extends State<_HomePageContent> {
     // );
   }
 
-  void _onProductQuantityChanged(Product product, int quantity) {
-    CartLogger.log('HOME_PAGE', 'Product quantity changed: ${product.name}, quantity: $quantity');
-    
-    // Get the CartBloc
-    final cartBloc = context.read<CartBloc>();
-    
-    // Create a temporary HomeCartBridge
-    final bridge = HomeCartBridge(
-      cartBloc: cartBloc,
-      homeBloc: context.read<HomeBloc>(),
-    );
-    
-    // Direct test with Firebase Realtime Database
+  void _handleAddToCart(Product product, int quantity) {
     try {
-      final userId = GetIt.instance<IUserService>().getCurrentUserId();
-      if (userId != null) {
-        // Create a simple test path specific to this user's cart
-        final database = GetIt.instance<FirebaseDatabase>();
-        final ref = database.ref().child('carts_test/$userId');
-        
-        // Create specific message
-        String cartMessage = "yoyo product with id ${product.id} got added in the cart";
-        
-        // Write entry with specific message
-        ref.set({
-          'product_id': product.id,
-          'product_name': product.name,
-          'quantity': quantity,
-          'price': product.price,
-          'timestamp': DateTime.now().millisecondsSinceEpoch,
-          'message': cartMessage,
-          'test_entry': true
-        });
-        
-        // Log the specific message
-        CartLogger.success('HOME_PAGE', cartMessage);
-        print('CART TEST: $cartMessage');
-        
-        // Also show a notification with the specific message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('✅ $cartMessage'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      CartLogger.error('HOME_PAGE', 'Failed to write test data to Firebase', e);
+      final cartBloc = context.read<CartBloc>();
+      final homeBloc = context.read<HomeBloc>();
       
-      // Show error notification
+      // Update cart through CartBloc
+      if (quantity <= 0) {
+        cartBloc.add(RemoveFromCart(product.id));
+      } else {
+        cartBloc.add(AddToCart(product, quantity));
+      }
+      
+      // Update HomeBloc directly
+      homeBloc.add(UpdateCartQuantity(product, quantity));
+      
+      // Show feedback
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('❌ Firebase test failed: ${e.toString().split('\n').first}'),
-          backgroundColor: Colors.red,
+          content: Text(quantity > 0 
+            ? 'Added ${product.name} to cart' 
+            : 'Removed ${product.name} from cart'
+          ),
+          duration: const Duration(seconds: 1),
         ),
       );
+    } catch (e) {
+      LoggingService.logError('HomePage', 'Error updating cart: $e');
     }
-    
-    // Use the bridge to update cart as usual
-    if (quantity <= 0) {
-      bridge.removeFromCart(product);
-    } else {
-      bridge.updateCartItemQuantity(product, quantity);
-    }
-    
-    CartLogger.success('HOME_PAGE', 'Cart updated via bridge');
   }
 
   void _navigateToCart() {
@@ -1422,7 +1372,7 @@ class _HomePageContentState extends State<_HomePageContent> {
               ),
               SimpleBestsellerGrid(
                 onProductTap: _onProductTap,
-                onQuantityChanged: _onProductQuantityChanged,
+                onQuantityChanged: _handleAddToCart,
                 cartQuantities: state.cartQuantities,
                 limit: AppConstants.bestsellerLimit ,  // Show 12 bestsellers (increased from 6)
                 ranked: AppConstants.bestsellerRanked,  // Randomize instead of sorting by rank
