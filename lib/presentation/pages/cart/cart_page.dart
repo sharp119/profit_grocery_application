@@ -22,7 +22,9 @@ class _CartPageState extends State<CartPage> {
   final Map<String, bool> _loadingState = {};
   final Map<String, Product?> _productDetails = {};
   int _totalItems = 0;
-  int _removedItems = 0;
+  int _removedItemsCount = 0;
+  bool _isLoading = true;
+  bool _showRemovedMessage = true;
 
   @override
   void initState() {
@@ -31,14 +33,22 @@ class _CartPageState extends State<CartPage> {
   }
 
   Future<void> _loadCartItems() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
     final cartItems = _cartProvider.cartItems;
     int totalCount = 0;
     int removedCount = 0;
+    int loadedItemsCount = 0;
     
     print('--- Cart Items Log ---');
     
     if (cartItems.isEmpty) {
       print('Cart is empty');
+      setState(() {
+        _isLoading = false;
+      });
     } else {
       print('Total unique products in cart: ${cartItems.length}');
       
@@ -74,14 +84,28 @@ class _CartPageState extends State<CartPage> {
           setState(() {
             _productDetails[productId] = product;
             _loadingState[productId] = false;
-            _removedItems = removedCount;
+            _removedItemsCount = removedCount;
+            
+            // Increment loaded items count
+            loadedItemsCount++;
+            
+            // Check if all items are loaded
+            if (loadedItemsCount == cartItems.length) {
+              _isLoading = false;
+            }
           });
         } catch (e) {
           print('  Error fetching product details: $e');
           setState(() {
             _loadingState[productId] = false;
-            removedCount += quantity;
-            _removedItems = removedCount;
+            
+            // Increment loaded items count
+            loadedItemsCount++;
+            
+            // Check if all items are loaded
+            if (loadedItemsCount == cartItems.length) {
+              _isLoading = false;
+            }
           });
         }
       }
@@ -96,9 +120,10 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     final cartItems = _cartProvider.cartItems;
-    // Filter out unknown products
-    final validCartItems = cartItems.keys
-        .where((id) => _productDetails[id] != null)
+    
+    // Filter out items where product is null (removed items)
+    final validCartEntries = cartItems.entries
+        .where((entry) => _productDetails[entry.key] != null)
         .toList();
     
     return Scaffold(
@@ -144,87 +169,123 @@ class _CartPageState extends State<CartPage> {
                       ),
                     ],
                   ),
-                  child: Column(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Cart Items',
-                            style: TextStyle(
-                              fontSize: 18.sp,
-                              fontWeight: FontWeight.bold,
-                              color: AppTheme.textPrimaryColor,
-                            ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
-                            decoration: BoxDecoration(
-                              color: AppTheme.accentColor,
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                            child: Text(
-                              '$_totalItems items',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.primaryColor,
-                              ),
-                            ),
-                          ),
-                        ],
+                      Text(
+                        'Cart Items',
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.textPrimaryColor,
+                        ),
                       ),
-                      if (_removedItems > 0)
-                        Container(
-                          margin: EdgeInsets.only(top: 8.h),
-                          padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
-                          decoration: BoxDecoration(
-                            color: Colors.red.shade700,
-                            borderRadius: BorderRadius.circular(8.r),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor,
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Text(
+                          '$_totalItems items',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppTheme.primaryColor,
                           ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Show removed items message if any items were removed and loading is complete
+                if (!_isLoading && _removedItemsCount > 0 && _showRemovedMessage)
+                  Container(
+                    width: double.infinity,
+                    margin: EdgeInsets.symmetric(horizontal: 16.r, vertical: 8.r),
+                    padding: EdgeInsets.all(12.r),
+                    decoration: BoxDecoration(
+                      color: Colors.red.shade800,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.warning_amber_rounded,
+                          color: Colors.white,
+                          size: 20.r,
+                        ),
+                        SizedBox(width: 8.w),
+                        Expanded(
                           child: Text(
-                            _removedItems == 1
-                                ? '1 item has been removed from the store'
-                                : '$_removedItems items have been removed from the store',
+                            '${_removedItemsCount} ${_removedItemsCount == 1 ? 'item' : 'items'} unavailable and not shown',
                             style: TextStyle(
-                              fontSize: 12.sp,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
                               color: Colors.white,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: validCartItems.isEmpty
-                      ? Center(
-                          child: Text(
-                            'No available products in cart',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              color: AppTheme.textPrimaryColor,
-                            ),
-                          ),
-                        )
-                      : ListView.builder(
-                          padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
-                          itemCount: validCartItems.length,
-                          itemBuilder: (context, index) {
-                            final productId = validCartItems[index];
-                            final quantity = cartItems[productId]?['quantity'] as int? ?? 0;
-                            final isLoading = _loadingState[productId] ?? true;
-                            final product = _productDetails[productId];
-                            
-                            if (product == null) {
-                              return SizedBox.shrink(); // Don't show removed products
-                            }
-                            
-                            return isLoading
-                                ? _buildLoadingCartItem()
-                                : _buildCartItem(productId, product, quantity);
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showRemovedMessage = false;
+                            });
                           },
+                          child: Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 20.r,
+                          ),
                         ),
-                ),
+                      ],
+                    ),
+                  ),
+                
+                _isLoading && cartItems.isNotEmpty
+                  ? Expanded(
+                      child: Center(
+                        child: CircularProgressIndicator(
+                          color: AppTheme.accentColor,
+                        ),
+                      ),
+                    )
+                  : Expanded(
+                      child: validCartEntries.isEmpty
+                          ? Center(
+                              child: Text(
+                                'All items in your cart are unavailable',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: AppTheme.textSecondaryColor,
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
+                              itemCount: validCartEntries.length,
+                              itemBuilder: (context, index) {
+                                final entry = validCartEntries[index];
+                                final productId = entry.key;
+                                final quantity = entry.value['quantity'] as int? ?? 0;
+                                final isLoading = _loadingState[productId] ?? true;
+                                final product = _productDetails[productId];
+                                
+                                if (isLoading) {
+                                  return _buildLoadingCartItem();
+                                }
+                                
+                                // Only build cart items for products that exist
+                                if (product != null) {
+                                  return _buildCartItem(productId, product, quantity);
+                                }
+                                
+                                // Return empty container for removed products
+                                return const SizedBox.shrink();
+                              },
+                            ),
+                    ),
               ],
             ),
     );
@@ -239,12 +300,7 @@ class _CartPageState extends State<CartPage> {
     );
   }
 
-  Widget _buildCartItem(String productId, Product? product, int quantity) {
-    // Don't show removed products
-    if (product == null) {
-      return SizedBox.shrink();
-    }
-    
+  Widget _buildCartItem(String productId, Product product, int quantity) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.r),
@@ -344,11 +400,7 @@ class _CartPageState extends State<CartPage> {
     );
   }
   
-  Widget _buildProductImage(Product? product) {
-    if (product == null) {
-      return _buildImageErrorWidget();
-    }
-    
+  Widget _buildProductImage(Product product) {
     final imageUrl = product.image;
     
     // Check for Firebase Storage URLs that cause errors (gs:// format)
