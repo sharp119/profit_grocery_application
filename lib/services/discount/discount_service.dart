@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:get_it/get_it.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../product/shared_product_service.dart';
 
 /// Service for handling product discount calculations and related operations
 /// This centralized service ensures consistent discount handling across different product cards
 class DiscountService {
+  /// Cache to store discount information by product ID
+  static final Map<String, Map<String, dynamic>> _discountCache = {};
+  
   /// Calculate the final price after applying a discount
   /// 
   /// Parameters:
@@ -139,5 +145,243 @@ class DiscountService {
         : "No discount";
     
     print("DISCOUNT: Product $productId - Type: ${discountType ?? 'None'}, Value: $discText");
+  }
+  
+  /// Get complete discount information for a product by its ID directly from Firestore
+  /// Checks if an entry with the same ID exists in the discounts collection
+  static Future<Map<String, dynamic>> getProductDiscountInfo(String productId) async {
+    // Check if we have cached discount info
+    if (_discountCache.containsKey(productId)) {
+      return _discountCache[productId]!;
+    }
+    
+    try {
+      // Get Firebase instance
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      
+      // First, check if there's a discount entry for this product in the discounts collection
+      final discountDoc = await firestore.collection('discounts').doc(productId).get();
+      
+      if (discountDoc.exists) {
+        // We found a discount record for this product
+        final discountData = discountDoc.data() as Map<String, dynamic>;
+        
+        // Get product info to calculate final price
+        final productService = GetIt.instance<SharedProductService>();
+        final product = await productService.getProductById(productId);
+        
+        if (product == null) {
+          return {'hasDiscount': false, 'error': 'Product not found'};
+        }
+        
+        // Extract discount details
+        final String discountType = discountData['discountType'] ?? 'percentage';
+        final double discountValue = (discountData['discountValue'] is int)
+            ? (discountData['discountValue'] as int).toDouble()
+            : (discountData['discountValue'] as double? ?? 0);
+        
+        // Calculate prices
+        final originalPrice = product.mrp ?? product.price;
+        final finalPrice = calculateFinalPrice(
+          originalPrice: originalPrice,
+          discountType: discountType,
+          discountValue: discountValue,
+        );
+        
+        // Calculate discount percentage
+        final discountPercentage = calculateDiscountPercentage(
+          originalPrice: originalPrice,
+          finalPrice: finalPrice,
+        );
+        
+        // Prepare the discount info
+        final discountInfo = {
+          'productId': productId,
+          'productName': product.name,
+          'originalPrice': originalPrice,
+          'finalPrice': finalPrice,
+          'hasDiscount': true,
+          'discountType': discountType,
+          'discountValue': discountValue,
+          'discountPercentage': discountPercentage,
+          'startDate': discountData['startDate'],
+          'endDate': discountData['endDate'],
+          'isActive': discountData['isActive'] ?? true,
+        };
+        
+        // Cache for future use
+        _discountCache[productId] = discountInfo;
+        
+        // Log the discount info
+        logDiscount(
+          productId: productId,
+          discountType: discountType,
+          discountValue: discountValue,
+        );
+        
+        return discountInfo;
+      } else {
+        // No discount entry found for this product
+        // Get basic product info for the response
+        final productService = GetIt.instance<SharedProductService>();
+        final product = await productService.getProductById(productId);
+        
+        if (product == null) {
+          return {'hasDiscount': false, 'error': 'Product not found'};
+        }
+        
+        // Prepare response with no discount
+        final noDiscountInfo = {
+          'productId': productId,
+          'productName': product.name,
+          'originalPrice': product.mrp ?? product.price,
+          'finalPrice': product.price,
+          'hasDiscount': false,
+          'discountPercentage': 0,
+          'discountAmount': 0,
+        };
+        
+        // Cache for future use
+        _discountCache[productId] = noDiscountInfo;
+        
+        return noDiscountInfo;
+      }
+    } catch (e) {
+      print('Error getting product discount info from Firestore: $e');
+      return {'hasDiscount': false, 'error': e.toString()};
+    }
+  }
+  
+  /// Get discount information synchronously (from cache only)
+  /// Returns null if not in cache
+  static Map<String, dynamic>? getCachedDiscountInfo(String productId) {
+    return _discountCache[productId];
+  }
+  
+  /// Get discount information for multiple products at once
+  /// Returns a map where keys are product IDs and values are their discount information
+  static Future<Map<String, Map<String, dynamic>>> getBatchProductDiscountInfo(List<String> productIds) async {
+    Map<String, Map<String, dynamic>> results = {};
+    
+    try {
+      // Get Firestore instance
+      final FirebaseFirestore firestore = FirebaseFirestore.instance;
+      
+      // Get all discounts from the discounts collection that match the product IDs
+      final QuerySnapshot discountsQuery = await firestore
+          .collection('discounts')
+          .where(FieldPath.documentId, whereIn: productIds)
+          .get();
+      
+      // Convert to map for easier lookup
+      Map<String, Map<String, dynamic>> discountsMap = {};
+      for (var doc in discountsQuery.docs) {
+        discountsMap[doc.id] = doc.data() as Map<String, dynamic>;
+      }
+      
+      // Get product service for fetching product details
+      final productService = GetIt.instance<SharedProductService>();
+      
+      // Process each product ID
+      for (String productId in productIds) {
+        // Check if we have cached discount info
+        if (_discountCache.containsKey(productId)) {
+          results[productId] = _discountCache[productId]!;
+          continue;
+        }
+        
+        try {
+          // Get product details
+          final product = await productService.getProductById(productId);
+          
+          if (product == null) {
+            results[productId] = {'hasDiscount': false, 'error': 'Product not found'};
+            continue;
+          }
+          
+          // Check if we have a discount for this product
+          if (discountsMap.containsKey(productId)) {
+            final discountData = discountsMap[productId]!;
+            
+            // Extract discount details
+            final String discountType = discountData['discountType'] ?? 'percentage';
+            final double discountValue = (discountData['discountValue'] is int)
+                ? (discountData['discountValue'] as int).toDouble()
+                : (discountData['discountValue'] as double? ?? 0);
+            
+            // Calculate prices
+            final originalPrice = product.mrp ?? product.price;
+            final finalPrice = calculateFinalPrice(
+              originalPrice: originalPrice,
+              discountType: discountType,
+              discountValue: discountValue,
+            );
+            
+            // Calculate discount percentage
+            final discountPercentage = calculateDiscountPercentage(
+              originalPrice: originalPrice,
+              finalPrice: finalPrice,
+            );
+            
+            // Prepare the discount info
+            final discountInfo = {
+              'productId': productId,
+              'productName': product.name,
+              'originalPrice': originalPrice,
+              'finalPrice': finalPrice,
+              'hasDiscount': true,
+              'discountType': discountType,
+              'discountValue': discountValue,
+              'discountPercentage': discountPercentage,
+              'startDate': discountData['startDate'],
+              'endDate': discountData['endDate'],
+              'isActive': discountData['isActive'] ?? true,
+            };
+            
+            // Cache for future use
+            _discountCache[productId] = discountInfo;
+            
+            // Add to results
+            results[productId] = discountInfo;
+            
+            // Log the discount
+            logDiscount(
+              productId: productId,
+              discountType: discountType,
+              discountValue: discountValue,
+            );
+          } else {
+            // No discount for this product
+            final noDiscountInfo = {
+              'productId': productId,
+              'productName': product.name,
+              'originalPrice': product.mrp ?? product.price,
+              'finalPrice': product.price,
+              'hasDiscount': false,
+              'discountPercentage': 0,
+              'discountAmount': 0,
+            };
+            
+            // Cache for future use
+            _discountCache[productId] = noDiscountInfo;
+            
+            // Add to results
+            results[productId] = noDiscountInfo;
+          }
+        } catch (e) {
+          print('Error processing product $productId: $e');
+          results[productId] = {'hasDiscount': false, 'error': e.toString()};
+        }
+      }
+      
+      return results;
+    } catch (e) {
+      print('Error in batch discount info: $e');
+      // Return an empty map with error for all requested products
+      for (String productId in productIds) {
+        results[productId] = {'hasDiscount': false, 'error': e.toString()};
+      }
+      return results;
+    }
   }
 } 

@@ -68,9 +68,11 @@ import '../../../domain/entities/product.dart';
 import '../../../services/logging_service.dart';
 import '../../../services/discount/discount_service.dart';
 import '../../widgets/buttons/add_button.dart';
+import '../../widgets/discount/discount_display_widget.dart';
+import '../../widgets/discount/discount_provider.dart';
 
 /// A simplified product card that only displays essential information
-class SimpleProductCard extends StatelessWidget {
+class SimpleProductCard extends StatefulWidget {
   final Product product;
   final Color backgroundColor;
   final Function(Product)? onTap;
@@ -83,29 +85,38 @@ class SimpleProductCard extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<SimpleProductCard> createState() => _SimpleProductCardState();
+}
+
+class _SimpleProductCardState extends State<SimpleProductCard> {
+  @override
+  void initState() {
+    super.initState();
+    // Preload discount info for this product from Firestore
+    DiscountProvider.preloadDiscountInfo(widget.product.id);
+  }
+
+  @override
+  void didUpdateWidget(SimpleProductCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.product.id != widget.product.id) {
+      // If product changed, preload the new product's discount info from Firestore
+      DiscountProvider.preloadDiscountInfo(widget.product.id);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Log when this product card is built
-    LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Building card for ${product.name} (${product.id})');
-    print('PRODUCT_CARD_SIMPLE: Building card for ${product.name} (${product.id})');
+    LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Building card for ${widget.product.name} (${widget.product.id})');
+    print('PRODUCT_CARD_SIMPLE: Building card for ${widget.product.name} (${widget.product.id})');
     
-    // Calculate discount percentage if there's a discount using DiscountService
-    int discountPercentage = 0;
-    if (product.mrp != null && product.mrp! > product.price) {
-      discountPercentage = DiscountService.calculateDiscountPercentage(
-        originalPrice: product.mrp!,
-        finalPrice: product.price,
-        productId: product.id,
-      );
-      LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Product has discount of $discountPercentage% (${product.mrp} → ${product.price})');
-      print('PRODUCT_CARD_SIMPLE: Product has discount of $discountPercentage% (${product.mrp} → ${product.price})');
-    }
-
     return GestureDetector(
       onTap: () {
-        LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Card tapped for ${product.name}');
-        print('PRODUCT_CARD_SIMPLE: Card tapped for ${product.name}');
-        if (onTap != null) {
-          onTap!(product);
+        LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Card tapped for ${widget.product.name}');
+        print('PRODUCT_CARD_SIMPLE: Card tapped for ${widget.product.name}');
+        if (widget.onTap != null) {
+          widget.onTap!(widget.product);
         }
       },
       child: Container(
@@ -135,10 +146,10 @@ class SimpleProductCard extends StatelessWidget {
                   child: Container(
                     height: 120.h,
                     width: double.infinity,
-                    color: backgroundColor, // Apply category color ONLY to the image background
+                    color: widget.backgroundColor, // Apply category color ONLY to the image background
                     padding: EdgeInsets.all(10.r),
                     child: CachedNetworkImage(
-                      imageUrl: product.image,
+                      imageUrl: widget.product.image,
                       fit: BoxFit.contain,
                       placeholder: (context, url) => Center(
                         child: CircularProgressIndicator(
@@ -147,7 +158,7 @@ class SimpleProductCard extends StatelessWidget {
                         ),
                       ),
                       errorWidget: (context, url, error) {
-                        LoggingService.logError('PRODUCT_CARD_SIMPLE', 'Error loading image for ${product.name}: $error');
+                        LoggingService.logError('PRODUCT_CARD_SIMPLE', 'Error loading image for ${widget.product.name}: $error');
                         print('PRODUCT_CARD_SIMPLE ERROR: Failed to load image - $error');
                         return Center(
                           child: Icon(
@@ -161,33 +172,18 @@ class SimpleProductCard extends StatelessWidget {
                   ),
                 ),
 
-                // Discount badge
-                if (discountPercentage > 0)
-                  Positioned(
-                    top: 0,
-                    right: 0,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.only(
-                          topRight: Radius.circular(12.r),
-                          bottomLeft: Radius.circular(12.r),
-                        ),
-                      ),
-                      child: Text(
-                        '$discountPercentage% OFF',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 10.sp,
-                        ),
-                      ),
-                    ),
+                // Discount badge using the new DiscountDisplayWidget
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: DiscountDisplayWidget(
+                    productId: widget.product.id,
+                    backgroundColor: Colors.red,
                   ),
+                ),
 
                 // Out of stock overlay
-                if (!product.inStock)
+                if (!widget.product.inStock)
                   Positioned.fill(
                     child: Container(
                       decoration: BoxDecoration(
@@ -229,7 +225,7 @@ class SimpleProductCard extends StatelessWidget {
                   Container(
                     height: 38.h, // Fixed height for product name
                     child: Text(
-                      product.name,
+                      widget.product.name,
                       style: TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.w500,
@@ -241,9 +237,9 @@ class SimpleProductCard extends StatelessWidget {
                   ),
 
                   // Product weight/quantity
-                  if (product.weight != null && product.weight!.isNotEmpty)
+                  if (widget.product.weight != null && widget.product.weight!.isNotEmpty)
                     Text(
-                      product.weight!,
+                      widget.product.weight!,
                       style: TextStyle(
                         color: Colors.white70,
                         fontSize: 12.sp,
@@ -258,7 +254,7 @@ class SimpleProductCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        '${AppConstants.currencySymbol}${product.price.toStringAsFixed(0)}',
+                        '${AppConstants.currencySymbol}${widget.product.price.toStringAsFixed(0)}',
                         style: TextStyle(
                           color: AppTheme.accentColor,
                           fontWeight: FontWeight.bold,
@@ -268,10 +264,10 @@ class SimpleProductCard extends StatelessWidget {
 
                       SizedBox(width: 8.w),
 
-                      // MRP if different from price
-                      if (product.mrp! > product.price)
+                      // MRP if different from price - check with DiscountProvider
+                      if (DiscountProvider.hasDiscount(widget.product.id))
                         Text(
-                          '${AppConstants.currencySymbol}${product.mrp?.toStringAsFixed(0)}',
+                          '${AppConstants.currencySymbol}${widget.product.mrp?.toStringAsFixed(0)}',
                           style: TextStyle(
                             color: Colors.white70,
                             decoration: TextDecoration.lineThrough,
@@ -285,10 +281,10 @@ class SimpleProductCard extends StatelessWidget {
 
                   // Add button with quantity controls
                   AddButton(
-                    productId: product.id,
+                    productId: widget.product.id,
                     sourceCardType: ProductCardType.simple,
                     height: 36.h,
-                    inStock: product.inStock,
+                    inStock: widget.product.inStock,
                   ),
                 ],
               ),
