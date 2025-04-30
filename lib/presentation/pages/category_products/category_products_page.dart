@@ -17,6 +17,7 @@ import '../../blocs/cart/cart_state.dart';
 import '../../blocs/category_products/category_products_bloc.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/panels/two_panel_category_product_view.dart';
+import '../../pages/cart/cart_page.dart';
 
 class CategoryProductsPage extends StatelessWidget {
   final String? categoryId;
@@ -350,8 +351,11 @@ class CategoryProductsPage extends StatelessWidget {
                 cartItemCount: cartState.itemCount ?? 0, // Use the CartBloc's item count with null safety
                 totalAmount: cartState.total ?? 0.0, // Use the CartBloc's total with null safety
                 onCartTap: () {
-                  // Navigate to cart using proper route constant
-                  Navigator.pushNamed(context, AppConstants.cartRoute);
+                  // Navigate to cart using direct navigation instead of named route
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CartPage()),
+                  );
                 },
                 cartPreviewImage: (cartState.itemCount ?? 0) > 0 && state.categoryProducts.isNotEmpty
                     ? _getCartPreviewImage(state)
