@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/category.dart';
@@ -13,6 +14,7 @@ import '../../../services/logging_service.dart';
 import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
 import '../cards/universal_product_card.dart';
+import '../../../core/constants/category_assets.dart';
 
 /// A two-panel layout with categories on the left and products on the right,
 /// optimized for efficient Firestore data loading with lazy loading support
@@ -335,8 +337,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                             height: 50.w,
                             decoration: BoxDecoration(
                               color: isSelected
-                                  ? backgroundColor.withOpacity(0.8)
-                                  : backgroundColor.withOpacity(0.4),
+                                  ? Colors.white.withOpacity(0.9)
+                                  : Colors.white.withOpacity(0.0),
                               shape: BoxShape.circle,
                               border: Border.all(
                                 color: isSelected
@@ -345,25 +347,34 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                 width: 1.5,
                               ),
                             ),
-                            child: Center(
-                              child: SizedBox(
-                                width: 30.w,
-                                height: 30.w,
-                                child: Image.network(
-                                  category.image,
-                                  color: isSelected
-                                      ? Colors.black.withOpacity(0.7)
-                                      : Colors.white,
-                                  errorBuilder: (context, error, stackTrace) {
-                                    return Icon(
-                                      Icons.category,
-                                      color: isSelected
-                                          ? AppTheme.accentColor
-                                          : Colors.white,
-                                      size: 24.w,
-                                    );
-                                  },
+                            child: Padding(
+                              padding: EdgeInsets.all(8.r),
+                              child: CachedNetworkImage(
+                                imageUrl: category.image,
+                                fit: BoxFit.contain,
+                                placeholder: (context, url) => Center(
+                                  child: SizedBox(
+                                    width: 20.w,
+                                    height: 20.w,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.w,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppTheme.accentColor,
+                                      ),
+                                    ),
+                                  ),
                                 ),
+                                errorWidget: (context, url, error) {
+                                  LoggingService.logError('TWOPANEL', 'Error loading image for ${category.name}: $error, URL: $url');
+                                  print('TWOPANEL: Error loading image for ${category.name}: $error, URL: $url');
+                                  return Icon(
+                                    Icons.category,
+                                    color: isSelected
+                                        ? AppTheme.accentColor
+                                        : Colors.white,
+                                    size: 24.w,
+                                  );
+                                },
                               ),
                             ),
                           ),
