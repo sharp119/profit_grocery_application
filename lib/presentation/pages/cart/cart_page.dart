@@ -8,6 +8,7 @@ import '../../../services/simple_cart_service.dart';
 import '../../../services/discount/discount_service.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/image_loader.dart';
+import '../../widgets/buttons/add_button.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -46,13 +47,54 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         _removeUnavailableProducts();
       }
     });
+
+    // Listen for cart changes to update the UI
+    _cartProvider.addListener(_onCartChanged);
   }
   
   @override
   void dispose() {
     // Dispose all animation controllers
     _itemAnimationControllers.forEach((_, controller) => controller.dispose());
+    
+    // Remove the cart listener
+    _cartProvider.removeListener(_onCartChanged);
+    
     super.dispose();
+  }
+
+  // Called when the cart is updated (like when quantity changes)
+  void _onCartChanged() {
+    if (mounted) {
+      setState(() {
+        // Update the total items count
+        _totalItems = _cartProvider.cartItems.length;
+        
+        // Update the cart entries if needed
+        final currentCartItems = _cartProvider.cartItems;
+        
+        // Check if any items were removed from the cart
+        final updatedEntries = _cartEntries.where((entry) {
+          return currentCartItems.containsKey(entry.key);
+        }).toList();
+        
+        // Check if any quantities were changed
+        for (var i = 0; i < updatedEntries.length; i++) {
+          final productId = updatedEntries[i].key;
+          final currentQuantity = currentCartItems[productId]?['quantity'] ?? 0;
+          
+          // Update the quantity in our cached entries
+          if (updatedEntries[i].value['quantity'] != currentQuantity) {
+            updatedEntries[i] = MapEntry(
+              productId, 
+              {...updatedEntries[i].value, 'quantity': currentQuantity}
+            );
+          }
+        }
+        
+        _cartEntries = updatedEntries;
+      });
+    }
   }
 
   // Setup initial list of cart items with placeholders
@@ -715,20 +757,13 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
               ],
             ),
           ),
-          // Quantity Badge
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
-            decoration: BoxDecoration(
-              color: AppTheme.accentColor,
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Text(
-              'Qty: $quantity',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-                color: AppTheme.primaryColor,
-              ),
+          // Quantity Button with fixed width
+          SizedBox(
+            width: 100.w,
+            child: AddButton(
+              productId: productId,
+              sourceCardType: ProductCardType.productDetails,
+              inStock: product.inStock,
             ),
           ),
         ],
