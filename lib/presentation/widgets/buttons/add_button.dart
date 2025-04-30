@@ -154,7 +154,7 @@ class _AddButtonState extends State<AddButton> {
 
     // If quantity is greater than zero, show the quantity selector
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 4.w),
+      padding: EdgeInsets.symmetric(horizontal: 2.w),
       child: Container(
         height: buttonHeight,
         width: double.infinity, // Will adapt to parent width
@@ -163,31 +163,34 @@ class _AddButtonState extends State<AddButton> {
           borderRadius: BorderRadius.circular(4.r),
         ),
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             // Decrease button
             InkWell(
               onTap: _decreaseQuantity,
               child: SizedBox(
-                width: buttonHeight, // Square button
+                width: buttonHeight * 0.8, 
                 height: buttonHeight,
                 child: Center(
                   child: Icon(
                     Icons.remove,
                     color: buttonTextColor,
-                    size: textSize + 2.sp,
+                    size: textSize,
                   ),
                 ),
               ),
             ),
             
             // Quantity display
-            Text(
-              _quantity.toString(),
-              style: TextStyle(
-                color: buttonTextColor,
-                fontWeight: FontWeight.bold,
-                fontSize: textSize,
+            Padding(
+              padding: EdgeInsets.zero,
+              child: Text(
+                _quantity.toString(),
+                style: TextStyle(
+                  color: buttonTextColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: textSize,
+                ),
               ),
             ),
             
@@ -195,13 +198,13 @@ class _AddButtonState extends State<AddButton> {
             InkWell(
               onTap: _increaseQuantity,
               child: SizedBox(
-                width: buttonHeight, // Square button
+                width: buttonHeight * 0.8,
                 height: buttonHeight,
                 child: Center(
                   child: Icon(
                     Icons.add,
                     color: buttonTextColor,
-                    size: textSize + 2.sp,
+                    size: textSize,
                   ),
                 ),
               ),

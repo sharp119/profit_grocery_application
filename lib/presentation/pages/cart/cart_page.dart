@@ -289,126 +289,74 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
-        title: const Text('Cart'),
+        title: const Text('Your Cart', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: AppTheme.primaryColor,
         elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: AppTheme.accentColor),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
-      body: cartItems.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.shopping_cart_outlined,
-                    size: 64.r,
-                    color: AppTheme.accentColor,
-                  ),
-                  SizedBox(height: 16.h),
-                  Text(
-                    'Your cart is empty',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.textPrimaryColor,
+      body: Stack(
+        children: [
+          // Main content with cart items
+          cartItems.isEmpty
+            ? Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.shopping_cart_outlined,
+                      size: 64.r,
+                      color: AppTheme.accentColor,
                     ),
-                  ),
-                ],
-              ),
-            )
-          : Column(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(16.r),
-                  decoration: BoxDecoration(
-                    color: AppTheme.primaryColor,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 8,
-                        offset: const Offset(0, 2),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Your cart is empty',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimaryColor,
                       ),
-                    ],
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'Cart Items',
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryColor,
-                        ),
-                      ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentColor,
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
-                        child: Text(
-                          '$_totalItems products',
+                    ),
+                  ],
+                ),
+              )
+            : Column(
+                children: [
+                  // Savings banner if cart has items
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 10.r),
+                    color: AppTheme.accentColor.withOpacity(0.8),
+                    child: Row(
+                      children: [
+                        Text(
+                          '₹${(_getTotalSavings() > 0 ? _getTotalSavings() : 0).toStringAsFixed(0)}',
                           style: TextStyle(
-                            fontSize: 14.sp,
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.bold,
                             color: AppTheme.primaryColor,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ),
-                
-                // Show removed items message if any items were removed and loading is complete
-                if (_allItemsLoaded && _removedItemsCount > 0 && _showRemovedMessage)
-                  AnimatedOpacity(
-                    opacity: 1.0,
-                    duration: const Duration(milliseconds: 500),
-                    child: Container(
-                      width: double.infinity,
-                      margin: EdgeInsets.symmetric(horizontal: 16.r, vertical: 8.r),
-                      padding: EdgeInsets.all(12.r),
-                      decoration: BoxDecoration(
-                        color: Colors.red.shade800,
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: Colors.white,
-                            size: 20.r,
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              '${_removedItemsCount} ${_removedItemsCount == 1 ? 'item' : 'items'} unavailable and ${_productsRemoved ? 'removed from cart' : 'not shown'}',
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w500,
-                                color: Colors.white,
-                              ),
+                        SizedBox(width: 8.w),
+                        Expanded(
+                          child: Text(
+                            'SAVINGS ON THIS ORDER',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w500,
+                              color: AppTheme.primaryColor,
                             ),
                           ),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _showRemovedMessage = false;
-                              });
-                            },
-                            child: Icon(
-                              Icons.close,
-                              color: Colors.white,
-                              size: 20.r,
-                            ),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                
-                Expanded(
-                  child: _cartEntries.isEmpty && _allItemsLoaded
+                  
+                  // Cart items list (takes remaining space minus the button height)
+                  Expanded(
+                    child: _cartEntries.isEmpty && _allItemsLoaded
                       ? Center(
                           child: Text(
                             'All items in your cart are unavailable',
@@ -418,320 +366,229 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                             ),
                           ),
                         )
-                      : Column(
-                          children: [
-                            Expanded(
-                              child: AnimatedList(
-                                key: GlobalKey<AnimatedListState>(),
-                                initialItemCount: _getVisibleItemCount(),
-                                padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
-                                itemBuilder: (context, index, animation) {
-                                  // Check if this is the "+ x more" button
-                                  if (!_showAllItems && index == 4 && _cartEntries.length > 4) {
-                                    return _buildShowMoreButton(animation);
-                                  }
-                                  
-                                  if (index >= _getVisibleEntriesLength()) {
-                                    return const SizedBox.shrink();
-                                  }
-                                  
-                                  final entry = _cartEntries[index];
-                                  final productId = entry.key;
-                                  final quantity = entry.value['quantity'] as int? ?? 0;
-                                  final isLoading = _loadingState[productId] ?? true;
-                                  final product = _productDetails[productId];
-                                  
-                                  return SlideTransition(
-                                    position: Tween<Offset>(
-                                      begin: const Offset(1, 0),
-                                      end: Offset.zero,
-                                    ).animate(
-                                      CurvedAnimation(
-                                        parent: animation,
-                                        curve: Curves.easeOut,
-                                      ),
-                                    ),
-                                    child: FadeTransition(
-                                      opacity: animation,
-                                      child: AnimatedSwitcher(
-                                        duration: const Duration(milliseconds: 300),
-                                        child: isLoading
-                                            ? _buildLoadingCartItem()
-                                            : (product != null)
-                                                ? _buildCartItem(productId, product, quantity)
-                                                : const SizedBox.shrink(),
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                            ),
-                          ],
+                      : ListView.separated(
+                          padding: EdgeInsets.only(bottom: 80.h), // Padding for bottom button
+                          itemCount: _showAllItems ? _cartEntries.length : 
+                            (_cartEntries.length > 4 ? 5 : _cartEntries.length),
+                          separatorBuilder: (context, index) => _buildDashedDivider(),
+                          itemBuilder: (context, index) {
+                            // Handle "show more" button
+                            if (!_showAllItems && index == 4 && _cartEntries.length > 4) {
+                              return _buildShowMoreButton();
+                            }
+                            
+                            if (index >= (_showAllItems ? _cartEntries.length : 
+                                (_cartEntries.length > 4 ? 4 : _cartEntries.length))) {
+                              return const SizedBox.shrink();
+                            }
+                            
+                            final entry = _cartEntries[index];
+                            final productId = entry.key;
+                            final quantity = entry.value['quantity'] as int? ?? 0;
+                            final isLoading = _loadingState[productId] ?? true;
+                            final product = _productDetails[productId];
+                            
+                            return isLoading
+                                ? _buildLoadingCartItem()
+                                : (product != null)
+                                    ? _buildCartItemCompact(productId, product, quantity)
+                                    : const SizedBox.shrink();
+                          },
                         ),
-                ),
-              ],
-            ),
-    );
-  }
-  
-  // Get count of items to display in the list
-  int _getVisibleItemCount() {
-    if (_showAllItems) {
-      return _cartEntries.length;
-    } else {
-      return _cartEntries.length > 4 ? 5 : _cartEntries.length; // 4 items + "show more" button
-    }
-  }
-  
-  // Get length of visible entries
-  int _getVisibleEntriesLength() {
-    if (_showAllItems) {
-      return _cartEntries.length;
-    } else {
-      return _cartEntries.length > 4 ? 4 : _cartEntries.length;
-    }
-  }
-  
-  // Build "show more" button
-  Widget _buildShowMoreButton(Animation<double> animation) {
-    final remainingItems = _cartEntries.length - 4;
-    
-    return SlideTransition(
-      position: Tween<Offset>(
-        begin: const Offset(1, 0),
-        end: Offset.zero,
-      ).animate(
-        CurvedAnimation(
-          parent: animation,
-          curve: Curves.easeOut,
-        ),
-      ),
-      child: FadeTransition(
-        opacity: animation,
-        child: GestureDetector(
-          onTap: () {
-            setState(() {
-              _showAllItems = true;
-            });
-          },
-          child: Container(
-            margin: EdgeInsets.only(bottom: 12.h),
-            padding: EdgeInsets.all(16.r),
-            decoration: BoxDecoration(
-              color: AppTheme.primaryColor.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(12.r),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 4.r,
-                  offset: Offset(0, 2.h),
-                ),
-              ],
-            ),
-            child: Center(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    '+ $remainingItems more ${remainingItems == 1 ? 'item' : 'items'}',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  SizedBox(width: 8.w),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Colors.white,
-                    size: 24.r,
                   ),
                 ],
               ),
+          
+          // Fixed "Select Address" button at the bottom
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 4,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: EdgeInsets.all(16.r),
+              child: ElevatedButton(
+                onPressed: () {
+                  // No functionality for now
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accentColor,
+                  foregroundColor: AppTheme.primaryColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                ),
+                child: Text(
+                  'Select Address',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.primaryColor,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+        ],
       ),
     );
   }
 
-  Widget _buildLoadingCartItem() {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: ShimmerLoader.cartItem(
-        height: 120.h,
+  // Dashed divider between cart items
+  Widget _buildDashedDivider() {
+    return Container(
+      margin: EdgeInsets.symmetric(vertical: 0),
+      child: CustomPaint(
+        painter: DashedLinePainter(),
+        size: Size(double.infinity, 1.h),
       ),
     );
   }
-
-  Widget _buildCartItem(String productId, Product product, int quantity) {
-    // Get discount info if available
+  
+  // Calculate total savings (original price minus discounted price)
+  double _getTotalSavings() {
+    double savings = 0;
+    
+    for (var entry in _cartEntries) {
+      final productId = entry.key;
+      final quantity = entry.value['quantity'] as int? ?? 0;
+      final product = _productDetails[productId];
+      
+      if (product != null) {
+        final hasDiscount = _discountDetails.containsKey(productId) && 
+                            _discountDetails[productId]?['hasDiscount'] == true;
+        final originalPrice = product.mrp ?? product.price;
+        
+        if (hasDiscount) {
+          final discountInfo = _discountDetails[productId]!;
+          
+          // Calculate the final price with discount
+          double finalPrice = product.price;
+          final discountType = discountInfo['discountType'];
+          final discountValue = discountInfo['discountValue'];
+          
+          if (discountType == 'percentage' && discountValue is num) {
+            finalPrice = product.price - (product.price * (discountValue / 100));
+          } else if (discountType == 'flat' && discountValue is num) {
+            finalPrice = product.price - discountValue;
+          }
+          
+          savings += (originalPrice - finalPrice) * quantity;
+        } else if (product.mrp != null && product.mrp! > product.price) {
+          savings += (product.mrp! - product.price) * quantity;
+        }
+      }
+    }
+    
+    return savings;
+  }
+  
+  // New compact cart item design
+  Widget _buildCartItemCompact(String productId, Product product, int quantity) {
+    // Calculate the final price with discount if applicable
     final discountInfo = _discountDetails[productId];
     final bool hasDiscount = discountInfo != null && discountInfo['hasDiscount'] == true;
     
     // Calculate the discounted price directly
     double finalPrice = product.price;
+    double originalPrice = product.mrp ?? product.price;
     
     if (hasDiscount) {
-      // Check if discount is active based on date
-      bool isDiscountActive = true;
+      // Get discount type and value
+      final discountType = discountInfo['discountType'];
+      final discountValue = discountInfo['discountValue'];
       
-      // Check if the discount has start and end timestamps
-      if (discountInfo.containsKey('startTimestamp') && discountInfo.containsKey('endTimestamp')) {
-        final now = DateTime.now().millisecondsSinceEpoch;
-        final startTimestamp = discountInfo['startTimestamp'];
-        final endTimestamp = discountInfo['endTimestamp'];
-        
-        // Parse timestamps if they are not already numbers
-        int startTime = startTimestamp is int ? startTimestamp : 0;
-        int endTime = endTimestamp is int ? endTimestamp : 0;
-        
-        if (startTime > 0 && endTime > 0) {
-          isDiscountActive = now >= startTime && now <= endTime;
-        }
+      // Convert discount value to double
+      double discountValueDouble = 0;
+      if (discountValue is int) {
+        discountValueDouble = discountValue.toDouble();
+      } else if (discountValue is double) {
+        discountValueDouble = discountValue;
+      } else if (discountValue is String && double.tryParse(discountValue) != null) {
+        discountValueDouble = double.parse(discountValue);
       }
       
-      // Only apply discount if it's active
-      if (isDiscountActive) {
-        // Get discount type and value
-        final discountType = discountInfo['discountType'];
-        final discountValue = discountInfo['discountValue'];
-        
-        // Convert discount value to double
-        double discountValueDouble = 0;
-        if (discountValue is int) {
-          discountValueDouble = discountValue.toDouble();
-        } else if (discountValue is double) {
-          discountValueDouble = discountValue;
-        } else if (discountValue is String && double.tryParse(discountValue) != null) {
-          discountValueDouble = double.parse(discountValue);
-        }
-        
-        // Apply discount based on type
-        if (discountType == 'percentage' && discountValueDouble > 0) {
-          // Calculate percentage discount
-          final discount = product.price * (discountValueDouble / 100.0);
-          finalPrice = product.price - discount;
-        } else if (discountType == 'flat' && discountValueDouble > 0) {
-          // Apply flat discount
-          finalPrice = product.price - discountValueDouble;
-        }
-        
-        // Ensure price is not negative
-        if (finalPrice < 0) finalPrice = 0;
+      // Apply discount based on type
+      if (discountType == 'percentage' && discountValueDouble > 0) {
+        // Calculate percentage discount
+        final discount = product.price * (discountValueDouble / 100.0);
+        finalPrice = product.price - discount;
+      } else if (discountType == 'flat' && discountValueDouble > 0) {
+        // Apply flat discount
+        finalPrice = product.price - discountValueDouble;
       }
     }
     
-    // Debug discount info
-    if (hasDiscount) {
-      print('DISCOUNT DEBUG - Product: ${product.name}');
-      print('  Original price: ${product.price}');
-      print('  Discount type: ${discountInfo['discountType']}');
-      print('  Discount value: ${discountInfo['discountValue']}');
-      print('  Final calculated price: $finalPrice');
-    }
+    // Format product weight/quantity info
+    String quantityInfo = product.weight ?? '';
     
     return Container(
-      key: ValueKey('cartItem_$productId'),
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(12.r),
-      decoration: BoxDecoration(
-        color: AppTheme.secondaryColor,
-        borderRadius: BorderRadius.circular(12.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 4.r,
-            offset: Offset(0, 2.h),
-          ),
-        ],
-      ),
+      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 12.r),
+      color: AppTheme.secondaryColor,
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Product Image with background color
-          Stack(
-            children: [
-              Container(
-                width: 80.w,
-                height: 80.h,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: _buildProductImage(product),
-              ),
-              
-              // Discount tag if available
-              /* if (hasDiscount && finalPrice < product.price)
-                Positioned(
-                  top: 0,
-                  right: 0,
-                  child: Container(
-                    width: 40.w,
-                    padding: EdgeInsets.symmetric(vertical: 6.h),
-                    decoration: BoxDecoration(
-                      color: Colors.red,
-                      borderRadius: BorderRadius.only(
-                        topRight: Radius.circular(8.r),
-                        bottomLeft: Radius.circular(8.r),
-                      ),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          discountInfo['discountType'] == 'percentage'
-                              ? '${discountInfo['discountValue']?.toInt()}%'
-                              : '₹${discountInfo['discountValue']?.toInt()}',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 12.sp,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                        Text(
-                          'OFF',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500,
-                            fontSize: 10.sp,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ), */
-            ],
+          // Column 1: Product image
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4.r),
+            child: SizedBox(
+              width: 55.w,
+              height: 55.h,
+              child: _buildProductImage(product),
+            ),
           ),
-          SizedBox(width: 12.w),
-          // Product Details
+          SizedBox(width: 8.w),
+          
+          // Column 2: Product details
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  product.name,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.textPrimaryColor,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 4.h),
-                if (product.categoryName != null)
-                  Text(
-                    product.categoryName!,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: AppTheme.textSecondaryColor,
+                // Row 1: Product name and quantity side by side
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Product name
+                    Expanded(
+                      child: Text(
+                        product.name,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textPrimaryColor,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                  ),
+                    // Little spacing
+                    SizedBox(width: 4.w),
+                    // Quantity info (250g, 1kg, etc.)
+                    if (quantityInfo.isNotEmpty)
+                      Text(
+                        quantityInfo,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                  ],
+                ),
+                
                 SizedBox(height: 8.h),
+                
+                // Row 2: Price info on left side
                 Row(
                   children: [
                     Text(
@@ -739,7 +596,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
-                        color: hasDiscount && finalPrice < product.price ? Colors.green : AppTheme.accentColor,
+                        color: hasDiscount && finalPrice < product.price ? Colors.green[700] : AppTheme.accentColor,
                       ),
                     ),
                     SizedBox(width: 8.w),
@@ -757,13 +614,18 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
               ],
             ),
           ),
-          // Quantity Button with fixed width
+          
+          SizedBox(width: 6.w),
+          
+          // Column 3: Add button
           SizedBox(
-            width: 100.w,
+            width: 90.w,
+            height: 30.h,
             child: AddButton(
               productId: productId,
               sourceCardType: ProductCardType.productDetails,
               inStock: product.inStock,
+              fontSize: 12.sp,
             ),
           ),
         ],
@@ -771,6 +633,53 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     );
   }
   
+  Widget _buildShowMoreButton() {
+    final remainingItems = _cartEntries.length - 4;
+    
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showAllItems = true;
+        });
+      },
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 16.r),
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+        ),
+        child: Center(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                '+ $remainingItems more ${remainingItems == 1 ? 'item' : 'items'}',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w500,
+                  color: AppTheme.accentColor,
+                ),
+              ),
+              Icon(
+                Icons.keyboard_arrow_down,
+                color: AppTheme.accentColor,
+                size: 20.r,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingCartItem() {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 12.h),
+      child: ShimmerLoader.cartItem(
+        height: 120.h,
+      ),
+    );
+  }
+
   Widget _buildProductImage(Product product) {
     final imageUrl = product.image;
     
@@ -805,5 +714,32 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       ),
     );
   }
+}
+
+// Add DashedLinePainter class below the CartPage class
+class DashedLinePainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppTheme.accentColor.withOpacity(0.5)
+      ..strokeWidth = 1
+      ..style = PaintingStyle.stroke;
+
+    const dashWidth = 5;
+    const dashSpace = 3;
+    double startX = 0;
+
+    while (startX < size.width) {
+      canvas.drawLine(
+        Offset(startX, 0),
+        Offset(startX + dashWidth, 0),
+        paint,
+      );
+      startX += dashWidth + dashSpace;
+    }
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
 }
 
