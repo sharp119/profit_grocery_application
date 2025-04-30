@@ -367,10 +367,10 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                           ),
                         )
                       : ListView.separated(
-                          padding: EdgeInsets.only(bottom: 80.h), // Padding for bottom button
+                          padding: EdgeInsets.only(bottom: 80.h, top: 10.h), // Added top padding
                           itemCount: _showAllItems ? _cartEntries.length : 
                             (_cartEntries.length > 4 ? 5 : _cartEntries.length),
-                          separatorBuilder: (context, index) => _buildDashedDivider(),
+                          separatorBuilder: (context, index) => SizedBox(height: 8.h), // Gap between elevated cards
                           itemBuilder: (context, index) {
                             // Handle "show more" button
                             if (!_showAllItems && index == 4 && _cartEntries.length > 4) {
@@ -388,11 +388,20 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                             final isLoading = _loadingState[productId] ?? true;
                             final product = _productDetails[productId];
                             
-                            return isLoading
-                                ? _buildLoadingCartItem()
-                                : (product != null)
-                                    ? _buildCartItemCompact(productId, product, quantity)
-                                    : const SizedBox.shrink();
+                            // Wrap both loading and product cards in an elevated container
+                            return Card(
+                              elevation: 2.0,
+                              margin: EdgeInsets.symmetric(horizontal: 10.r),
+                              color: AppTheme.secondaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: isLoading
+                                  ? _buildLoadingCartItem()
+                                  : (product != null)
+                                      ? _buildCartItemCompact(productId, product, quantity)
+                                      : const SizedBox.shrink(),
+                            );
                           },
                         ),
                   ),
@@ -444,15 +453,9 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     );
   }
 
-  // Dashed divider between cart items
+  // Dashed divider between cart items - no longer needed with card-based layout
   Widget _buildDashedDivider() {
-    return Container(
-      margin: EdgeInsets.symmetric(vertical: 0),
-      child: CustomPaint(
-        painter: DashedLinePainter(),
-        size: Size(double.infinity, 1.h),
-      ),
-    );
+    return SizedBox(height: 1.h);
   }
   
   // Calculate total savings (original price minus discounted price)
@@ -533,8 +536,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     String quantityInfo = product.weight ?? '';
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 14.r),
-      color: AppTheme.secondaryColor,
+      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 12.r), // Adjusted padding
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -652,35 +654,44 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   Widget _buildShowMoreButton() {
     final remainingItems = _cartEntries.length - 4;
     
-    return GestureDetector(
-      onTap: () {
-        setState(() {
-          _showAllItems = true;
-        });
-      },
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 16.r),
-        decoration: BoxDecoration(
-          color: AppTheme.secondaryColor,
-        ),
-        child: Center(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                '+ $remainingItems more ${remainingItems == 1 ? 'item' : 'items'}',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.accentColor,
+    return Card(
+      elevation: 2.0,
+      margin: EdgeInsets.symmetric(horizontal: 10.r),
+      color: AppTheme.secondaryColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: GestureDetector(
+        onTap: () {
+          setState(() {
+            _showAllItems = true;
+          });
+        },
+        child: Container(
+          padding: EdgeInsets.symmetric(vertical: 16.r),
+          decoration: BoxDecoration(
+            color: AppTheme.secondaryColor,
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  '+ $remainingItems more ${remainingItems == 1 ? 'item' : 'items'}',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.accentColor,
+                  ),
                 ),
-              ),
-              Icon(
-                Icons.keyboard_arrow_down,
-                color: AppTheme.accentColor,
-                size: 20.r,
-              ),
-            ],
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: AppTheme.accentColor,
+                  size: 20.r,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -689,9 +700,9 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
   Widget _buildLoadingCartItem() {
     return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(12.h),
       child: ShimmerLoader.cartItem(
-        height: 120.h,
+        height: 80.h,
       ),
     );
   }
