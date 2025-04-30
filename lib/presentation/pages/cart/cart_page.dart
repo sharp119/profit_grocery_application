@@ -538,58 +538,63 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Section 1: Product image - fixed width
-          SizedBox(
-            width: 65.w,
-            child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(4.r),
-                child: SizedBox(
-                  width: 55.w,
-                  height: 55.h,
-                  child: _buildProductImage(product),
-                ),
-              ),
-            ),
-          ),
-          
-          // Section 2: Product details - fixed width
-          SizedBox(
-            width: 130.w,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Row 1: Product name - now 2 lines
-                Text(
-                  product.name,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w500,
-                    color: AppTheme.textPrimaryColor,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                
-                SizedBox(height: 4.h),
-                
-                // Row 2: Product quantity
-                if (quantityInfo.isNotEmpty)
-                  Text(
-                    quantityInfo,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      color: AppTheme.textSecondaryColor,
+          // Section 1: 70% - Image and product details
+          Row(
+            children: [
+              // Product image (approximately 25% of total)
+              SizedBox(
+                width: 75.w,
+                child: Center(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(4.r),
+                    child: SizedBox(
+                      width: 55.w,
+                      height: 55.h,
+                      child: _buildProductImage(product),
                     ),
                   ),
-              ],
-            ),
+                ),
+              ),
+              
+              // Product details (approximately 45% of total)
+              SizedBox(
+                width: 140.w,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Product name
+                    Text(
+                      product.name,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
+                        color: AppTheme.textPrimaryColor,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    
+                    SizedBox(height: 4.h),
+                    
+                    // Product quantity
+                    if (quantityInfo.isNotEmpty)
+                      Text(
+                        quantityInfo,
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          color: AppTheme.textSecondaryColor,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
           ),
           
-          // Section 3: Add button - fixed width, centered
+          // Section 2: 20% - Add button
           SizedBox(
-            width: 80.w,
+            width: 75.w,
             child: Center(
               child: SizedBox(
                 width: 68.w,
@@ -604,13 +609,14 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             ),
           ),
           
-          // Section 4: Price information - fixed width, centered
+          // Section 3: 10% - Price information
           SizedBox(
-            width: 70.w,
-            child: Center(
+            width: 55.w,
+            child: Padding(
+              padding: EdgeInsets.only(right: 1.w), // Add right padding
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end, // Align to the right side
                 children: [
                   Text(
                     '₹${finalPrice.toStringAsFixed(0)}',
@@ -619,6 +625,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       fontWeight: FontWeight.bold,
                       color: hasDiscount && finalPrice < product.price ? Colors.green[700] : AppTheme.accentColor,
                     ),
+                    textAlign: TextAlign.right, // Ensure text is right-aligned
                   ),
                   
                   SizedBox(height: 2.h),
@@ -631,6 +638,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                         color: AppTheme.textSecondaryColor,
                         decoration: TextDecoration.lineThrough,
                       ),
+                      textAlign: TextAlign.right, // Ensure text is right-aligned
                     ),
                 ],
               ),
