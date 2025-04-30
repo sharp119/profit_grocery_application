@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../services/discount/discount_service.dart';
 import 'bestseller_item.dart';
 import 'product.dart';
 
@@ -41,7 +42,11 @@ class BestsellerProduct extends Equatable {
   int get rank => bestsellerInfo.rank;
   
   /// Check if bestseller has special discount
-  bool get hasSpecialDiscount => bestsellerInfo.hasSpecialDiscount;
+  bool get hasSpecialDiscount => DiscountService.hasDiscount(
+    discountType: discountType,
+    discountValue: discountValue,
+    productId: product.id,
+  );
   
   /// Get the bestseller discount type (percentage or flat)
   String? get discountType => bestsellerInfo.discountType;
@@ -50,16 +55,23 @@ class BestsellerProduct extends Equatable {
   double? get discountValue => bestsellerInfo.discountValue;
   
   /// Get final price after applying bestseller discount
-  double get finalPrice => hasSpecialDiscount
-      ? bestsellerInfo.getDiscountedPrice(product.price)
-      : product.price;
+  double get finalPrice => DiscountService.calculateFinalPrice(
+    originalPrice: product.price,
+    discountType: discountType,
+    discountValue: discountValue,
+    productId: product.id,
+  );
   
   /// Get total discount percentage (after applying bestseller discount)
   double get totalDiscountPercentage {
     if (mrp == null || mrp! <= finalPrice) {
       return 0.0;
     }
-    return ((mrp! - finalPrice) / mrp! * 100).roundToDouble();
+    return DiscountService.calculateDiscountPercentage(
+      originalPrice: mrp!,
+      finalPrice: finalPrice,
+      productId: product.id,
+    ).toDouble();
   }
   
   /// Check if the product has any discount (either bestseller or regular)

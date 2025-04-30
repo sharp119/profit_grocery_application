@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
+import '../../../services/discount/discount_service.dart';
 import '../../widgets/image_loader.dart';
 import '../../../core/utils/screen_size_utils.dart';
 
@@ -56,10 +57,14 @@ class ProductCard extends StatelessWidget {
     );
   }
 
-  // Calculate discount percentage
-  double? get discountPercentage {
+  // Calculate discount percentage using DiscountService
+  int? get discountPercentage {
     if (mrp != null && mrp! > price) {
-      return ((mrp! - price) / mrp! * 100).roundToDouble();
+      return DiscountService.calculateDiscountPercentage(
+        originalPrice: mrp!,
+        finalPrice: price,
+        productId: id,
+      );
     }
     return null;
   }

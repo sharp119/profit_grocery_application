@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/product.dart';
+import '../../../services/discount/discount_service.dart';
 import 'reusable_product_card.dart';
 
 /**
@@ -66,7 +67,14 @@ class FeaturedProductCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // Calculate the featured discount
     final originalPrice = product.mrp ?? product.price;
-    final finalPrice = originalPrice - (originalPrice * discountPercentage / 100);
+    
+    // Calculate final price using the discount service
+    final finalPrice = DiscountService.calculateFinalPrice(
+      originalPrice: originalPrice,
+      discountType: 'percentage',
+      discountValue: discountPercentage,
+      productId: product.id,
+    );
     
     // Special logger message for featured products could be added here
     
@@ -75,7 +83,7 @@ class FeaturedProductCard extends StatelessWidget {
       product: product,
       finalPrice: finalPrice,
       originalPrice: originalPrice,
-      hasDiscount: true,
+      hasDiscount: discountPercentage > 0,
       discountType: 'percentage',
       discountValue: discountPercentage,
       backgroundColor: backgroundColor,

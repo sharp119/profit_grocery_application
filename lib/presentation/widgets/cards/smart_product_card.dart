@@ -70,6 +70,7 @@ import '../../../domain/entities/product.dart';
 import '../../../services/product/shared_product_service.dart';
 import '../../../services/category/shared_category_service.dart';
 import '../../../services/logging_service.dart';
+import '../../../services/discount/discount_service.dart';
 import '../../widgets/quantity_selector/quantity_selector.dart';
 
 /// A smart product card that only needs a productId and loads its own data
@@ -373,7 +374,7 @@ class _SmartProductCardState extends State<SmartProductCard> {
             ),
 
             // Discount tag
-            if (product.mrp! > product.price)
+            if (product.mrp != null && product.mrp! > product.price)
               Positioned(
                 top: 0,
                 right: 0,
@@ -387,7 +388,11 @@ class _SmartProductCardState extends State<SmartProductCard> {
                     ),
                   ),
                   child: Text(
-                    '${((((product.mrp ?? 1) - (product.price ?? 0)) / (product.mrp ?? 1)) * 100).round()}% OFF',
+                    '${DiscountService.calculateDiscountPercentage(
+                      originalPrice: product.mrp!, 
+                      finalPrice: product.price,
+                      productId: product.id
+                    )}% OFF',
                     style: TextStyle(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,

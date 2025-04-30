@@ -66,6 +66,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/logging_service.dart';
+import '../../../services/discount/discount_service.dart';
 import '../../widgets/buttons/add_button.dart';
 
 /// A simplified product card that only displays essential information
@@ -87,10 +88,14 @@ class SimpleProductCard extends StatelessWidget {
     LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Building card for ${product.name} (${product.id})');
     print('PRODUCT_CARD_SIMPLE: Building card for ${product.name} (${product.id})');
     
-    // Calculate discount percentage if there's a discount
+    // Calculate discount percentage if there's a discount using DiscountService
     int discountPercentage = 0;
     if (product.mrp != null && product.mrp! > product.price) {
-      discountPercentage = ((((product.mrp ?? 0) - product.price) / (product.mrp ?? 1)) * 100).round();
+      discountPercentage = DiscountService.calculateDiscountPercentage(
+        originalPrice: product.mrp!,
+        finalPrice: product.price,
+        productId: product.id,
+      );
       LoggingService.logFirestore('PRODUCT_CARD_SIMPLE: Product has discount of $discountPercentage% (${product.mrp} → ${product.price})');
       print('PRODUCT_CARD_SIMPLE: Product has discount of $discountPercentage% (${product.mrp} → ${product.price})');
     }

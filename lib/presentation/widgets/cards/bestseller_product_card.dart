@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/bestseller_product.dart';
 import '../../../services/logging_service.dart';
+import '../../../services/discount/discount_service.dart';
 import 'reusable_product_card.dart';
 
 /**
@@ -80,10 +81,16 @@ class BestsellerProductCard extends StatelessWidget {
       }
     }
 
+    // Use DiscountService to determine discount properties
+    final hasDiscount = DiscountService.hasDiscount(
+      discountType: bestsellerProduct.discountType,
+      discountValue: bestsellerProduct.discountValue,
+    );
+    
     // Calculate original price to show (either MRP or regular price depending on discount type)
     final originalPrice = product.mrp != null && product.mrp! > bestsellerProduct.finalPrice 
         ? product.mrp 
-        : bestsellerProduct.hasSpecialDiscount 
+        : hasDiscount 
             ? product.price 
             : null;
 
@@ -92,7 +99,7 @@ class BestsellerProductCard extends StatelessWidget {
       product: product,
       finalPrice: bestsellerProduct.finalPrice,
       originalPrice: originalPrice,
-      hasDiscount: bestsellerProduct.hasSpecialDiscount,
+      hasDiscount: hasDiscount,
       discountType: bestsellerProduct.discountType,
       discountValue: bestsellerProduct.discountValue,
       backgroundColor: backgroundColor,

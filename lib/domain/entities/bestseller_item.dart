@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import '../../services/discount/discount_service.dart';
 
 /// Represents a bestseller item with discount information
 /// Used to track bestseller-specific discounts separate from regular product discounts
@@ -16,23 +17,20 @@ class BestsellerItem extends Equatable {
   });
   
   /// Check if this bestseller has a special discount
-  bool get hasSpecialDiscount => 
-    discountType != null && 
-    discountValue != null && 
-    discountValue! > 0;
+  bool get hasSpecialDiscount => DiscountService.hasDiscount(
+    discountType: discountType,
+    discountValue: discountValue,
+    productId: productId,
+  );
   
   /// Calculate the discounted price based on original price
   double getDiscountedPrice(double originalPrice) {
-    if (!hasSpecialDiscount) return originalPrice;
-    
-    if (discountType == 'percentage') {
-      final discount = originalPrice * (discountValue! / 100);
-      return originalPrice - discount;
-    } else if (discountType == 'flat') {
-      return originalPrice - discountValue!;
-    }
-    
-    return originalPrice;
+    return DiscountService.calculateFinalPrice(
+      originalPrice: originalPrice,
+      discountType: discountType,
+      discountValue: discountValue,
+      productId: productId,
+    );
   }
   
   @override

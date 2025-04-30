@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../domain/entities/product.dart';
+import '../../../services/discount/discount_service.dart';
 import 'reusable_product_card.dart';
 
 /**
@@ -63,31 +64,37 @@ class StandardProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate final price based on discounts
+    // Calculate original price (MRP or regular price)
     final originalPrice = product.mrp ?? product.price;
-    double finalPrice = product.price;
     
     // Determine discount type and value
     String? discountType;
     double? discountValue;
-    bool hasDiscount = false;
     
     if (discountPercentage != null && discountPercentage! > 0) {
       // Percentage discount
       discountType = 'percentage';
       discountValue = discountPercentage;
-      finalPrice = originalPrice - (originalPrice * discountPercentage! / 100);
-      hasDiscount = true;
     } else if (flatDiscount != null && flatDiscount! > 0) {
       // Flat discount
       discountType = 'flat';
       discountValue = flatDiscount;
-      finalPrice = originalPrice - flatDiscount!;
-      hasDiscount = true;
     }
     
-    // Ensure final price is not negative
-    finalPrice = finalPrice < 0 ? 0 : finalPrice;
+    // Use DiscountService to determine if there's a valid discount
+    final hasDiscount = DiscountService.hasDiscount(
+      discountType: discountType, 
+      discountValue: discountValue,
+      productId: product.id,
+    );
+    
+    // Calculate final price using DiscountService
+    final finalPrice = DiscountService.calculateFinalPrice(
+      originalPrice: originalPrice,
+      discountType: discountType,
+      discountValue: discountValue,
+      productId: product.id,
+    );
 
     // Use the reusable product card
     return ReusableProductCard(
