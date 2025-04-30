@@ -132,6 +132,105 @@ class DiscountService {
     }
   }
   
+  /// Get the final price after applying a discount, safely handling various data types
+  /// 
+  /// Parameters:
+  /// - [originalPrice]: Original price of the product
+  /// - [discountType]: Type of discount ('percentage' or 'flat')
+  /// - [discountValue]: Value of the discount (can be int, double, or String)
+  /// - [currencySymbol]: Optional currency symbol for formatted output
+  /// - [formatOutput]: Whether to format the output as a display string with currency symbol
+  /// 
+  /// Returns either the discounted price as a double or a formatted string with currency symbol
+  static dynamic getDiscountedPrice({
+    required double originalPrice,
+    required String? discountType,
+    required dynamic discountValue,
+    String currencySymbol = '₹',
+    bool formatOutput = false,
+  }) {
+    // Convert discount value to double
+    double? discountValueDouble;
+    
+    if (discountValue == null) {
+      discountValueDouble = null;
+    } else if (discountValue is int) {
+      discountValueDouble = discountValue.toDouble();
+    } else if (discountValue is double) {
+      discountValueDouble = discountValue;
+    } else if (discountValue is String) {
+      discountValueDouble = double.tryParse(discountValue);
+    }
+
+    
+    
+    // Calculate final price
+    double finalPrice = calculateFinalPrice(
+      originalPrice: originalPrice,
+      discountType: discountType,
+      discountValue: discountValueDouble,
+    );
+    
+    // Ensure price is never negative
+    finalPrice = finalPrice < 0 ? 0 : finalPrice;
+    
+    // Return formatted string or raw value
+    return formatOutput 
+        ? '$currencySymbol${finalPrice.toStringAsFixed(0)}' 
+        : finalPrice;
+  }
+  
+  /// Process a discount info map to extract the final price
+  /// Useful when working with discount info retrieved from Firestore
+  /// 
+  /// Parameters:
+  /// - [discountInfo]: Map containing discount information
+  /// - [originalPrice]: Original price to use if discount info doesn't contain a final price
+  /// - [currencySymbol]: Optional currency symbol for formatted output
+  /// - [formatOutput]: Whether to return a formatted string with currency symbol
+  /// 
+  /// Returns the final price after discount as a double or formatted string
+  static dynamic getFinalPriceFromDiscountInfo({
+    required Map<String, dynamic>? discountInfo,
+    required double originalPrice,
+    String currencySymbol = '₹',
+    bool formatOutput = false,
+  }) {
+    // If no discount info or not a valid discount, return original price
+    if (discountInfo == null || discountInfo['hasDiscount'] != true) {
+      return formatOutput 
+          ? '$currencySymbol${originalPrice.toStringAsFixed(0)}' 
+          : originalPrice;
+    }
+    
+    // Try to get final price directly from discount info
+    var finalPrice = discountInfo['finalPrice'];
+    double finalPriceDouble;
+    
+    if (finalPrice is int) {
+      finalPriceDouble = finalPrice.toDouble();
+    } else if (finalPrice is double) {
+      finalPriceDouble = finalPrice;
+    } else if (finalPrice is String && double.tryParse(finalPrice) != null) {
+      finalPriceDouble = double.parse(finalPrice);
+    } else {
+      // Calculate price using discount type and value if final price not available
+      finalPriceDouble = getDiscountedPrice(
+        originalPrice: originalPrice,
+        discountType: discountInfo['discountType'],
+        discountValue: discountInfo['discountValue'],
+      );
+    }
+    
+    // Ensure price is never negative
+    finalPriceDouble = finalPriceDouble < 0 ? 0 : finalPriceDouble;
+    
+    // Return formatted string or raw value
+    return formatOutput 
+        ? '$currencySymbol${finalPriceDouble.toStringAsFixed(0)}' 
+        : finalPriceDouble;
+  }
+  
   /// Log discount information for a product
   /// This prints discount type, value and product ID
   static void logDiscount({

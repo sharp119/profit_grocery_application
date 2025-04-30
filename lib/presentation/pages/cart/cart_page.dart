@@ -97,13 +97,14 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     } else {
       print('Total unique products in cart: ${cartItems.length}');
       
-      // Calculate total items
+      // Calculate total quantity (all items)
       cartItems.forEach((_, item) {
         totalCount += (item['quantity'] as int? ?? 0);
       });
       
+      // Set the total items to the unique item count
       setState(() {
-        _totalItems = totalCount;
+        _totalItems = cartItems.length;
       });
       
       // Load product details for each item
@@ -304,7 +305,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                           borderRadius: BorderRadius.circular(16.r),
                         ),
                         child: Text(
-                          '$_totalItems items',
+                          '$_totalItems products',
                           style: TextStyle(
                             fontSize: 14.sp,
                             fontWeight: FontWeight.bold,
@@ -526,48 +527,66 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     final discountInfo = _discountDetails[productId];
     final bool hasDiscount = discountInfo != null && discountInfo['hasDiscount'] == true;
     
+    // Calculate the discounted price directly
+    double finalPrice = product.price;
+    
+    if (hasDiscount) {
+      // Check if discount is active based on date
+      bool isDiscountActive = true;
+      
+      // Check if the discount has start and end timestamps
+      if (discountInfo.containsKey('startTimestamp') && discountInfo.containsKey('endTimestamp')) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        final startTimestamp = discountInfo['startTimestamp'];
+        final endTimestamp = discountInfo['endTimestamp'];
+        
+        // Parse timestamps if they are not already numbers
+        int startTime = startTimestamp is int ? startTimestamp : 0;
+        int endTime = endTimestamp is int ? endTimestamp : 0;
+        
+        if (startTime > 0 && endTime > 0) {
+          isDiscountActive = now >= startTime && now <= endTime;
+        }
+      }
+      
+      // Only apply discount if it's active
+      if (isDiscountActive) {
+        // Get discount type and value
+        final discountType = discountInfo['discountType'];
+        final discountValue = discountInfo['discountValue'];
+        
+        // Convert discount value to double
+        double discountValueDouble = 0;
+        if (discountValue is int) {
+          discountValueDouble = discountValue.toDouble();
+        } else if (discountValue is double) {
+          discountValueDouble = discountValue;
+        } else if (discountValue is String && double.tryParse(discountValue) != null) {
+          discountValueDouble = double.parse(discountValue);
+        }
+        
+        // Apply discount based on type
+        if (discountType == 'percentage' && discountValueDouble > 0) {
+          // Calculate percentage discount
+          final discount = product.price * (discountValueDouble / 100.0);
+          finalPrice = product.price - discount;
+        } else if (discountType == 'flat' && discountValueDouble > 0) {
+          // Apply flat discount
+          finalPrice = product.price - discountValueDouble;
+        }
+        
+        // Ensure price is not negative
+        if (finalPrice < 0) finalPrice = 0;
+      }
+    }
+    
     // Debug discount info
     if (hasDiscount) {
       print('DISCOUNT DEBUG - Product: ${product.name}');
       print('  Original price: ${product.price}');
-      print('  Discount info: $discountInfo');
-      print('  Final price from discount: ${discountInfo['finalPrice']}');
-      print('  Final price type: ${discountInfo['finalPrice'].runtimeType}');
-    }
-    
-    // Calculate the discounted price
-    double displayPrice;
-    if (hasDiscount) {
-      // First try to get the final price directly from discount info
-      var finalPrice = discountInfo['finalPrice'];
-      if (finalPrice != null) {
-        if (finalPrice is int) {
-          displayPrice = finalPrice.toDouble();
-        } else if (finalPrice is double) {
-          displayPrice = finalPrice;
-        } else if (finalPrice is String) {
-          displayPrice = double.tryParse(finalPrice) ?? product.price;
-        } else {
-          // Fallback to calculating the discount ourselves
-          displayPrice = _calculateDiscountedPrice(product.price, discountInfo);
-        }
-      } else {
-        // Fallback to calculating the discount ourselves
-        displayPrice = _calculateDiscountedPrice(product.price, discountInfo);
-      }
-    } else {
-      displayPrice = product.price;
-    }
-    
-    // Ensure price is not zero (fallback to product price if it is)
-    if (displayPrice <= 0) {
-      print('  WARNING: Price was zero or negative, using product price instead');
-      displayPrice = product.price;
-    }
-    
-    // Print final calculated price for debugging
-    if (hasDiscount) {
-      print('  FINAL CALCULATED PRICE: $displayPrice');
+      print('  Discount type: ${discountInfo['discountType']}');
+      print('  Discount value: ${discountInfo['discountValue']}');
+      print('  Final calculated price: $finalPrice');
     }
     
     return Container(
@@ -595,14 +614,14 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 width: 80.w,
                 height: 80.h,
                 decoration: BoxDecoration(
-                  color: AppTheme.backgroundColor,
+                  color: Colors.transparent,
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: _buildProductImage(product),
               ),
               
               // Discount tag if available
-              if (hasDiscount)
+              /* if (hasDiscount && finalPrice < product.price)
                 Positioned(
                   top: 0,
                   right: 0,
@@ -642,7 +661,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       ],
                     ),
                   ),
-                ),
+                ), */
             ],
           ),
           SizedBox(width: 12.w),
@@ -674,17 +693,17 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Text(
-                      '₹${displayPrice.toStringAsFixed(0)}',
+                      '₹${finalPrice.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
-                        color: hasDiscount ? Colors.green : AppTheme.accentColor,
+                        color: hasDiscount && finalPrice < product.price ? Colors.green : AppTheme.accentColor,
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    if (hasDiscount || (product.mrp != null && product.mrp! > displayPrice))
+                    if (hasDiscount && finalPrice < product.price || (product.mrp != null && product.mrp! > finalPrice))
                       Text(
-                        '₹${hasDiscount ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
+                        '₹${hasDiscount && finalPrice < product.price ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: AppTheme.textSecondaryColor,
@@ -715,36 +734,6 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         ],
       ),
     );
-  }
-  
-  // Calculate discounted price manually if needed
-  double _calculateDiscountedPrice(double originalPrice, Map<String, dynamic> discountInfo) {
-    final discountType = discountInfo['discountType'] as String?;
-    var discountValue = discountInfo['discountValue'];
-    
-    // Convert discount value to double
-    double discountValueDouble;
-    if (discountValue is int) {
-      discountValueDouble = discountValue.toDouble();
-    } else if (discountValue is double) {
-      discountValueDouble = discountValue;
-    } else if (discountValue is String) {
-      discountValueDouble = double.tryParse(discountValue) ?? 0.0;
-    } else {
-      print('  ERROR: Invalid discount value format: $discountValue');
-      return originalPrice;
-    }
-    
-    // Apply discount based on type
-    if (discountType == 'percentage') {
-      final discountAmount = originalPrice * (discountValueDouble / 100);
-      return originalPrice - discountAmount;
-    } else if (discountType == 'flat') {
-      return originalPrice - discountValueDouble;
-    } else {
-      print('  ERROR: Unknown discount type: $discountType');
-      return originalPrice;
-    }
   }
   
   Widget _buildProductImage(Product product) {
