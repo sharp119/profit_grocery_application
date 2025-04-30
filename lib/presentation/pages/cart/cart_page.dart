@@ -22,6 +22,7 @@ class _CartPageState extends State<CartPage> {
   final Map<String, bool> _loadingState = {};
   final Map<String, Product?> _productDetails = {};
   int _totalItems = 0;
+  int _removedItems = 0;
 
   @override
   void initState() {
@@ -32,6 +33,7 @@ class _CartPageState extends State<CartPage> {
   Future<void> _loadCartItems() async {
     final cartItems = _cartProvider.cartItems;
     int totalCount = 0;
+    int removedCount = 0;
     
     print('--- Cart Items Log ---');
     
@@ -65,22 +67,27 @@ class _CartPageState extends State<CartPage> {
             print('  Category: ${product.categoryName ?? 'N/A'}');
           } else {
             print('  Product details not found in Firestore');
+            removedCount += quantity;
           }
           
           // Update product details and loading state
           setState(() {
             _productDetails[productId] = product;
             _loadingState[productId] = false;
+            _removedItems = removedCount;
           });
         } catch (e) {
           print('  Error fetching product details: $e');
           setState(() {
             _loadingState[productId] = false;
+            removedCount += quantity;
+            _removedItems = removedCount;
           });
         }
       }
       
       print('\nTotal number of items: $totalCount');
+      print('\nRemoved items: $removedCount');
     }
     
     print('---------------------');
@@ -89,6 +96,10 @@ class _CartPageState extends State<CartPage> {
   @override
   Widget build(BuildContext context) {
     final cartItems = _cartProvider.cartItems;
+    // Filter out unknown products
+    final validCartItems = cartItems.keys
+        .where((id) => _productDetails[id] != null)
+        .toList();
     
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -133,50 +144,86 @@ class _CartPageState extends State<CartPage> {
                       ),
                     ],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  child: Column(
                     children: [
-                      Text(
-                        'Cart Items',
-                        style: TextStyle(
-                          fontSize: 18.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryColor,
-                        ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Cart Items',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.textPrimaryColor,
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
+                            decoration: BoxDecoration(
+                              color: AppTheme.accentColor,
+                              borderRadius: BorderRadius.circular(16.r),
+                            ),
+                            child: Text(
+                              '$_totalItems items',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.primaryColor,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
-                        decoration: BoxDecoration(
-                          color: AppTheme.accentColor,
-                          borderRadius: BorderRadius.circular(16.r),
-                        ),
-                        child: Text(
-                          '$_totalItems items',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.primaryColor,
+                      if (_removedItems > 0)
+                        Container(
+                          margin: EdgeInsets.only(top: 8.h),
+                          padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 6.r),
+                          decoration: BoxDecoration(
+                            color: Colors.red.shade700,
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Text(
+                            _removedItems == 1
+                                ? '1 item has been removed from the store'
+                                : '$_removedItems items have been removed from the store',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.white,
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),
                 Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
-                    itemCount: cartItems.length,
-                    itemBuilder: (context, index) {
-                      final productId = cartItems.keys.elementAt(index);
-                      final quantity = cartItems[productId]?['quantity'] as int? ?? 0;
-                      final isLoading = _loadingState[productId] ?? true;
-                      final product = _productDetails[productId];
-                      
-                      return isLoading
-                          ? _buildLoadingCartItem()
-                          : _buildCartItem(productId, product, quantity);
-                    },
-                  ),
+                  child: validCartItems.isEmpty
+                      ? Center(
+                          child: Text(
+                            'No available products in cart',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: AppTheme.textPrimaryColor,
+                            ),
+                          ),
+                        )
+                      : ListView.builder(
+                          padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
+                          itemCount: validCartItems.length,
+                          itemBuilder: (context, index) {
+                            final productId = validCartItems[index];
+                            final quantity = cartItems[productId]?['quantity'] as int? ?? 0;
+                            final isLoading = _loadingState[productId] ?? true;
+                            final product = _productDetails[productId];
+                            
+                            if (product == null) {
+                              return SizedBox.shrink(); // Don't show removed products
+                            }
+                            
+                            return isLoading
+                                ? _buildLoadingCartItem()
+                                : _buildCartItem(productId, product, quantity);
+                          },
+                        ),
                 ),
               ],
             ),
@@ -193,6 +240,11 @@ class _CartPageState extends State<CartPage> {
   }
 
   Widget _buildCartItem(String productId, Product? product, int quantity) {
+    // Don't show removed products
+    if (product == null) {
+      return SizedBox.shrink();
+    }
+    
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.r),
@@ -227,7 +279,7 @@ class _CartPageState extends State<CartPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  product?.name ?? 'Unknown Product',
+                  product.name,
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
@@ -237,9 +289,9 @@ class _CartPageState extends State<CartPage> {
                   overflow: TextOverflow.ellipsis,
                 ),
                 SizedBox(height: 4.h),
-                if (product?.categoryName != null)
+                if (product.categoryName != null)
                   Text(
-                    product!.categoryName!,
+                    product.categoryName!,
                     style: TextStyle(
                       fontSize: 12.sp,
                       color: AppTheme.textSecondaryColor,
@@ -249,7 +301,7 @@ class _CartPageState extends State<CartPage> {
                 Row(
                   children: [
                     Text(
-                      '₹${product?.price ?? 0}',
+                      '₹${product.price}',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
@@ -257,7 +309,7 @@ class _CartPageState extends State<CartPage> {
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    if (product?.mrp != null && product!.mrp! > product.price)
+                    if (product.mrp != null && product.mrp! > product.price)
                       Text(
                         '₹${product.mrp}',
                         style: TextStyle(
