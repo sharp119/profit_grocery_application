@@ -4,6 +4,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/cart_provider.dart';
 import '../../../services/product/shared_product_service.dart';
+import '../../../services/simple_cart_service.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/image_loader.dart';
 
@@ -17,6 +18,7 @@ class CartPage extends StatefulWidget {
 class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   final CartProvider _cartProvider = CartProvider();
   final SharedProductService _productService = SharedProductService();
+  final SimpleCartService _cartService = SimpleCartService();
   
   // Map to track loading and animation states
   final Map<String, bool> _loadingState = {};
@@ -27,6 +29,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   int _removedItemsCount = 0;
   bool _allItemsLoaded = false;
   bool _showRemovedMessage = true;
+  bool _productsRemoved = false;
   
   // Final list of products after filtering out unavailable ones
   late List<MapEntry<String, dynamic>> _cartEntries = [];
@@ -35,7 +38,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _setupItemsList();
-    _loadCartItems();
+    _loadCartItems().then((_) {
+      if (_removedItemsCount > 0) {
+        _removeUnavailableProducts();
+      }
+    });
   }
   
   @override
@@ -180,6 +187,41 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     });
   }
 
+  // Remove unavailable products from both cache and Firebase
+  Future<void> _removeUnavailableProducts() async {
+    try {
+      final unavailableProductIds = _productDetails.entries
+          .where((entry) => entry.value == null)
+          .map((entry) => entry.key)
+          .toList();
+      
+      if (unavailableProductIds.isEmpty) return;
+      
+      // Calculate new total after removing unavailable items
+      int newTotal = _totalItems - _removedItemsCount;
+      
+      // Remove each unavailable product
+      for (var productId in unavailableProductIds) {
+        await _cartService.removeItem(productId: productId);
+        print('Removed unavailable product: $productId');
+      }
+      
+      // Update total items count
+      setState(() {
+        _totalItems = newTotal;
+        _productsRemoved = true;
+        _showRemovedMessage = false; // Hide the removed message since we've cleaned up
+      });
+      
+      // Reload cart items from provider to ensure UI is synced
+      await _cartProvider.loadCartItems();
+      
+      print('Removed ${unavailableProductIds.length} unavailable products from cart');
+    } catch (e) {
+      print('Error removing unavailable products: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartItems = _cartProvider.cartItems;
@@ -280,7 +322,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                           SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
-                              '${_removedItemsCount} ${_removedItemsCount == 1 ? 'item' : 'items'} unavailable and not shown',
+                              '${_removedItemsCount} ${_removedItemsCount == 1 ? 'item' : 'items'} unavailable and ${_productsRemoved ? 'removed from cart' : 'not shown'}',
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w500,
