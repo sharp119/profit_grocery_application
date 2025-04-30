@@ -533,7 +533,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     String quantityInfo = product.weight ?? '';
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 12.r),
+      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 14.r),
       color: AppTheme.secondaryColor,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -542,90 +542,95 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
           ClipRRect(
             borderRadius: BorderRadius.circular(4.r),
             child: SizedBox(
-              width: 55.w,
-              height: 55.h,
+              width: 60.w,
+              height: 60.h,
               child: _buildProductImage(product),
             ),
           ),
-          SizedBox(width: 8.w),
+          SizedBox(width: 10.w),
           
-          // Column 2: Product details
+          // Column 2: Product details (name and quantity in separate rows)
           Expanded(
+            flex: 3, // Giving more space to the middle column
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Row 1: Product name and quantity side by side
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Product name
-                    Expanded(
-                      child: Text(
-                        product.name,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          fontWeight: FontWeight.w500,
-                          color: AppTheme.textPrimaryColor,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                    // Little spacing
-                    SizedBox(width: 4.w),
-                    // Quantity info (250g, 1kg, etc.)
-                    if (quantityInfo.isNotEmpty)
-                      Text(
-                        quantityInfo,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                      ),
-                  ],
+                // Row 1: Product name
+                Text(
+                  product.name,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                    color: AppTheme.textPrimaryColor,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
                 
-                SizedBox(height: 8.h),
+                SizedBox(height: 6.h),
                 
-                // Row 2: Price info on left side
+                // Row 2: Product quantity
+                if (quantityInfo.isNotEmpty)
+                  Text(
+                    quantityInfo,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: AppTheme.textSecondaryColor,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          
+          SizedBox(width: 2.w), // Reduced spacing before price column
+          
+          // Column 3: Price and add button
+          Expanded(
+            flex: 2, // Giving less space to the price column, moving it left
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Row 1: Price information
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.end, // Align to the right
                   children: [
                     Text(
                       '₹${finalPrice.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontSize: 16.sp,
+                        fontSize: 14.sp,
                         fontWeight: FontWeight.bold,
                         color: hasDiscount && finalPrice < product.price ? Colors.green[700] : AppTheme.accentColor,
                       ),
                     ),
-                    SizedBox(width: 8.w),
+                    SizedBox(width: 4.w),
                     if (hasDiscount && finalPrice < product.price || (product.mrp != null && product.mrp! > finalPrice))
                       Text(
                         '₹${hasDiscount && finalPrice < product.price ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
                         style: TextStyle(
-                          fontSize: 14.sp,
+                          fontSize: 12.sp,
                           color: AppTheme.textSecondaryColor,
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
                   ],
                 ),
+                
+                SizedBox(height: 6.h),
+                
+                // Row 2: Add button
+                SizedBox(
+                  width: 90.w,
+                  height: 30.h,
+                  child: AddButton(
+                    productId: productId,
+                    sourceCardType: ProductCardType.productDetails,
+                    inStock: product.inStock,
+                    fontSize: 12.sp,
+                  ),
+                ),
               ],
-            ),
-          ),
-          
-          SizedBox(width: 6.w),
-          
-          // Column 3: Add button
-          SizedBox(
-            width: 90.w,
-            height: 30.h,
-            child: AddButton(
-              productId: productId,
-              sourceCardType: ProductCardType.productDetails,
-              inStock: product.inStock,
-              fontSize: 12.sp,
             ),
           ),
         ],
