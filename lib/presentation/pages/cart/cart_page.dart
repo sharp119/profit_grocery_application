@@ -14,29 +14,64 @@ class CartPage extends StatefulWidget {
   State<CartPage> createState() => _CartPageState();
 }
 
-class _CartPageState extends State<CartPage> {
+class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   final CartProvider _cartProvider = CartProvider();
   final SharedProductService _productService = SharedProductService();
   
-  // Map to track loading state and product details for each cart item
+  // Map to track loading and animation states
   final Map<String, bool> _loadingState = {};
   final Map<String, Product?> _productDetails = {};
+  final Map<String, AnimationController> _itemAnimationControllers = {};
+  
   int _totalItems = 0;
   int _removedItemsCount = 0;
-  bool _isLoading = true;
+  bool _allItemsLoaded = false;
   bool _showRemovedMessage = true;
+  
+  // Final list of products after filtering out unavailable ones
+  late List<MapEntry<String, dynamic>> _cartEntries = [];
 
   @override
   void initState() {
     super.initState();
+    _setupItemsList();
     _loadCartItems();
+  }
+  
+  @override
+  void dispose() {
+    // Dispose all animation controllers
+    _itemAnimationControllers.forEach((_, controller) => controller.dispose());
+    super.dispose();
+  }
+
+  // Setup initial list of cart items with placeholders
+  void _setupItemsList() {
+    final cartItems = _cartProvider.cartItems;
+    
+    if (cartItems.isNotEmpty) {
+      setState(() {
+        // Create the initial list with all cart items
+        _cartEntries = cartItems.entries.toList();
+        
+        // Setup animations for all items
+        for (var entry in _cartEntries) {
+          final productId = entry.key;
+          
+          // Initialize loading state
+          _loadingState[productId] = true;
+          
+          // Create animation controller for this item
+          _itemAnimationControllers[productId] = AnimationController(
+            vsync: this,
+            duration: const Duration(milliseconds: 300),
+          );
+        }
+      });
+    }
   }
 
   Future<void> _loadCartItems() async {
-    setState(() {
-      _isLoading = true;
-    });
-    
     final cartItems = _cartProvider.cartItems;
     int totalCount = 0;
     int removedCount = 0;
@@ -47,22 +82,24 @@ class _CartPageState extends State<CartPage> {
     if (cartItems.isEmpty) {
       print('Cart is empty');
       setState(() {
-        _isLoading = false;
+        _allItemsLoaded = true;
       });
     } else {
       print('Total unique products in cart: ${cartItems.length}');
       
-      // Initialize loading states for all products
+      // Calculate total items
+      cartItems.forEach((_, item) {
+        totalCount += (item['quantity'] as int? ?? 0);
+      });
+      
+      setState(() {
+        _totalItems = totalCount;
+      });
+      
+      // Load product details for each item
       for (final entry in cartItems.entries) {
         final productId = entry.key;
         final quantity = entry.value['quantity'] as int? ?? 0;
-        totalCount += quantity;
-        
-        // Set initial loading state
-        setState(() {
-          _loadingState[productId] = true;
-          _totalItems = totalCount;
-        });
         
         // Fetch product details from Firestore
         try {
@@ -80,33 +117,33 @@ class _CartPageState extends State<CartPage> {
             removedCount += quantity;
           }
           
-          // Update product details and loading state
+          // Update this specific product's state
           setState(() {
             _productDetails[productId] = product;
             _loadingState[productId] = false;
             _removedItemsCount = removedCount;
-            
-            // Increment loaded items count
-            loadedItemsCount++;
-            
-            // Check if all items are loaded
-            if (loadedItemsCount == cartItems.length) {
-              _isLoading = false;
-            }
           });
+          
+          // Increment loaded items count
+          loadedItemsCount++;
+          
+          // Check if all items are loaded
+          if (loadedItemsCount == cartItems.length) {
+            await _handleAllItemsLoaded();
+          }
         } catch (e) {
           print('  Error fetching product details: $e');
           setState(() {
             _loadingState[productId] = false;
-            
-            // Increment loaded items count
-            loadedItemsCount++;
-            
-            // Check if all items are loaded
-            if (loadedItemsCount == cartItems.length) {
-              _isLoading = false;
-            }
           });
+          
+          // Increment loaded items count
+          loadedItemsCount++;
+          
+          // Check if all items are loaded
+          if (loadedItemsCount == cartItems.length) {
+            await _handleAllItemsLoaded();
+          }
         }
       }
       
@@ -116,15 +153,36 @@ class _CartPageState extends State<CartPage> {
     
     print('---------------------');
   }
+  
+  Future<void> _handleAllItemsLoaded() async {
+    final unavailableProductIds = _productDetails.entries
+        .where((entry) => entry.value == null)
+        .map((entry) => entry.key)
+        .toList();
+    
+    // Start animations for items to be removed
+    for (var productId in unavailableProductIds) {
+      if (_itemAnimationControllers.containsKey(productId)) {
+        _itemAnimationControllers[productId]!.reverse();
+      }
+    }
+    
+    // Wait for animations to complete
+    await Future.delayed(const Duration(milliseconds: 350));
+    
+    setState(() {
+      // Filter out unavailable products
+      _cartEntries = _cartEntries
+          .where((entry) => _productDetails[entry.key] != null)
+          .toList();
+      
+      _allItemsLoaded = true;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final cartItems = _cartProvider.cartItems;
-    
-    // Filter out items where product is null (removed items)
-    final validCartEntries = cartItems.entries
-        .where((entry) => _productDetails[entry.key] != null)
-        .toList();
     
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -200,92 +258,104 @@ class _CartPageState extends State<CartPage> {
                 ),
                 
                 // Show removed items message if any items were removed and loading is complete
-                if (!_isLoading && _removedItemsCount > 0 && _showRemovedMessage)
-                  Container(
-                    width: double.infinity,
-                    margin: EdgeInsets.symmetric(horizontal: 16.r, vertical: 8.r),
-                    padding: EdgeInsets.all(12.r),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade800,
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.warning_amber_rounded,
-                          color: Colors.white,
-                          size: 20.r,
-                        ),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            '${_removedItemsCount} ${_removedItemsCount == 1 ? 'item' : 'items'} unavailable and not shown',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _showRemovedMessage = false;
-                            });
-                          },
-                          child: Icon(
-                            Icons.close,
+                if (_allItemsLoaded && _removedItemsCount > 0 && _showRemovedMessage)
+                  AnimatedOpacity(
+                    opacity: 1.0,
+                    duration: const Duration(milliseconds: 500),
+                    child: Container(
+                      width: double.infinity,
+                      margin: EdgeInsets.symmetric(horizontal: 16.r, vertical: 8.r),
+                      padding: EdgeInsets.all(12.r),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade800,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.warning_amber_rounded,
                             color: Colors.white,
                             size: 20.r,
                           ),
-                        ),
-                      ],
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              '${_removedItemsCount} ${_removedItemsCount == 1 ? 'item' : 'items'} unavailable and not shown',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _showRemovedMessage = false;
+                              });
+                            },
+                            child: Icon(
+                              Icons.close,
+                              color: Colors.white,
+                              size: 20.r,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 
-                _isLoading && cartItems.isNotEmpty
-                  ? Expanded(
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: AppTheme.accentColor,
-                        ),
-                      ),
-                    )
-                  : Expanded(
-                      child: validCartEntries.isEmpty
-                          ? Center(
-                              child: Text(
-                                'All items in your cart are unavailable',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  color: AppTheme.textSecondaryColor,
+                Expanded(
+                  child: _cartEntries.isEmpty && _allItemsLoaded
+                      ? Center(
+                          child: Text(
+                            'All items in your cart are unavailable',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: AppTheme.textSecondaryColor,
+                            ),
+                          ),
+                        )
+                      : AnimatedList(
+                          key: GlobalKey<AnimatedListState>(),
+                          initialItemCount: _cartEntries.length,
+                          padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
+                          itemBuilder: (context, index, animation) {
+                            if (index >= _cartEntries.length) {
+                              return const SizedBox.shrink();
+                            }
+
+                            final entry = _cartEntries[index];
+                            final productId = entry.key;
+                            final quantity = entry.value['quantity'] as int? ?? 0;
+                            final isLoading = _loadingState[productId] ?? true;
+                            final product = _productDetails[productId];
+                            
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(1, 0),
+                                end: Offset.zero,
+                              ).animate(
+                                CurvedAnimation(
+                                  parent: animation,
+                                  curve: Curves.easeOut,
                                 ),
                               ),
-                            )
-                          : ListView.builder(
-                              padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 16.r),
-                              itemCount: validCartEntries.length,
-                              itemBuilder: (context, index) {
-                                final entry = validCartEntries[index];
-                                final productId = entry.key;
-                                final quantity = entry.value['quantity'] as int? ?? 0;
-                                final isLoading = _loadingState[productId] ?? true;
-                                final product = _productDetails[productId];
-                                
-                                if (isLoading) {
-                                  return _buildLoadingCartItem();
-                                }
-                                
-                                // Only build cart items for products that exist
-                                if (product != null) {
-                                  return _buildCartItem(productId, product, quantity);
-                                }
-                                
-                                // Return empty container for removed products
-                                return const SizedBox.shrink();
-                              },
-                            ),
-                    ),
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: AnimatedSwitcher(
+                                  duration: const Duration(milliseconds: 300),
+                                  child: isLoading
+                                      ? _buildLoadingCartItem()
+                                      : (product != null)
+                                          ? _buildCartItem(productId, product, quantity)
+                                          : const SizedBox.shrink(),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                ),
               ],
             ),
     );
@@ -302,6 +372,7 @@ class _CartPageState extends State<CartPage> {
 
   Widget _buildCartItem(String productId, Product product, int quantity) {
     return Container(
+      key: ValueKey('cartItem_$productId'),
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(12.r),
       decoration: BoxDecoration(
