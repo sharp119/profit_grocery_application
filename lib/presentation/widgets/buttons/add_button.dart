@@ -154,7 +154,7 @@ class _AddButtonState extends State<AddButton> {
 
     // If quantity is greater than zero, show the quantity selector
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 2.w),
+      padding: EdgeInsets.symmetric(horizontal: 1.w),
       child: Container(
         height: buttonHeight,
         width: double.infinity, // Will adapt to parent width
@@ -169,7 +169,7 @@ class _AddButtonState extends State<AddButton> {
             InkWell(
               onTap: _decreaseQuantity,
               child: SizedBox(
-                width: buttonHeight * 0.8, 
+                width: buttonHeight * 0.75,
                 height: buttonHeight,
                 child: Center(
                   child: Icon(
@@ -198,7 +198,7 @@ class _AddButtonState extends State<AddButton> {
             InkWell(
               onTap: _increaseQuantity,
               child: SizedBox(
-                width: buttonHeight * 0.8,
+                width: buttonHeight * 0.75,
                 height: buttonHeight,
                 child: Center(
                   child: Icon(

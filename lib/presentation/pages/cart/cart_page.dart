@@ -533,49 +533,53 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     String quantityInfo = product.weight ?? '';
     
     return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.r, vertical: 14.r),
+      padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 14.r),
       color: AppTheme.secondaryColor,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          // Column 1: Product image
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4.r),
-            child: SizedBox(
-              width: 60.w,
-              height: 60.h,
-              child: _buildProductImage(product),
+          // Section 1: Product image - fixed width
+          SizedBox(
+            width: 65.w,
+            child: Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(4.r),
+                child: SizedBox(
+                  width: 55.w,
+                  height: 55.h,
+                  child: _buildProductImage(product),
+                ),
+              ),
             ),
           ),
-          SizedBox(width: 10.w),
           
-          // Column 2: Product details (name and quantity in separate rows)
-          Expanded(
-            flex: 3, // Giving more space to the middle column
+          // Section 2: Product details - fixed width
+          SizedBox(
+            width: 130.w,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Row 1: Product name
+                // Row 1: Product name - now 2 lines
                 Text(
                   product.name,
                   style: TextStyle(
-                    fontSize: 14.sp,
+                    fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
                     color: AppTheme.textPrimaryColor,
                   ),
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
                 
-                SizedBox(height: 6.h),
+                SizedBox(height: 4.h),
                 
                 // Row 2: Product quantity
                 if (quantityInfo.isNotEmpty)
                   Text(
                     quantityInfo,
                     style: TextStyle(
-                      fontSize: 12.sp,
+                      fontSize: 11.sp,
                       color: AppTheme.textSecondaryColor,
                     ),
                   ),
@@ -583,54 +587,53 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             ),
           ),
           
-          SizedBox(width: 2.w), // Reduced spacing before price column
+          // Section 3: Add button - fixed width, centered
+          SizedBox(
+            width: 80.w,
+            child: Center(
+              child: SizedBox(
+                width: 68.w,
+                height: 28.h,
+                child: AddButton(
+                  productId: productId,
+                  sourceCardType: ProductCardType.productDetails,
+                  inStock: product.inStock,
+                  fontSize: 11.sp,
+                ),
+              ),
+            ),
+          ),
           
-          // Column 3: Price and add button
-          Expanded(
-            flex: 2, // Giving less space to the price column, moving it left
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Row 1: Price information
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end, // Align to the right
-                  children: [
+          // Section 4: Price information - fixed width, centered
+          SizedBox(
+            width: 70.w,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Text(
+                    '₹${finalPrice.toStringAsFixed(0)}',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.bold,
+                      color: hasDiscount && finalPrice < product.price ? Colors.green[700] : AppTheme.accentColor,
+                    ),
+                  ),
+                  
+                  SizedBox(height: 2.h),
+                  
+                  if (hasDiscount && finalPrice < product.price || (product.mrp != null && product.mrp! > finalPrice))
                     Text(
-                      '₹${finalPrice.toStringAsFixed(0)}',
+                      '₹${hasDiscount && finalPrice < product.price ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
                       style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                        color: hasDiscount && finalPrice < product.price ? Colors.green[700] : AppTheme.accentColor,
+                        fontSize: 12.sp,
+                        color: AppTheme.textSecondaryColor,
+                        decoration: TextDecoration.lineThrough,
                       ),
                     ),
-                    SizedBox(width: 4.w),
-                    if (hasDiscount && finalPrice < product.price || (product.mrp != null && product.mrp! > finalPrice))
-                      Text(
-                        '₹${hasDiscount && finalPrice < product.price ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: AppTheme.textSecondaryColor,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                      ),
-                  ],
-                ),
-                
-                SizedBox(height: 6.h),
-                
-                // Row 2: Add button
-                SizedBox(
-                  width: 90.w,
-                  height: 30.h,
-                  child: AddButton(
-                    productId: productId,
-                    sourceCardType: ProductCardType.productDetails,
-                    inStock: product.inStock,
-                    fontSize: 12.sp,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],
