@@ -1,3 +1,64 @@
+/**
+ * SimpleProductCard
+ * 
+ * A simplified product card that displays only essential product information.
+ * This card is optimized for performance and minimal UI elements.
+ * 
+ * Usage:
+ * - Used in search results and quick product views
+ * - Provides basic product information
+ * - Optimized for performance
+ * - Minimal UI elements
+ * 
+ * Key Features:
+ * - Essential product information only
+ * - Basic discount display
+ * - Lightweight implementation
+ * - Performance optimized
+ * 
+ * Where Used:
+ * - Search Results: Quick product previews
+ * - Category Quick Views: Fast loading product lists
+ * - Performance-Critical Sections: Where minimal UI is preferred
+ * - Mobile-Optimized Views: For better performance on low-end devices
+ * 
+ * Example Usage:
+ * ```dart
+ * SimpleProductCard(
+ *   product: product,
+ *   backgroundColor: categoryColor,
+ *   onTap: (product) => navigateToDetails(product),
+ * )
+ * ```
+ */
+
+/// SimpleProductCard
+/// 
+/// A simplified product card that displays only essential product information.
+/// This card is optimized for performance and minimal UI elements.
+/// 
+/// Usage:
+/// - Used in search results and quick product views
+/// - Provides basic product information
+/// - Optimized for performance
+/// - Minimal UI elements
+/// 
+/// Key Features:
+/// - Essential product information only
+/// - Basic discount display
+/// - Lightweight implementation
+/// - Performance optimized
+/// 
+/// Example Usage:
+/// ```dart
+/// SimpleProductCard(
+///   product: product,
+///   backgroundColor: categoryColor,
+///   onTap: (product) => navigateToDetails(product),
+/// )
+/// ```
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -5,7 +66,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/logging_service.dart';
-import '../../../utils/add_button_handler.dart';
+import '../../widgets/buttons/add_button.dart';
 
 /// A simplified product card that only displays essential information
 class SimpleProductCard extends StatelessWidget {
@@ -217,58 +278,17 @@ class SimpleProductCard extends StatelessWidget {
 
                   SizedBox(height: 8.h),
 
-                  // Add button (cart functionality removed but button preserved)
-                  if (product.inStock)
-                    _buildAddButton()
-                  else
-                    ElevatedButton(
-                      onPressed: null,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.grey.shade700,
-                        disabledBackgroundColor: Colors.grey.shade700,
-                        foregroundColor: Colors.white,
-                        disabledForegroundColor: Colors.white70,
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                      ),
-                      child: Text(
-                        'Out of Stock',
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                        ),
-                      ),
-                    ),
+                  // Add button with quantity controls
+                  AddButton(
+                    productId: product.id,
+                    sourceCardType: ProductCardType.simple,
+                    height: 36.h,
+                    inStock: product.inStock,
+                  ),
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // Build the ADD button that uses AddButtonHandler
-  Widget _buildAddButton() {
-    return SizedBox(
-      height: 36.h, // Fixed height
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // Use the centralized AddButtonHandler
-          AddButtonHandler().handleAddButtonClick(
-            productId: product.id,
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentColor,
-          foregroundColor: Colors.black,
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-        ),
-        child: Text(
-          'ADD',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14.sp,
-          ),
         ),
       ),
     );

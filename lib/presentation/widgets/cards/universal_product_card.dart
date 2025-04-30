@@ -5,6 +5,41 @@ import '../../../data/inventory/similar_products.dart';
 import '../../../data/models/product_model.dart';
 import 'enhanced_product_card.dart';
 
+/**
+ * UniversalProductCard
+ * 
+ * A universal product card that works consistently across all screens.
+ * This card can be initialized with either a Product object or a productId.
+ * 
+ * Usage:
+ * - Used across different screens for consistent product display
+ * - Can work with either Product object or productId
+ * - Provides consistent UI and behavior
+ * - Handles product resolution automatically
+ * 
+ * Key Features:
+ * - Flexible initialization (Product or productId)
+ * - Automatic product resolution
+ * - Consistent UI across screens
+ * - Background color handling
+ * 
+ * Where Used:
+ * - TwoPanelCategoryProductView: Main product listing in category view
+ * - Category Products Page: Standard product display
+ * - Search Results: Consistent product display
+ * - Product Collections: When uniform product display is needed
+ * 
+ * Example Usage:
+ * ```dart
+ * UniversalProductCard(
+ *   product: product, // or productId: productId
+ *   onTap: () => navigateToDetails(product),
+ *   backgroundColor: categoryColor,
+ *   useBackgroundColor: true,
+ * )
+ * ```
+ */
+
 /// A universal product card that works consistently across all screens
 class UniversalProductCard extends StatefulWidget {
   // Product can be provided directly or by ID

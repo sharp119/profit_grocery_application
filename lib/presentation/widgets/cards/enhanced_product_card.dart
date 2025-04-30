@@ -1,3 +1,30 @@
+/// EnhancedProductCard
+/// 
+/// An improved version of the product card with enhanced UI and additional features.
+/// This card provides better product information display and weight/unit parsing.
+/// 
+/// Usage:
+/// - Used in product details and featured sections
+/// - Provides enhanced product information display
+/// - Automatically parses weight and unit information
+/// - Shows more detailed product information
+/// 
+/// Key Features:
+/// - Weight and unit parsing from product name
+/// - Enhanced UI following modern design principles
+/// - Dark theme compatibility
+/// - Improved product information layout
+/// 
+/// Example Usage:
+/// ```dart
+/// EnhancedProductCard.fromEntity(
+///   product: product,
+///   onTap: () => navigateToDetails(product),
+///   backgroundColor: categoryColor,
+/// )
+/// ```
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
@@ -5,7 +32,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../image_loader.dart';
-import '../../../utils/add_button_handler.dart';
+import '../../widgets/buttons/add_button.dart';
 
 /// An enhanced product card with improved UI following the design in Image 2
 /// but keeping the dark theme from the original app
@@ -268,11 +295,16 @@ class EnhancedProductCard extends StatelessWidget {
                   
                   SizedBox(height: 2.h), // Reduced space before button
                   
-                  // Add button (cart functionality removed but button preserved)
+                  // Add button with quantity controls
                   SizedBox(
-                    height: 28.h, // Even smaller button
-                    width: double.infinity, // Ensure button takes full width
-                    child: _buildAddButton(),
+                    height: 28.h,
+                    child: AddButton(
+                      productId: id,
+                      sourceCardType: ProductCardType.enhanced,
+                      height: 28.h,
+                      fontSize: 13.sp,
+                      inStock: inStock,
+                    ),
                   ),
                 ],
               ),
@@ -383,40 +415,6 @@ class EnhancedProductCard extends StatelessWidget {
           Icons.image_not_supported,
           color: Colors.grey,
           size: 28.r, // Smaller icon size
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: 28.h,
-      child: ElevatedButton(
-        onPressed: inStock ? () {
-          // Use the centralized AddButtonHandler
-          AddButtonHandler().handleAddButtonClick(
-            productId: id,
-          );
-        } : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentColor,
-          foregroundColor: Colors.black,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(4.r),
-          ),
-          padding: EdgeInsets.zero,
-          elevation: 1, // Slight elevation for depth
-          // Add gradient effect for premium look
-          shadowColor: Colors.black.withOpacity(0.5),
-        ),
-        child: Text(
-          'ADD',
-          style: TextStyle(
-            fontSize: 13.sp,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 0.5,
-          ),
         ),
       ),
     );

@@ -3,6 +3,41 @@ import '../../../domain/entities/bestseller_product.dart';
 import '../../../services/logging_service.dart';
 import 'reusable_product_card.dart';
 
+/**
+ * BestsellerProductCard
+ * 
+ * A specialized product card for bestseller products that uses the ReusableProductCard component.
+ * This card is specifically designed for the bestseller section in the home screen.
+ * 
+ * Usage:
+ * - Used in SimpleBestsellerGrid for displaying bestseller products
+ * - Shows special bestseller discounts (percentage or flat)
+ * - Displays bestseller badge
+ * - Handles cart quantity changes
+ * 
+ * Key Features:
+ * - Special bestseller pricing and discounts
+ * - Rank information
+ * - Bestseller badge
+ * - Cart functionality
+ * 
+ * Where Used:
+ * - Home Screen: SimpleBestsellerGrid (12 bestsellers in 2-column grid)
+ * - Bestseller Collections: Shows special discounts and badges
+ * - Featured Sections: When highlighting bestseller products
+ * 
+ * Example Usage:
+ * ```dart
+ * BestsellerProductCard(
+ *   bestsellerProduct: bestsellerProduct,
+ *   backgroundColor: categoryColor,
+ *   onTap: (product) => navigateToDetails(product),
+ *   onQuantityChanged: (product, qty) => updateCart(product, qty),
+ *   quantity: cartQuantities[product.id] ?? 0,
+ * )
+ * ```
+ */
+
 /// A specialized product card for bestseller products
 /// Uses the reusable product card component
 class BestsellerProductCard extends StatelessWidget {

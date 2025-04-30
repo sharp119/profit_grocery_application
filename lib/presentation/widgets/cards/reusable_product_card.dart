@@ -5,7 +5,46 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/logging_service.dart';
-import '../../../utils/add_button_handler.dart';
+import '../../widgets/buttons/add_button.dart';
+
+/**
+ * ReusableProductCard
+ * 
+ * A base product card component that serves as the foundation for other specialized product cards.
+ * This card implements the core product display functionality and is used by other card types.
+ * 
+ * Usage:
+ * - Used as a base component by BestsellerProductCard, StandardProductCard, etc.
+ * - Provides consistent product display across the app
+ * - Handles product images, pricing, and basic interactions
+ * 
+ * Key Features:
+ * - Vertical layout with product name at top
+ * - Quantity/price display in middle
+ * - Action button at bottom
+ * - Discount display
+ * - Image loading with error handling
+ * 
+ * Where Used:
+ * - Base Component: Extended by other product cards
+ * - Custom Product Cards: When building specialized displays
+ * - Consistent Layouts: For uniform product presentation
+ * - Theme Integration: For app-wide product display consistency
+ * 
+ * Example Usage:
+ * ```dart
+ * ReusableProductCard(
+ *   product: product,
+ *   finalPrice: finalPrice,
+ *   originalPrice: originalPrice,
+ *   hasDiscount: hasDiscount,
+ *   discountType: discountType,
+ *   discountValue: discountValue,
+ *   backgroundColor: categoryColor,
+ *   onTap: (product) => handleTap(product),
+ * )
+ * ```
+ */
 
 /// A reusable product card that can be used across the app
 /// Uses the new vertical layout with product name at top, quantity/price in middle, and action button at bottom
@@ -267,65 +306,17 @@ class ReusableProductCard extends StatelessWidget {
                   
                   SizedBox(height: 8.h), // Space before the button
                   
-                  // Row 3: Add button (cart functionality removed)
-                  if (product.inStock)
-                    _buildAddButton()
-                  else
-                    SizedBox(
-                      height: 36.h, // Same fixed height as the ADD button
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: null,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade700,
-                          disabledBackgroundColor: Colors.grey.shade700,
-                          foregroundColor: Colors.white,
-                          disabledForegroundColor: Colors.white70,
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                        ),
-                        child: Text(
-                          'Out of Stock',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                          ),
-                        ),
-                      ),
-                    ),
+                  // Add button with quantity controls
+                  AddButton(
+                    productId: product.id,
+                    sourceCardType: ProductCardType.reusable,
+                    height: 36.h,
+                    inStock: product.inStock,
+                  ),
                 ],
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // Build the ADD button that uses AddButtonHandler
-  Widget _buildAddButton() {
-    return SizedBox(
-      height: 36.h, // Fixed height
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: () {
-          // Use the centralized AddButtonHandler
-          AddButtonHandler().handleAddButtonClick(
-            productId: product.id,
-          );
-        },
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppTheme.accentColor,
-          foregroundColor: Colors.black,
-          padding: EdgeInsets.symmetric(horizontal: 16.w),
-        ),
-        child: Text(
-          'ADD',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 14.sp,
-          ),
         ),
       ),
     );

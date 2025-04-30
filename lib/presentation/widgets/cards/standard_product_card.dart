@@ -2,6 +2,43 @@ import 'package:flutter/material.dart';
 import '../../../domain/entities/product.dart';
 import 'reusable_product_card.dart';
 
+/**
+ * StandardProductCard
+ * 
+ * A standard product card used for regular product displays throughout the app.
+ * This card extends the ReusableProductCard with standard product display functionality.
+ * 
+ * Usage:
+ * - Used in regular product listings and category pages
+ * - Handles standard product discounts (percentage or flat)
+ * - Provides consistent product display across non-specialized sections
+ * 
+ * Key Features:
+ * - Standard product display
+ * - Discount handling (percentage or flat)
+ * - Cart quantity management
+ * - Consistent with app theme
+ * 
+ * Where Used:
+ * - Regular Product Listings: Standard product display
+ * - Category Pages: Consistent product presentation
+ * - General Product Grids: When no special features are needed
+ * - Basic Product Collections: Standard product showcase
+ * 
+ * Example Usage:
+ * ```dart
+ * StandardProductCard(
+ *   product: product,
+ *   backgroundColor: categoryColor,
+ *   discountPercentage: 10.0, // Optional percentage discount
+ *   flatDiscount: 20.0, // Optional flat discount
+ *   onTap: (product) => navigateToDetails(product),
+ *   onQuantityChanged: (product, qty) => updateCart(product, qty),
+ *   quantity: cartQuantities[product.id] ?? 0,
+ * )
+ * ```
+ */
+
 /// A standard product card used for regular product displays
 /// Uses the reusable product card component
 class StandardProductCard extends StatelessWidget {

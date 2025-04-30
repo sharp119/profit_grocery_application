@@ -27,7 +27,7 @@ import '../../blocs/product_details/product_details_state.dart';
 import '../../widgets/buttons/cart_fab.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../cart/cart_page.dart';
-import '../../../utils/add_button_handler.dart';
+import '../../widgets/buttons/add_button.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class ProductDetailsPage extends StatefulWidget {
@@ -47,7 +47,6 @@ class ProductDetailsPage extends StatefulWidget {
 class _ProductDetailsPageState extends State<ProductDetailsPage> {
   late final PageController _imagePageController;
   int _currentImageIndex = 0;
-  int _quantity = 1;
 
   @override
   void initState() {
@@ -66,28 +65,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
   void dispose() {
     _imagePageController.dispose();
     super.dispose();
-  }
-
-  void _increaseQuantity() {
-    setState(() {
-      _quantity++;
-    });
-  }
-
-  void _decreaseQuantity() {
-    if (_quantity > 1) {
-      setState(() {
-        _quantity--;
-      });
-    }
-  }
-
-  void _addToCart(Product product) {
-    // Use the centralized AddButtonHandler
-    AddButtonHandler().handleAddButtonClick(
-      productId: product.id,
-      quantity: _quantity,
-    );
   }
 
   @override
@@ -430,88 +407,12 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         ),
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            // Quantity selector
-            Container(
-              decoration: BoxDecoration(
-                color: AppTheme.secondaryColor,
-                borderRadius: BorderRadius.circular(8.r),
-                border: Border.all(
-                  color: AppTheme.accentColor.withOpacity(0.5),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  // Decrease button
-                  IconButton(
-                    onPressed: _decreaseQuantity,
-                    icon: Icon(
-                      Icons.remove,
-                      color: Colors.white,
-                      size: 16.sp,
-                    ),
-                    padding: EdgeInsets.all(4.w),
-                    constraints: const BoxConstraints(),
-                  ),
-                  
-                  // Quantity
-                  Container(
-                    constraints: BoxConstraints(
-                      minWidth: 40.w,
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 8.w),
-                    child: Text(
-                      _quantity.toString(),
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  
-                  // Increase button
-                  IconButton(
-                    onPressed: _increaseQuantity,
-                    icon: Icon(
-                      Icons.add,
-                      color: Colors.white,
-                      size: 16.sp,
-                    ),
-                    padding: EdgeInsets.all(4.w),
-                    constraints: const BoxConstraints(),
-                  ),
-                ],
-              ),
-            ),
-            
-            SizedBox(width: 16.w),
-            
-            // Add to cart button
-            Expanded(
-              child: ElevatedButton(
-                onPressed: () => _addToCart(product),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentColor,
-                  foregroundColor: Colors.black,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                ),
-                child: Text(
-                  'ADD TO CART',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-          ],
+        child: AddButton(
+          productId: product.id,
+          sourceCardType: ProductCardType.productDetails,
+          height: 46.h,
+          fontSize: 16.sp,
+          inStock: product.inStock,
         ),
       ),
     );

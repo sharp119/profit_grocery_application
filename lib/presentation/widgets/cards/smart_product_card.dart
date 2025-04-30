@@ -1,3 +1,64 @@
+/**
+ * SmartProductCard
+ * 
+ * A self-loading product card that only requires a productId to function.
+ * This card independently loads product details and handles its own state.
+ * 
+ * Usage:
+ * - Used when only productId is available
+ * - Automatically loads product details
+ * - Handles loading and error states
+ * - Provides callbacks for product loading events
+ * 
+ * Key Features:
+ * - Self-loading product details
+ * - Automatic category color detection
+ * - Loading and error states
+ * - Callback for product loading events
+ * 
+ * Where Used:
+ * - Dynamic Product Lists: When only IDs are available initially
+ * - Lazy-Loaded Sections: For on-demand product loading
+ * - Performance-Optimized Views: When loading products as needed
+ * - Network-Dependent Displays: For handling offline/online states
+ * 
+ * Example Usage:
+ * ```dart
+ * SmartProductCard(
+ *   productId: productId,
+ *   onTap: (product) => navigateToDetails(product),
+ *   onProductLoaded: (product) => handleProductLoaded(product),
+ * )
+ * ```
+ */
+
+/// SmartProductCard
+/// 
+/// A self-loading product card that only requires a productId to function.
+/// This card independently loads product details and handles its own state.
+/// 
+/// Usage:
+/// - Used when only productId is available
+/// - Automatically loads product details
+/// - Handles loading and error states
+/// - Provides callbacks for product loading events
+/// 
+/// Key Features:
+/// - Self-loading product details
+/// - Automatic category color detection
+/// - Loading and error states
+/// - Callback for product loading events
+/// 
+/// Example Usage:
+/// ```dart
+/// SmartProductCard(
+///   productId: productId,
+///   onTap: (product) => navigateToDetails(product),
+///   onProductLoaded: (product) => handleProductLoaded(product),
+/// )
+/// ```
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
