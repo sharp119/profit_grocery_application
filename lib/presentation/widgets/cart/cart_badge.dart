@@ -52,7 +52,7 @@ class CartBadge extends StatelessWidget {
               // Navigate to cart page
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CartPage()),
+                MaterialPageRoute(builder: (context) => CartPage()),
               );
             },
           ),
@@ -99,7 +99,7 @@ class FloatingCartBadge extends StatelessWidget {
                 // Navigate to cart page
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const CartPage()),
+                  MaterialPageRoute(builder: (context) => CartPage()),
                 );
               },
               child: Container(

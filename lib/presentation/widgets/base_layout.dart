@@ -68,7 +68,7 @@ class BaseLayout extends StatelessWidget {
             onPressed: onCartTap ?? () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => const CartPage()),
+                MaterialPageRoute(builder: (context) => CartPage()),
               );
             },
           ),

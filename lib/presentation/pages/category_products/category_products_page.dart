@@ -354,7 +354,7 @@ class CategoryProductsPage extends StatelessWidget {
                   // Navigate to cart using direct navigation instead of named route
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const CartPage()),
+                    MaterialPageRoute(builder: (context) => CartPage()),
                   );
                 },
                 cartPreviewImage: (cartState.itemCount ?? 0) > 0 && state.categoryProducts.isNotEmpty

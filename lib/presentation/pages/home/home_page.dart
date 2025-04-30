@@ -242,7 +242,7 @@ class _HomePageContentState extends State<_HomePageContent> {
   void _navigateToCart() {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const CartPage()),
+      MaterialPageRoute(builder: (context) => CartPage()),
     );
   }
 

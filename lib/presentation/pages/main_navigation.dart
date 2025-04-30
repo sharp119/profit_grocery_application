@@ -13,6 +13,7 @@ import 'package:profit_grocery_application/presentation/pages/cart/cart_page.dar
 import 'package:profit_grocery_application/presentation/pages/home/home_page.dart';
 import 'package:profit_grocery_application/presentation/pages/orders/orders_page.dart';
 import 'package:profit_grocery_application/presentation/pages/profile/profile_page.dart';
+import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 
 class MainNavigation extends StatelessWidget {
   const MainNavigation({Key? key}) : super(key: key);
@@ -50,8 +51,9 @@ class _MainNavigationContentState extends State<_MainNavigationContent> {
     // Initialize tab bodies - will be maintained across tab switches
     _tabBodies = [
       const HomePage(),
+      const CategoryProductsPage(), // Categories page with TwoPanelView
       const OrdersPage(),
-      const CartPage(),
+      // CartPage(),
       const ProfilePage(),
     ];
     
@@ -151,39 +153,44 @@ class _MainNavigationContentState extends State<_MainNavigationContent> {
                       label: 'Home',
                     ),
                     BottomNavigationBarItem(
+                      icon: Icon(Icons.category_outlined),
+                      activeIcon: Icon(Icons.category),
+                      label: 'Categories',
+                    ),
+                    BottomNavigationBarItem(
                       icon: Icon(Icons.shopping_bag_outlined),
                       activeIcon: Icon(Icons.shopping_bag),
                       label: 'Orders',
                     ),
-                    BottomNavigationBarItem(
-                      icon: cartItemCount > 0
-                        ? badges.Badge(
-                            badgeContent: Text(
-                              cartItemCount.toString(),
-                              style: TextStyle(color: Colors.black, fontSize: 10.sp),
-                            ),
-                            badgeStyle: const badges.BadgeStyle(
-                              badgeColor: AppTheme.accentColor,
-                              padding: EdgeInsets.all(5),
-                            ),
-                            child: const Icon(Icons.shopping_cart_outlined),
-                          )
-                        : const Icon(Icons.shopping_cart_outlined),
-                      activeIcon: cartItemCount > 0
-                        ? badges.Badge(
-                            badgeContent: Text(
-                              cartItemCount.toString(),
-                              style: TextStyle(color: Colors.black, fontSize: 10.sp),
-                            ),
-                            badgeStyle: const badges.BadgeStyle(
-                              badgeColor: AppTheme.accentColor,
-                              padding: EdgeInsets.all(5),
-                            ),
-                            child: const Icon(Icons.shopping_cart),
-                          )
-                        : const Icon(Icons.shopping_cart),
-                      label: 'Cart',
-                    ),
+                    // BottomNavigationBarItem(
+                    //   icon: cartItemCount > 0
+                    //     ? badges.Badge(
+                    //         badgeContent: Text(
+                    //           cartItemCount.toString(),
+                    //           style: TextStyle(color: Colors.black, fontSize: 10.sp),
+                    //         ),
+                    //         badgeStyle: const badges.BadgeStyle(
+                    //           badgeColor: AppTheme.accentColor,
+                    //           padding: EdgeInsets.all(5),
+                    //         ),
+                    //         child: const Icon(Icons.shopping_cart_outlined),
+                    //       )
+                    //     : const Icon(Icons.shopping_cart_outlined),
+                    //   activeIcon: cartItemCount > 0
+                    //     ? badges.Badge(
+                    //         badgeContent: Text(
+                    //           cartItemCount.toString(),
+                    //           style: TextStyle(color: Colors.black, fontSize: 10.sp),
+                    //         ),
+                    //         badgeStyle: const badges.BadgeStyle(
+                    //           badgeColor: AppTheme.accentColor,
+                    //           padding: EdgeInsets.all(5),
+                    //         ),
+                    //         child: const Icon(Icons.shopping_cart),
+                    //       )
+                    //     : const Icon(Icons.shopping_cart),
+                    //   label: 'Cart',
+                    // ),
                     BottomNavigationBarItem(
                       icon: Icon(Icons.settings_outlined),
                       activeIcon: Icon(Icons.settings),
