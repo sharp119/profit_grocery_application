@@ -5,6 +5,7 @@ import '../../../domain/entities/product.dart';
 import '../../../services/cart_provider.dart';
 import '../../../services/product/shared_product_service.dart';
 import '../../../services/simple_cart_service.dart';
+import '../../../services/discount/discount_service.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/image_loader.dart';
 
@@ -24,6 +25,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   final Map<String, bool> _loadingState = {};
   final Map<String, Product?> _productDetails = {};
   final Map<String, AnimationController> _itemAnimationControllers = {};
+  final Map<String, Map<String, dynamic>> _discountDetails = {};
   
   int _totalItems = 0;
   int _removedItemsCount = 0;
@@ -120,6 +122,20 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             print('  Price: ${product.price}');
             print('  MRP: ${product.mrp ?? 'N/A'}');
             print('  Category: ${product.categoryName ?? 'N/A'}');
+            
+            // Fetch discount information
+            try {
+              final discountInfo = await DiscountService.getProductDiscountInfo(productId);
+              if (discountInfo['hasDiscount'] == true) {
+                print('  Discount: ${discountInfo['discountType']} - ${discountInfo['discountValue']}');
+                print('  Final price after discount: ${discountInfo['finalPrice']}');
+                setState(() {
+                  _discountDetails[productId] = discountInfo;
+                });
+              }
+            } catch (discountError) {
+              print('  Error fetching discount information: $discountError');
+            }
           } else {
             print('  Product details not found in Firestore');
             removedCount += quantity;
@@ -506,6 +522,54 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   }
 
   Widget _buildCartItem(String productId, Product product, int quantity) {
+    // Get discount info if available
+    final discountInfo = _discountDetails[productId];
+    final bool hasDiscount = discountInfo != null && discountInfo['hasDiscount'] == true;
+    
+    // Debug discount info
+    if (hasDiscount) {
+      print('DISCOUNT DEBUG - Product: ${product.name}');
+      print('  Original price: ${product.price}');
+      print('  Discount info: $discountInfo');
+      print('  Final price from discount: ${discountInfo['finalPrice']}');
+      print('  Final price type: ${discountInfo['finalPrice'].runtimeType}');
+    }
+    
+    // Calculate the discounted price
+    double displayPrice;
+    if (hasDiscount) {
+      // First try to get the final price directly from discount info
+      var finalPrice = discountInfo['finalPrice'];
+      if (finalPrice != null) {
+        if (finalPrice is int) {
+          displayPrice = finalPrice.toDouble();
+        } else if (finalPrice is double) {
+          displayPrice = finalPrice;
+        } else if (finalPrice is String) {
+          displayPrice = double.tryParse(finalPrice) ?? product.price;
+        } else {
+          // Fallback to calculating the discount ourselves
+          displayPrice = _calculateDiscountedPrice(product.price, discountInfo);
+        }
+      } else {
+        // Fallback to calculating the discount ourselves
+        displayPrice = _calculateDiscountedPrice(product.price, discountInfo);
+      }
+    } else {
+      displayPrice = product.price;
+    }
+    
+    // Ensure price is not zero (fallback to product price if it is)
+    if (displayPrice <= 0) {
+      print('  WARNING: Price was zero or negative, using product price instead');
+      displayPrice = product.price;
+    }
+    
+    // Print final calculated price for debugging
+    if (hasDiscount) {
+      print('  FINAL CALCULATED PRICE: $displayPrice');
+    }
+    
     return Container(
       key: ValueKey('cartItem_$productId'),
       margin: EdgeInsets.only(bottom: 12.h),
@@ -525,14 +589,61 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Product Image with background color
-          Container(
-            width: 80.w,
-            height: 80.h,
-            decoration: BoxDecoration(
-              color: AppTheme.backgroundColor,
-              borderRadius: BorderRadius.circular(8.r),
-            ),
-            child: _buildProductImage(product),
+          Stack(
+            children: [
+              Container(
+                width: 80.w,
+                height: 80.h,
+                decoration: BoxDecoration(
+                  color: AppTheme.backgroundColor,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: _buildProductImage(product),
+              ),
+              
+              // Discount tag if available
+              if (hasDiscount)
+                Positioned(
+                  top: 0,
+                  right: 0,
+                  child: Container(
+                    width: 40.w,
+                    padding: EdgeInsets.symmetric(vertical: 6.h),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.only(
+                        topRight: Radius.circular(8.r),
+                        bottomLeft: Radius.circular(8.r),
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          discountInfo['discountType'] == 'percentage'
+                              ? '${discountInfo['discountValue']?.toInt()}%'
+                              : '₹${discountInfo['discountValue']?.toInt()}',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12.sp,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        Text(
+                          'OFF',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500,
+                            fontSize: 10.sp,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
           ),
           SizedBox(width: 12.w),
           // Product Details
@@ -563,17 +674,17 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                 Row(
                   children: [
                     Text(
-                      '₹${product.price}',
+                      '₹${displayPrice.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
-                        color: AppTheme.accentColor,
+                        color: hasDiscount ? Colors.green : AppTheme.accentColor,
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    if (product.mrp != null && product.mrp! > product.price)
+                    if (hasDiscount || (product.mrp != null && product.mrp! > displayPrice))
                       Text(
-                        '₹${product.mrp}',
+                        '₹${hasDiscount ? product.price.toStringAsFixed(0) : product.mrp!.toStringAsFixed(0)}',
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: AppTheme.textSecondaryColor,
@@ -604,6 +715,36 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         ],
       ),
     );
+  }
+  
+  // Calculate discounted price manually if needed
+  double _calculateDiscountedPrice(double originalPrice, Map<String, dynamic> discountInfo) {
+    final discountType = discountInfo['discountType'] as String?;
+    var discountValue = discountInfo['discountValue'];
+    
+    // Convert discount value to double
+    double discountValueDouble;
+    if (discountValue is int) {
+      discountValueDouble = discountValue.toDouble();
+    } else if (discountValue is double) {
+      discountValueDouble = discountValue;
+    } else if (discountValue is String) {
+      discountValueDouble = double.tryParse(discountValue) ?? 0.0;
+    } else {
+      print('  ERROR: Invalid discount value format: $discountValue');
+      return originalPrice;
+    }
+    
+    // Apply discount based on type
+    if (discountType == 'percentage') {
+      final discountAmount = originalPrice * (discountValueDouble / 100);
+      return originalPrice - discountAmount;
+    } else if (discountType == 'flat') {
+      return originalPrice - discountValueDouble;
+    } else {
+      print('  ERROR: Unknown discount type: $discountType');
+      return originalPrice;
+    }
   }
   
   Widget _buildProductImage(Product product) {
