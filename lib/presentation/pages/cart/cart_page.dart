@@ -47,6 +47,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   bool _showRemovedMessage = true;
   bool _productsRemoved = false;
   bool _showAllItems = false;
+  bool _isPaymentExpanded = false;
   
   // Final list of products after filtering out unavailable ones
   late List<MapEntry<String, dynamic>> _cartEntries = [];
@@ -781,89 +782,307 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   
   // Build the payment summary section
   Widget _buildPaymentSummarySection() {
-    return Padding(
-      padding: EdgeInsets.all(12.r),
-      child: Row(
+    return InkWell(
+      onTap: () {
+        setState(() {
+          _isPaymentExpanded = !_isPaymentExpanded;
+        });
+      },
+      child: Column(
         children: [
-          Container(
-            width: 40.w,
-            height: 40.h,
-            decoration: BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Icon(
-              Icons.receipt_long_outlined,
-              color: Color(0xFFFFC107), // More vibrant amber
-              size: 22.sp,
-            ),
-          ),
-          SizedBox(width: 12.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+          // To Pay summary row
+          Padding(
+            padding: EdgeInsets.all(12.r),
+            child: Row(
               children: [
-                Text(
-                  'To Pay',
-                  style: TextStyle(
-                    fontSize: 14.sp, // Match product name size
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white,
+                Container(
+                  width: 40.w,
+                  height: 40.h,
+                  decoration: BoxDecoration(
+                    color: Colors.black,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                  child: Icon(
+                    Icons.receipt_long_outlined,
+                    color: Color(0xFFFFC107), // More vibrant amber
+                    size: 22.sp,
                   ),
                 ),
-                SizedBox(height: 2.h), // Match product card spacing
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'To Pay',
+                        style: TextStyle(
+                          fontSize: 14.sp, // Match product name size
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: 2.h), // Match product card spacing
+                      Text(
+                        'Incl. all taxes and charges',
+                        style: TextStyle(
+                          fontSize: 10.sp, // Match product weight/quantity size
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Row(
+                      children: [
+                        if (_totalSavings > 0)
+                          Text(
+                            '₹${(_totalCartValue + _totalSavings).toInt()}',
+                            style: TextStyle(
+                              fontSize: 11.sp, // Match strikethrough price in cart item
+                              decoration: TextDecoration.lineThrough,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                        if (_totalSavings > 0)
+                          SizedBox(width: 6.w),
+                        Text(
+                          '₹${_totalCartValue.toInt()}',
+                          style: TextStyle(
+                            fontSize: 14.sp, // Match price font size in cart item
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFFFC107), // More vibrant amber
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_totalSavings > 0)
+                      Text(
+                        'SAVING ₹${_totalSavings.toInt()}',
+                        style: TextStyle(
+                          fontSize: 10.sp, // Match product weight/quantity size
+                          fontWeight: FontWeight.w500,
+                          color: Colors.green.shade400,
+                        ),
+                      ),
+                  ],
+                ),
+                SizedBox(width: 8.w),
+                Icon(
+                  _isPaymentExpanded ? Icons.keyboard_arrow_up : Icons.chevron_right,
+                  color: Colors.grey.shade400,
+                  size: 22.sp,
+                ),
+              ],
+            ),
+          ),
+          
+          // Expandable bill summary
+          if (_isPaymentExpanded)
+            _buildExpandedBillSummary(),
+        ],
+      ),
+    );
+  }
+  
+  // Build expanded bill summary section
+  Widget _buildExpandedBillSummary() {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 20.r, vertical: 10.r),
+      decoration: BoxDecoration(
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade800, width: 0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Bill Summary header
+          Padding(
+            padding: EdgeInsets.only(bottom: 10.r),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.receipt_outlined,
+                  color: Colors.grey.shade400,
+                  size: 18.sp,
+                ),
+                SizedBox(width: 8.w),
                 Text(
-                  'Incl. all taxes and charges',
+                  'Bill Summary',
                   style: TextStyle(
-                    fontSize: 10.sp, // Match product weight/quantity size
-                    color: Colors.grey.shade400,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
                   ),
                 ),
               ],
             ),
           ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Row(
-                children: [
-                  if (_totalSavings > 0)
+          
+          // Item Total & GST
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 6.r),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
                     Text(
-                      '₹${(_totalCartValue + _totalSavings).toInt()}',
+                      'Item Total & GST',
                       style: TextStyle(
-                        fontSize: 11.sp, // Match strikethrough price in cart item
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.grey.shade400,
+                      size: 14.sp,
+                    ),
+                  ],
+                ),
+                Row(
+                  children: [
+                    if (_totalSavings > 0)
+                      Text(
+                        '₹${(_totalCartValue + _totalSavings).toInt()}',
+                        style: TextStyle(
+                          fontSize: 11.sp,
+                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    if (_totalSavings > 0)
+                      SizedBox(width: 6.w),
+                    Text(
+                      '₹${_totalCartValue.toInt()}',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          
+          // Delivery Fee
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 6.r),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Delivery Fee',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: Colors.white,
+                  ),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      '₹30',
+                      style: TextStyle(
+                        fontSize: 11.sp,
                         decoration: TextDecoration.lineThrough,
                         color: Colors.grey.shade400,
                       ),
                     ),
-                  if (_totalSavings > 0)
                     SizedBox(width: 6.w),
-                  Text(
-                    '₹${_totalCartValue.toInt()}',
-                    style: TextStyle(
-                      fontSize: 14.sp, // Match price font size in cart item
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFFFC107), // More vibrant amber
+                    Text(
+                      '₹0',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: Colors.white,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              if (_totalSavings > 0)
-                Text(
-                  'SAVING ₹${_totalSavings.toInt()}',
-                  style: TextStyle(
-                    fontSize: 10.sp, // Match product weight/quantity size
-                    fontWeight: FontWeight.w500,
-                    color: Colors.green.shade400,
-                  ),
+                  ],
                 ),
-            ],
+              ],
+            ),
           ),
-          SizedBox(width: 8.w),
-          Icon(
-            Icons.chevron_right,
-            color: Colors.grey.shade400,
-            size: 22.sp,
+          
+          // Free Delivery applied
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 8.r),
+            child: Text(
+              'Free Delivery applied!',
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: Colors.green.shade400,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          
+          // Divider
+          Divider(color: Colors.grey.shade800, height: 1),
+          
+          // To Pay (Total)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 10.r),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'To Pay',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'Incl. all taxes and charges',
+                      style: TextStyle(
+                        fontSize: 10.sp,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      '₹${_totalCartValue.toInt()}',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFFFFC107),
+                      ),
+                    ),
+                    if (_totalSavings > 0)
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 2.r),
+                        decoration: BoxDecoration(
+                          color: Colors.green.shade900.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                        child: Text(
+                          'SAVING ₹${_totalSavings.toInt()}',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green.shade400,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ],
       ),
