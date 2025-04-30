@@ -29,6 +29,7 @@ import 'data/datasources/firebase/coupon/coupon_remote_datasource.dart';
 import 'data/repositories/coupon/coupon_repository_impl.dart';
 import 'domain/repositories/coupon_repository.dart';
 import 'firebase_options.dart';
+import 'services/cart_provider.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
@@ -120,6 +121,9 @@ void main() async {
   
   // Initialize service locator for shared services
   setupServiceLocator();
+  
+  // Initialize the cart provider
+  await CartProvider().initialize();
   
   print('App initialized - starting with MyApp');
   runApp(const MyApp());

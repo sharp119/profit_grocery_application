@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_theme.dart';
+import '../../../services/cart_provider.dart';
 import '../../../utils/add_button_handler.dart';
 
 enum ProductCardType {
@@ -38,6 +39,38 @@ class AddButton extends StatefulWidget {
 
 class _AddButtonState extends State<AddButton> {
   int _quantity = 0;
+  final CartProvider _cartProvider = CartProvider();
+
+  @override
+  void initState() {
+    super.initState();
+    // Check if this product is already in the cart
+    _loadCartQuantity();
+    
+    // Listen for cart changes
+    _cartProvider.addListener(_onCartChanged);
+  }
+  
+  @override
+  void dispose() {
+    // Remove the listener when the widget is disposed
+    _cartProvider.removeListener(_onCartChanged);
+    super.dispose();
+  }
+  
+  void _onCartChanged() {
+    _loadCartQuantity();
+  }
+  
+  void _loadCartQuantity() {
+    final quantity = _cartProvider.getQuantity(widget.productId);
+    
+    if (quantity != _quantity) {
+      setState(() {
+        _quantity = quantity;
+      });
+    }
+  }
 
   void _increaseQuantity() {
     setState(() {
