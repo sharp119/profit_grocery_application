@@ -478,6 +478,14 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
+      barrierColor: Colors.black54,
+      enableDrag: true,
+      elevation: 20,
+      transitionAnimationController: AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 400),
+        reverseDuration: const Duration(milliseconds: 200),
+      ),
       builder: (context) => AddressSelectionModal(
         addresses: user.addresses,
         selectedAddressId: _defaultAddress?.id,
@@ -1544,7 +1552,7 @@ extension StringExtension on String {
 }
 
 // Address selection modal class
-class AddressSelectionModal extends StatelessWidget {
+class AddressSelectionModal extends StatefulWidget {
   final List<Address> addresses;
   final String? selectedAddressId;
   final Function(Address) onAddressSelected;
@@ -1557,245 +1565,314 @@ class AddressSelectionModal extends StatelessWidget {
   }) : super(key: key);
 
   @override
+  State<AddressSelectionModal> createState() => _AddressSelectionModalState();
+}
+
+class _AddressSelectionModalState extends State<AddressSelectionModal> with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 300),
+    );
+    _animation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOutCubic,
+    );
+    _animationController.forward();
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(16),
-          topRight: Radius.circular(16),
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Transform.translate(
+          offset: Offset(0, (1.0 - _animation.value) * 100),
+          child: Opacity(
+            opacity: _animation.value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(16),
+            topRight: Radius.circular(16),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 10,
+              spreadRadius: 2,
+            )
+          ],
         ),
-      ),
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.7,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Header
-          Container(
-            padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 16.r),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade100,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                InkWell(
-                  onTap: () => Navigator.pop(context),
-                  child: Icon(
-                    Icons.arrow_back,
-                    color: Colors.black87,
-                    size: 24.r,
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Text(
-                  'Select an Address',
-                  style: TextStyle(
-                    fontSize: 18.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          // Add Address button
-          InkWell(
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AddressFormPage(isEditing: false),
-                ),
-              );
-            },
-            child: Container(
-              padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 16.r),
-              child: Row(
-                children: [
-                  Container(
-                    width: 40.r,
-                    height: 40.r,
-                    decoration: BoxDecoration(
-                      color: Colors.pink.shade50,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.add,
-                      color: Colors.pink.shade400,
-                      size: 24.r,
-                    ),
-                  ),
-                  SizedBox(width: 16.w),
-                  Text(
-                    'Add Address',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.pink.shade400,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Divider
-          Divider(color: Colors.grey.shade300, height: 1),
-          
-          // Address type label
-          Container(
-            width: double.infinity,
-            padding: EdgeInsets.symmetric(vertical: 10.r, horizontal: 16.r),
-            color: Colors.grey.shade200,
-            child: Text(
-              'SAVED ADDRESSES',
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
-            ),
-          ),
-          
-          // Address list - with fixed height showing 4 addresses
-          addresses.isEmpty
-            ? Padding(
-                padding: EdgeInsets.all(16.r),
-                child: Text(
-                  'No saved addresses found.',
-                  style: TextStyle(
-                    fontSize: 14.sp,
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.7,
+        ),
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 8.r),
+                child: Container(
+                  width: 40.w,
+                  height: 4.h,
+                  decoration: BoxDecoration(
                     color: Colors.grey.shade600,
+                    borderRadius: BorderRadius.circular(2.r),
                   ),
                 ),
-              )
-            : Container(
-                height: 96.r * 4, // Fixed height for 4 addresses (96.r per address)
-                child: ListView.separated(
-                  shrinkWrap: true,
-                  padding: EdgeInsets.only(bottom: 16.r),
-                  itemCount: addresses.length,
-                  separatorBuilder: (context, index) => Divider(
-                    color: Colors.grey.shade300,
-                    height: 1,
-                    indent: 72.r,
+              ),
+              
+              // Header
+              Container(
+                padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 16.r),
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryColor,
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(16),
+                    topRight: Radius.circular(16),
                   ),
-                  itemBuilder: (context, index) {
-                    final address = addresses[index];
-                    final isSelected = address.id == selectedAddressId;
-                    
-                    // Choose icon based on address type
-                    IconData iconData;
-                    Color iconColor;
-                    switch (address.addressType.toLowerCase()) {
-                      case 'home':
-                        iconData = Icons.home_outlined;
-                        iconColor = Colors.blue;
-                        break;
-                      case 'work':
-                        iconData = Icons.work_outline;
-                        iconColor = Colors.orange;
-                        break;
-                      default:
-                        iconData = Icons.place_outlined;
-                        iconColor = Colors.purple;
-                    }
-                    
-                    return InkWell(
-                      onTap: () => onAddressSelected(address),
-                      child: Container(
-                        height: 96.r, // Fixed height for each address
-                        padding: EdgeInsets.symmetric(vertical: 12.r, horizontal: 16.r),
-                        color: isSelected ? Colors.grey.shade100 : Colors.transparent,
-                        child: Row(
-                          children: [
-                            // Address type icon
-                            Container(
-                              width: 40.r,
-                              height: 40.r,
-                              decoration: BoxDecoration(
-                                color: iconColor.withOpacity(0.1),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                iconData,
-                                color: iconColor,
-                                size: 20.r,
-                              ),
-                            ),
-                            SizedBox(width: 16.w),
-                            
-                            // Address details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Address type
-                                  Row(
+                ),
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () => Navigator.pop(context),
+                      child: Icon(
+                        Icons.arrow_back,
+                        color: AppTheme.accentColor,
+                        size: 24.r,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Text(
+                      'Select an Address',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Add Address button
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddressFormPage(isEditing: false),
+                    ),
+                  );
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 16.r),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40.r,
+                        height: 40.r,
+                        decoration: BoxDecoration(
+                          color: AppTheme.accentColor.withOpacity(0.2),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.add,
+                          color: AppTheme.accentColor,
+                          size: 24.r,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Text(
+                        'Add Address',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.accentColor,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              
+              // Divider
+              Divider(color: Colors.grey.shade800, height: 1),
+              
+              // Address type label
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.symmetric(vertical: 10.r, horizontal: 16.r),
+                color: Colors.black,
+                child: Text(
+                  'SAVED ADDRESSES',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.grey.shade400,
+                  ),
+                ),
+              ),
+              
+              // Address list - scrollable with flexible height
+              widget.addresses.isEmpty
+                ? Padding(
+                    padding: EdgeInsets.all(16.r),
+                    child: Text(
+                      'No saved addresses found.',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.grey.shade400,
+                      ),
+                    ),
+                  )
+                : Flexible(
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.only(bottom: 16.r),
+                      itemCount: widget.addresses.length,
+                      separatorBuilder: (context, index) => Divider(
+                        color: Colors.grey.shade800,
+                        height: 1,
+                        indent: 72.r,
+                      ),
+                      itemBuilder: (context, index) {
+                        final address = widget.addresses[index];
+                        final isSelected = address.id == widget.selectedAddressId;
+                        
+                        // Choose icon and color based on address type
+                        IconData iconData;
+                        Color iconColor;
+                        switch (address.addressType.toLowerCase()) {
+                          case 'home':
+                            iconData = Icons.home_outlined;
+                            iconColor = Colors.blue;
+                            break;
+                          case 'work':
+                            iconData = Icons.work_outline;
+                            iconColor = Colors.orange;
+                            break;
+                          default:
+                            iconData = Icons.place_outlined;
+                            iconColor = Colors.purple;
+                        }
+                        
+                        return InkWell(
+                          onTap: () => widget.onAddressSelected(address),
+                          child: Container(
+                            height: 96.r, // Fixed height for each address
+                            padding: EdgeInsets.symmetric(vertical: 12.r, horizontal: 16.r),
+                            color: isSelected ? Colors.black.withOpacity(0.5) : Colors.transparent,
+                            child: Row(
+                              children: [
+                                // Address type icon
+                                Container(
+                                  width: 40.r,
+                                  height: 40.r,
+                                  decoration: BoxDecoration(
+                                    color: iconColor.withOpacity(0.2),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    iconData,
+                                    color: iconColor,
+                                    size: 20.r,
+                                  ),
+                                ),
+                                SizedBox(width: 16.w),
+                                
+                                // Address details
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
+                                      // Address type
+                                      Row(
+                                        children: [
+                                          Text(
+                                            address.addressType.toUpperCase(),
+                                            style: TextStyle(
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.bold,
+                                              color: iconColor,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      
+                                      // Address text
                                       Text(
-                                        address.addressType.toUpperCase(),
+                                        address.addressLine,
                                         style: TextStyle(
                                           fontSize: 13.sp,
-                                          fontWeight: FontWeight.bold,
-                                          color: iconColor,
+                                          color: Colors.white,
+                                          height: 1.3,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: 2.h),
+                                      
+                                      // City, State
+                                      Text(
+                                        '${address.city}, ${address.state}',
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey.shade400,
                                         ),
                                       ),
                                     ],
                                   ),
-                                  SizedBox(height: 4.h),
-                                  
-                                  // Address text
-                                  Text(
-                                    address.addressLine,
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      color: Colors.black87,
-                                      height: 1.3,
-                                    ),
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
+                                ),
+                                
+                                // Radio button
+                                Radio<String>(
+                                  value: address.id,
+                                  groupValue: widget.selectedAddressId,
+                                  onChanged: (_) => widget.onAddressSelected(address),
+                                  activeColor: AppTheme.accentColor,
+                                  fillColor: MaterialStateProperty.resolveWith<Color>(
+                                    (Set<MaterialState> states) {
+                                      if (states.contains(MaterialState.selected)) {
+                                        return AppTheme.accentColor;
+                                      }
+                                      return Colors.grey;
+                                    },
                                   ),
-                                  SizedBox(height: 2.h),
-                                  
-                                  // City, State
-                                  Text(
-                                    '${address.city}, ${address.state}',
-                                    style: TextStyle(
-                                      fontSize: 12.sp,
-                                      color: Colors.grey.shade600,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            
-                            // Radio button
-                            Radio<String>(
-                              value: address.id,
-                              groupValue: selectedAddressId,
-                              onChanged: (_) => onAddressSelected(address),
-                              activeColor: Colors.pink.shade400,
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-          
-          // Bottom padding
-          SizedBox(height: 16.h),
-        ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+              
+              // Bottom padding
+              SizedBox(height: 16.h),
+            ],
+          ),
+        ),
       ),
     );
   }
