@@ -22,6 +22,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../blocs/user/user_bloc.dart';
 import '../../blocs/user/user_event.dart';
 import 'package:provider/provider.dart';
+import '../profile/address_form_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -455,6 +456,41 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     return total;
   }
 
+  // Show address selection modal
+  void _showAddressSelection() async {
+    final userState = context.read<UserBloc>().state;
+    final user = userState.user;
+    
+    if (user == null || user.addresses.isEmpty) {
+      // If no addresses, navigate to add address page
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const AddressFormPage(isEditing: false),
+        ),
+      );
+      return;
+    }
+    
+    // Show modal bottom sheet with addresses
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => AddressSelectionModal(
+        addresses: user.addresses,
+        selectedAddressId: _defaultAddress?.id,
+        onAddressSelected: (address) {
+          setState(() {
+            _defaultAddress = address;
+          });
+          _cacheDefaultAddress(address);
+          Navigator.pop(context);
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final cartItems = _cartProvider.cartItems;
@@ -703,9 +739,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   Widget _buildDeliveryAddressSection() {
     return InkWell(
       onTap: () {
-        // Navigate to address selection
-        // This will be implemented later to select from existing addresses
-        print('Navigate to address selection');
+        // Show address selection dialog
+        _showAddressSelection();
       },
       child: Padding(
         padding: EdgeInsets.all(12.r),
@@ -1440,6 +1475,264 @@ class DashedLinePainter extends CustomPainter {
 extension StringExtension on String {
   String capitalize() {
     return this.isNotEmpty ? '${this[0].toUpperCase()}${this.substring(1)}' : '';
+  }
+}
+
+// Address selection modal class
+class AddressSelectionModal extends StatelessWidget {
+  final List<Address> addresses;
+  final String? selectedAddressId;
+  final Function(Address) onAddressSelected;
+
+  const AddressSelectionModal({
+    Key? key,
+    required this.addresses,
+    this.selectedAddressId,
+    required this.onAddressSelected,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(16),
+          topRight: Radius.circular(16),
+        ),
+      ),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.7,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 16.r),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade100,
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(16),
+                topRight: Radius.circular(16),
+              ),
+            ),
+            child: Row(
+              children: [
+                InkWell(
+                  onTap: () => Navigator.pop(context),
+                  child: Icon(
+                    Icons.arrow_back,
+                    color: Colors.black87,
+                    size: 24.r,
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Text(
+                  'Select an Address',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Add Address button
+          InkWell(
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AddressFormPage(isEditing: false),
+                ),
+              );
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(vertical: 16.r, horizontal: 16.r),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40.r,
+                    height: 40.r,
+                    decoration: BoxDecoration(
+                      color: Colors.pink.shade50,
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.add,
+                      color: Colors.pink.shade400,
+                      size: 24.r,
+                    ),
+                  ),
+                  SizedBox(width: 16.w),
+                  Text(
+                    'Add Address',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.pink.shade400,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          
+          // Divider
+          Divider(color: Colors.grey.shade300, height: 1),
+          
+          // Address type label
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.symmetric(vertical: 10.r, horizontal: 16.r),
+            color: Colors.grey.shade200,
+            child: Text(
+              'SAVED ADDRESSES',
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+          ),
+          
+          // Address list - with fixed height showing 4 addresses
+          addresses.isEmpty
+            ? Padding(
+                padding: EdgeInsets.all(16.r),
+                child: Text(
+                  'No saved addresses found.',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              )
+            : Container(
+                height: 96.r * 4, // Fixed height for 4 addresses (96.r per address)
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.only(bottom: 16.r),
+                  itemCount: addresses.length,
+                  separatorBuilder: (context, index) => Divider(
+                    color: Colors.grey.shade300,
+                    height: 1,
+                    indent: 72.r,
+                  ),
+                  itemBuilder: (context, index) {
+                    final address = addresses[index];
+                    final isSelected = address.id == selectedAddressId;
+                    
+                    // Choose icon based on address type
+                    IconData iconData;
+                    Color iconColor;
+                    switch (address.addressType.toLowerCase()) {
+                      case 'home':
+                        iconData = Icons.home_outlined;
+                        iconColor = Colors.blue;
+                        break;
+                      case 'work':
+                        iconData = Icons.work_outline;
+                        iconColor = Colors.orange;
+                        break;
+                      default:
+                        iconData = Icons.place_outlined;
+                        iconColor = Colors.purple;
+                    }
+                    
+                    return InkWell(
+                      onTap: () => onAddressSelected(address),
+                      child: Container(
+                        height: 96.r, // Fixed height for each address
+                        padding: EdgeInsets.symmetric(vertical: 12.r, horizontal: 16.r),
+                        color: isSelected ? Colors.grey.shade100 : Colors.transparent,
+                        child: Row(
+                          children: [
+                            // Address type icon
+                            Container(
+                              width: 40.r,
+                              height: 40.r,
+                              decoration: BoxDecoration(
+                                color: iconColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                iconData,
+                                color: iconColor,
+                                size: 20.r,
+                              ),
+                            ),
+                            SizedBox(width: 16.w),
+                            
+                            // Address details
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Address type
+                                  Row(
+                                    children: [
+                                      Text(
+                                        address.addressType.toUpperCase(),
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.bold,
+                                          color: iconColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  
+                                  // Address text
+                                  Text(
+                                    address.addressLine,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      color: Colors.black87,
+                                      height: 1.3,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  
+                                  // City, State
+                                  Text(
+                                    '${address.city}, ${address.state}',
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: Colors.grey.shade600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            // Radio button
+                            Radio<String>(
+                              value: address.id,
+                              groupValue: selectedAddressId,
+                              onChanged: (_) => onAddressSelected(address),
+                              activeColor: Colors.pink.shade400,
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+          
+          // Bottom padding
+          SizedBox(height: 16.h),
+        ],
+      ),
+    );
   }
 }
 
