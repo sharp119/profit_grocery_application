@@ -29,6 +29,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
   final VoidCallback onCartTap;
   final String? cartPreviewImage;
   final Map<String, Color>? subcategoryColors;
+  final bool useSearch;
 
   const TwoPanelCategoryProductView({
     Key? key,
@@ -42,6 +43,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
     required this.onCartTap,
     this.cartPreviewImage,
     this.subcategoryColors,
+    this.useSearch = false,
   }) : super(key: key);
 
   @override

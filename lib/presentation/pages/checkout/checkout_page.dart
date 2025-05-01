@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -10,6 +12,7 @@ import '../../blocs/checkout/checkout_state.dart';
 import '../../widgets/base_layout.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../coupon/coupon_page.dart';
+import '../../../services/cart_provider.dart';
 
 class CheckoutPage extends StatelessWidget {
   const CheckoutPage({super.key});
@@ -32,11 +35,123 @@ class _CheckoutPageContent extends StatefulWidget {
 
 class _CheckoutPageContentState extends State<_CheckoutPageContent> {
   final TextEditingController _couponController = TextEditingController();
+  final CartProvider _cartProvider = CartProvider();
+  
+  // Cart information to display
+  int _itemCount = 0;
+  double _subtotal = 0.0;
+  double _discount = 0.0;
+  double _total = 0.0;
+  bool _freeDelivery = true;
+  
+  // Address information
+  Map<String, dynamic>? _addressData;
+  bool _loadingAddress = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCartInformation();
+    _loadAddressFromPrefs();
+    
+    // Listen for cart changes
+    _cartProvider.addListener(_getCartInformation);
+  }
 
   @override
   void dispose() {
     _couponController.dispose();
+    _cartProvider.removeListener(_getCartInformation);
     super.dispose();
+  }
+  
+  Future<void> _getCartInformation() async {
+    try {
+      // Get cart items count
+      final cartItems = _cartProvider.cartItems;
+      final itemCount = cartItems.length;
+      
+      // Try to retrieve cart total values from SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      final cartTotalsJson = prefs.getString('cart_totals');
+      
+      double subtotal = 0.0;
+      double discount = 0.0;
+      double total = 0.0;
+      
+      if (cartTotalsJson != null) {
+        // Parse cart totals from SharedPreferences
+        final cartTotals = jsonDecode(cartTotalsJson);
+        subtotal = (cartTotals['subtotal'] as num).toDouble();
+        discount = (cartTotals['discount'] as num).toDouble();
+        total = (cartTotals['total'] as num).toDouble();
+      } else {
+        // If cart totals not found in SharedPreferences, use hardcoded values
+        // In a real app, you would calculate these values
+        subtotal = 798.0;
+        discount = 79.8; // 10% discount
+        total = subtotal - discount; // Free delivery already applied
+      }
+      
+      setState(() {
+        _itemCount = itemCount;
+        _subtotal = subtotal;
+        _discount = discount;
+        _total = total;
+      });
+      
+      // Save cart totals for next time
+      _saveCartTotals(subtotal, discount, total);
+    } catch (e) {
+      print('Error getting cart information: $e');
+    }
+  }
+  
+  // Save cart totals to SharedPreferences
+  Future<void> _saveCartTotals(double subtotal, double discount, double total) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartTotals = {
+        'subtotal': subtotal,
+        'discount': discount,
+        'total': total,
+      };
+      await prefs.setString('cart_totals', jsonEncode(cartTotals));
+    } catch (e) {
+      print('Error saving cart totals: $e');
+    }
+  }
+
+  // Load selected address from SharedPreferences
+  Future<void> _loadAddressFromPrefs() async {
+    setState(() {
+      _loadingAddress = true;
+    });
+    
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final addressJson = prefs.getString('selected_address');
+      
+      if (addressJson != null) {
+        setState(() {
+          _addressData = jsonDecode(addressJson);
+          _loadingAddress = false;
+        });
+        print('Loaded address from SharedPreferences');
+      } else {
+        setState(() {
+          _addressData = null;
+          _loadingAddress = false;
+        });
+        print('No saved address found in SharedPreferences');
+      }
+    } catch (e) {
+      print('Error loading address from SharedPreferences: $e');
+      setState(() {
+        _addressData = null;
+        _loadingAddress = false;
+      });
+    }
   }
 
   void _selectAddress(BuildContext context, String addressId) {
@@ -108,16 +223,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Delivery address shimmer
-          ShimmerLoader.customContainer(
-            height: 150.h,
-            width: double.infinity,
-            borderRadius: 12.r,
-          ),
-          
-          SizedBox(height: 24.h),
-          
-          // Payment method shimmer
+          // Order summary shimmer (moved to top)
           ShimmerLoader.customContainer(
             height: 180.h,
             width: double.infinity,
@@ -126,7 +232,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           
           SizedBox(height: 24.h),
           
-          // Coupon shimmer
+          // Coupon shimmer (moved to second)
           ShimmerLoader.customContainer(
             height: 80.h,
             width: double.infinity,
@@ -135,9 +241,18 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           
           SizedBox(height: 24.h),
           
-          // Order summary shimmer
+          // Payment method shimmer (moved to third)
           ShimmerLoader.customContainer(
             height: 180.h,
+            width: double.infinity,
+            borderRadius: 12.r,
+          ),
+          
+          SizedBox(height: 24.h),
+          
+          // Delivery address shimmer (moved to bottom)
+          ShimmerLoader.customContainer(
+            height: 150.h,
             width: double.infinity,
             borderRadius: 12.r,
           ),
@@ -155,21 +270,29 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Delivery address
+              // Order summary (moved to top)
+              _buildSectionHeading('Order Summary'),
+              
+              SizedBox(height: 12.h),
+              
+              _buildOrderSummaryCard(context, state),
+              
+              SizedBox(height: 24.h),
+              
+              // Coupon section (moved to second)
               _buildSectionHeading(
-                'Delivery Address',
-                onActionTap: () {
-                  // Navigate to address selection screen
-                },
+                'Apply Coupon',
+                actionText: 'View All',
+                onActionTap: () => _navigateToCoupons(context),
               ),
               
               SizedBox(height: 12.h),
               
-              _buildAddressCard(context, state),
+              _buildCouponCard(context, state),
               
               SizedBox(height: 24.h),
               
-              // Payment method
+              // Payment method (moved to third)
               _buildSectionHeading(
                 'Payment Method',
                 actionText: 'Add New',
@@ -184,28 +307,15 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
               
               SizedBox(height: 24.h),
               
-              // Coupon section
-              _buildSectionHeading(
-                'Apply Coupon',
-                actionText: 'View All',
-                onActionTap: () => _navigateToCoupons(context),
-              ),
+              // Delivery address (moved to last)
+              _buildSectionHeading('Delivery Address'),
               
               SizedBox(height: 12.h),
               
-              _buildCouponCard(context, state),
-              
-              SizedBox(height: 24.h),
-              
-              // Order summary
-              _buildSectionHeading('Order Summary'),
-              
-              SizedBox(height: 12.h),
-              
-              _buildOrderSummaryCard(context, state),
+              _buildAddressCard(context, state),
               
               // Extra space at bottom for the fixed button
-              SizedBox(height: 80.h),
+              SizedBox(height: 110.h),
             ],
           ),
         ),
@@ -216,69 +326,29 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           left: 0,
           right: 0,
           child: Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: AppTheme.secondaryColor,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, -2),
-                ),
-              ],
-              border: Border(
-                top: BorderSide(
-                  color: AppTheme.accentColor.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-            ),
-            child: SizedBox(
+            color: Colors.black,
+            child: Container(
+              margin: EdgeInsets.fromLTRB(20.r, 20.h, 20.r, 30.h),
               width: double.infinity,
-              height: 56.h,
+              height: 50.h,
               child: ElevatedButton(
                 onPressed: state.status == CheckoutStatus.placingOrder
                     ? null
                     : () => _placeOrder(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentColor,
-                  foregroundColor: Colors.black,
+                  backgroundColor: Color(0xFFFFC107), // More vibrant amber
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8.r),
                   ),
-                  padding: EdgeInsets.zero,
                 ),
-                child: state.status == CheckoutStatus.placingOrder
-                    ? const CircularProgressIndicator(
-                        color: Colors.black,
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'PLACE ORDER',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            '•',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            '${AppConstants.currencySymbol}${state.total.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
+                child: Text(
+                  'PLACE ORDER',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
               ),
             ),
           ),
@@ -292,7 +362,11 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
     String actionText = 'Change',
     VoidCallback? onActionTap,
   }) {
+    // Don't show action text for Delivery Address section
+    final bool showAction = title != 'Delivery Address' && onActionTap != null;
+    
     return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
@@ -303,7 +377,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           ),
         ),
         const Spacer(),
-        if (onActionTap != null)
+        if (showAction)
           TextButton(
             onPressed: onActionTap,
             style: TextButton.styleFrom(
@@ -328,9 +402,26 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
   }
 
   Widget _buildAddressCard(BuildContext context, CheckoutState state) {
-    final selectedAddress = state.selectedAddress;
+    if (_loadingAddress) {
+      return Container(
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppTheme.secondaryColor,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: AppTheme.accentColor.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Center(
+          child: CircularProgressIndicator(
+            color: AppTheme.accentColor,
+          ),
+        ),
+      );
+    }
     
-    if (selectedAddress == null) {
+    if (_addressData == null) {
       return Container(
         padding: EdgeInsets.all(16.w),
         decoration: BoxDecoration(
@@ -366,32 +457,14 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
               ),
               textAlign: TextAlign.center,
             ),
-            SizedBox(height: 16.h),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  // Navigate to add address screen
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.accentColor,
-                  foregroundColor: Colors.black,
-                  padding: EdgeInsets.symmetric(vertical: 12.h),
-                ),
-                child: Text(
-                  'Add Address',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
           ],
         ),
       );
     }
 
+    // We have address data
+    final addressType = _addressData!['addressType'] ?? 'home';
+    
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
@@ -414,7 +487,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
               ),
               SizedBox(width: 8.w),
               Text(
-                'Deliver to:',
+                'Delivery Address:',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16.sp,
@@ -428,19 +501,19 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
                   vertical: 2.h,
                 ),
                 decoration: BoxDecoration(
-                  color: selectedAddress.type == 'home'
+                  color: addressType == 'home'
                       ? Colors.green.withOpacity(0.2)
-                      : selectedAddress.type == 'work'
+                      : addressType == 'work'
                           ? Colors.blue.withOpacity(0.2)
                           : Colors.purple.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(4.r),
                 ),
                 child: Text(
-                  selectedAddress.type.toUpperCase(),
+                  addressType.toUpperCase(),
                   style: TextStyle(
-                    color: selectedAddress.type == 'home'
+                    color: addressType == 'home'
                         ? Colors.green
-                        : selectedAddress.type == 'work'
+                        : addressType == 'work'
                             ? Colors.blue
                             : Colors.purple,
                     fontSize: 10.sp,
@@ -450,133 +523,60 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
               ),
             ],
           ),
-          
+
           SizedBox(height: 12.h),
-          
+
           // User name
           Text(
-            selectedAddress.name,
+            _addressData!['name'] ?? 'No Name',
             style: TextStyle(
               color: Colors.white,
               fontSize: 16.sp,
               fontWeight: FontWeight.w500,
             ),
           ),
-          
+
           SizedBox(height: 4.h),
-          
-          // Address
+
+          // Full address
           Text(
-            selectedAddress.address,
+            _addressData!['addressLine'] ?? 'No Address',
             style: TextStyle(
               color: Colors.grey,
               fontSize: 14.sp,
             ),
           ),
-          
+
           SizedBox(height: 4.h),
-          
+
+          // City & State
+          Text(
+            '${_addressData!['city'] ?? ''}, ${_addressData!['state'] ?? ''}',
+            style: TextStyle(
+              color: Colors.grey,
+              fontSize: 14.sp,
+            ),
+          ),
+
+          SizedBox(height: 4.h),
+
           // Pincode
           Text(
-            'PIN: ${selectedAddress.pincode}',
+            'PIN: ${_addressData!['pincode'] ?? 'Not Available'}',
             style: TextStyle(
               color: Colors.grey,
               fontSize: 14.sp,
             ),
           ),
-          
-          SizedBox(height: 4.h),
-          
-          // Phone number
-          Row(
-            children: [
-              Icon(
-                Icons.phone,
-                color: Colors.grey,
-                size: 16.sp,
-              ),
-              SizedBox(width: 4.w),
-              Text(
-                '+91 ${selectedAddress.phone}',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 14.sp,
-                ),
-              ),
-            ],
-          ),
-          
-          // Show multiple addresses if available
-          if (state.addresses.length > 1) ...[
-            SizedBox(height: 16.h),
-            const Divider(color: Colors.grey),
-            SizedBox(height: 16.h),
-            
+
+          // Landmark if available
+          if (_addressData!['landmark'] != null && _addressData!['landmark'].toString().isNotEmpty) ...[
+            SizedBox(height: 4.h),
             Text(
-              'Other Addresses',
+              'Landmark: ${_addressData!['landmark']}',
               style: TextStyle(
-                color: Colors.white,
+                color: Colors.grey,
                 fontSize: 14.sp,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            
-            SizedBox(height: 12.h),
-            
-            SizedBox(
-              height: 40.h,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: state.addresses.length,
-                itemBuilder: (context, index) {
-                  final address = state.addresses[index];
-                  final isSelected = address.id == selectedAddress.id;
-                  
-                  return GestureDetector(
-                    onTap: () => _selectAddress(context, address.id),
-                    child: Container(
-                      margin: EdgeInsets.only(right: 8.w),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 12.w,
-                        vertical: 8.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: isSelected
-                            ? AppTheme.accentColor.withOpacity(0.2)
-                            : AppTheme.primaryColor,
-                        borderRadius: BorderRadius.circular(8.r),
-                        border: Border.all(
-                          color: isSelected
-                              ? AppTheme.accentColor
-                              : Colors.transparent,
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            address.type == 'home'
-                                ? Icons.home
-                                : address.type == 'work'
-                                    ? Icons.business
-                                    : Icons.location_on,
-                            color: isSelected ? AppTheme.accentColor : Colors.grey,
-                            size: 16.sp,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            address.type.toUpperCase(),
-                            style: TextStyle(
-                              color: isSelected ? AppTheme.accentColor : Colors.white,
-                              fontSize: 12.sp,
-                              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
               ),
             ),
           ],
@@ -738,7 +738,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
                       SizedBox(height: 4.h),
                       
                       Text(
-                        'You are saving ${AppConstants.currencySymbol}${state.discount.toStringAsFixed(2)} with this coupon!',
+                        'You are saving ${AppConstants.currencySymbol}${state.discount.toInt()} with this coupon!',
                         style: TextStyle(
                           color: Colors.green,
                           fontSize: 12.sp,
@@ -887,7 +887,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '${state.itemCount} Items',
+                '$_itemCount Items',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16.sp,
@@ -912,14 +912,14 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           
           SizedBox(height: 16.h),
           
-          _buildSummaryRow('Subtotal', '${AppConstants.currencySymbol}${state.subtotal.toStringAsFixed(2)}'),
+          _buildSummaryRow('Subtotal', '${AppConstants.currencySymbol}${_subtotal.toInt()}'),
           
           SizedBox(height: 8.h),
           
-          if (state.discount > 0) ...[
+          if (_discount > 0) ...[
             _buildSummaryRow(
               'Discount',
-              '- ${AppConstants.currencySymbol}${state.discount.toStringAsFixed(2)}',
+              '- ${AppConstants.currencySymbol}${_discount.toInt()}',
               isDiscount: true,
             ),
             
@@ -928,10 +928,8 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           
           _buildSummaryRow(
             'Delivery Fee',
-            state.deliveryFee > 0
-                ? '${AppConstants.currencySymbol}${state.deliveryFee.toStringAsFixed(2)}'
-                : 'FREE',
-            isFree: state.deliveryFee == 0,
+            'FREE',
+            isFree: true,
           ),
           
           SizedBox(height: 16.h),
@@ -942,11 +940,11 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           
           _buildSummaryRow(
             'Total Amount',
-            '${AppConstants.currencySymbol}${state.total.toStringAsFixed(2)}',
+            '${AppConstants.currencySymbol}${_total.toInt()}',
             isTotal: true,
           ),
           
-          if (state.discount > 0) ...[
+          if (_discount > 0) ...[
             SizedBox(height: 16.h),
             Container(
               padding: EdgeInsets.all(8.w),
@@ -964,7 +962,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
                   SizedBox(width: 8.w),
                   Expanded(
                     child: Text(
-                      'You are saving ${AppConstants.currencySymbol}${state.discount.toStringAsFixed(2)} on this order',
+                      'You are saving ${AppConstants.currencySymbol}${_discount.toInt()} on this order',
                       style: TextStyle(
                         color: Colors.green,
                         fontSize: 12.sp,

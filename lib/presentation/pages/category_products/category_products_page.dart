@@ -18,6 +18,7 @@ import '../../blocs/category_products/category_products_bloc.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/panels/two_panel_category_product_view.dart';
 import '../../pages/cart/cart_page.dart';
+import '../../widgets/search/custom_search_bar.dart';
 
 class CategoryProductsPage extends StatelessWidget {
   final String? categoryId;
@@ -143,15 +144,6 @@ class CategoryProductsPage extends StatelessWidget {
     return [
       IconButton(
         icon: const Icon(
-          Icons.search,
-          color: Colors.white,
-        ),
-        onPressed: () {
-          // Search functionality
-        },
-      ),
-      IconButton(
-        icon: const Icon(
           Icons.filter_list,
           color: Colors.white,
         ),
@@ -274,40 +266,11 @@ class CategoryProductsPage extends StatelessWidget {
     
     return Column(
       children: [
-        // Search bar
-        Padding(
-          padding: EdgeInsets.all(16.w),
-          child: TextField(
-            decoration: InputDecoration(
-              filled: true,
-              fillColor: AppTheme.secondaryColor,
-              hintText: 'Search products',
-              hintStyle: TextStyle(
-                color: Colors.white.withOpacity(0.5),
-                fontSize: 14.sp,
-              ),
-              prefixIcon: Icon(
-                Icons.search,
-                color: Colors.white.withOpacity(0.5),
-              ),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8.r),
-                borderSide: BorderSide.none,
-              ),
-              contentPadding: EdgeInsets.symmetric(
-                vertical: 12.h,
-                horizontal: 16.w,
-              ),
-            ),
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14.sp,
-            ),
-            cursorColor: AppTheme.accentColor,
-            onChanged: (query) {
-              // Search functionality
-            },
-          ),
+        // Search bar widget
+        CustomSearchBar(
+          onSearch: (query) {
+            // Search functionality
+          },
         ),
         
         // Category-Product two panel view
@@ -361,6 +324,7 @@ class CategoryProductsPage extends StatelessWidget {
                     ? _getCartPreviewImage(state)
                     : null,
                 subcategoryColors: state.subcategoryColors,
+                useSearch: false,
               );
             },
           ),

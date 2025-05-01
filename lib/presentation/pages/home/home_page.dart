@@ -17,6 +17,7 @@ import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
 import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
+import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -1170,12 +1171,6 @@ class _HomePageContentState extends State<_HomePageContent> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.search),
-                onPressed: () {
-                  // Navigate to search page
-                },
-              ),
-              IconButton(
                 icon: const Icon(Icons.notifications_outlined),
                 onPressed: () {
                   // Navigate to notifications
@@ -1205,6 +1200,15 @@ class _HomePageContentState extends State<_HomePageContent> {
                     },
                     showNewBadge: true,
                     newTabIndex: 3, // Show "New" badge on Kids tab (index 3)
+                  ),
+                  
+                  // Search bar
+                  CustomSearchBar(
+                    onSearch: (query) {
+                      // Handle search
+                      debugPrint('Searching for: $query');
+                    },
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                   ),
                   
                   // Main content

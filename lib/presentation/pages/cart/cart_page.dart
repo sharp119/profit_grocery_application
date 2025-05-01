@@ -23,6 +23,7 @@ import '../../blocs/user/user_bloc.dart';
 import '../../blocs/user/user_event.dart';
 import 'package:provider/provider.dart';
 import '../profile/address_form_page.dart';
+import '../checkout/checkout_page.dart';
 
 class CartPage extends StatefulWidget {
   const CartPage({Key? key}) : super(key: key);
@@ -499,6 +500,9 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     _totalCartValue = _calculateTotalCartValue();
     _totalSavings = _getTotalSavings();
     
+    // Save cart totals to SharedPreferences for checkout page
+    _saveCartTotals();
+    
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
       appBar: AppBar(
@@ -712,7 +716,14 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             height: 50.h,
             child: ElevatedButton(
               onPressed: () {
-                // No functionality for now
+                // Navigate to checkout page
+                _saveAddressToPrefs();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CheckoutPage(),
+                  ),
+                );
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: Color(0xFFFFC107), // More vibrant amber
@@ -1441,6 +1452,46 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         size: 20.sp, // Reduced size
       ),
     );
+  }
+
+  // Save cart totals to SharedPreferences for checkout page to use
+  Future<void> _saveCartTotals() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cartTotals = {
+        'subtotal': _totalCartValue.toInt().toDouble(),
+        'discount': _totalSavings.toInt().toDouble(),
+        'total': _totalCartValue.toInt().toDouble(),
+        'itemCount': _cartEntries.length,
+      };
+      await prefs.setString('cart_totals', jsonEncode(cartTotals));
+      print('Saved cart totals to SharedPreferences');
+    } catch (e) {
+      print('Error saving cart totals: $e');
+    }
+  }
+
+  // Save selected address to SharedPreferences for checkout page
+  Future<void> _saveAddressToPrefs() async {
+    try {
+      if (_defaultAddress != null) {
+        final prefs = await SharedPreferences.getInstance();
+        final addressData = {
+          'id': _defaultAddress!.id,
+          'name': _defaultAddress!.name,
+          'addressLine': _defaultAddress!.addressLine,
+          'city': _defaultAddress!.city,
+          'state': _defaultAddress!.state,
+          'pincode': _defaultAddress!.pincode,
+          'landmark': _defaultAddress!.landmark,
+          'addressType': _defaultAddress!.addressType,
+        };
+        await prefs.setString('selected_address', jsonEncode(addressData));
+        print('Saved selected address to SharedPreferences');
+      }
+    } catch (e) {
+      print('Error saving address to SharedPreferences: $e');
+    }
   }
 }
 

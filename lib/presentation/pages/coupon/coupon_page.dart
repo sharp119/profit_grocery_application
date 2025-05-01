@@ -345,105 +345,105 @@ class _CouponPageContentState extends State<_CouponPageContent> {
           ),
           
           // Admin button to upload sample coupons to Firebase
-          Container(
-            margin: EdgeInsets.only(top: 16.h),
-            padding: EdgeInsets.all(12.w),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade800.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(8.r),
-              border: Border.all(
-                color: Colors.grey.shade700,
-                width: 1,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.admin_panel_settings,
-                      color: Colors.amber,
-                      size: 18.sp,
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      'Admin Actions',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 12.h),
-                Text(
-                  'Upload all sample coupons to different databases',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.7),
-                    fontSize: 12.sp,
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.read<CouponBloc>().add(const UploadSampleCoupons());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade700,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: BlocBuilder<CouponBloc, CouponState>(
-                      builder: (context, state) {
-                        if (state.status == CouponStatus.uploading) {
-                          return const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.amber,
-                            ),
-                          );
-                        }
-                        return const Text('Upload to Realtime DB');
-                      },
-                    ),
-                  ),
-                ),
-                SizedBox(height: 8.h),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      context.read<CouponBloc>().add(const UploadSampleCouponsToFirestore());
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.grey.shade800,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: BlocBuilder<CouponBloc, CouponState>(
-                      builder: (context, state) {
-                        if (state.status == CouponStatus.uploading) {
-                          return const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: Colors.amber,
-                            ),
-                          );
-                        }
-                        return const Text('Upload to Firestore');
-                      },
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // Container(
+          //   margin: EdgeInsets.only(top: 16.h),
+          //   padding: EdgeInsets.all(12.w),
+          //   decoration: BoxDecoration(
+          //     color: Colors.grey.shade800.withOpacity(0.5),
+          //     borderRadius: BorderRadius.circular(8.r),
+          //     border: Border.all(
+          //       color: Colors.grey.shade700,
+          //       width: 1,
+          //     ),
+          //   ),
+          //   child: Column(
+          //     crossAxisAlignment: CrossAxisAlignment.start,
+          //     children: [
+          //       Row(
+          //         children: [
+          //           Icon(
+          //             Icons.admin_panel_settings,
+          //             color: Colors.amber,
+          //             size: 18.sp,
+          //           ),
+          //           SizedBox(width: 8.w),
+          //           Text(
+          //             'Admin Actions',
+          //             style: TextStyle(
+          //               color: Colors.white,
+          //               fontSize: 14.sp,
+          //               fontWeight: FontWeight.bold,
+          //             ),
+          //           ),
+          //         ],
+          //       ),
+          //       SizedBox(height: 12.h),
+          //       Text(
+          //         'Upload all sample coupons to different databases',
+          //         style: TextStyle(
+          //           color: Colors.white.withOpacity(0.7),
+          //           fontSize: 12.sp,
+          //         ),
+          //       ),
+          //       SizedBox(height: 8.h),
+          //       SizedBox(
+          //         width: double.infinity,
+          //         child: ElevatedButton(
+          //           onPressed: () {
+          //             context.read<CouponBloc>().add(const UploadSampleCoupons());
+          //           },
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: Colors.grey.shade700,
+          //             foregroundColor: Colors.white,
+          //           ),
+          //           child: BlocBuilder<CouponBloc, CouponState>(
+          //             builder: (context, state) {
+          //               if (state.status == CouponStatus.uploading) {
+          //                 return const SizedBox(
+          //                   height: 20,
+          //                   width: 20,
+          //                   child: CircularProgressIndicator(
+          //                     strokeWidth: 2,
+          //                     color: Colors.amber,
+          //                   ),
+          //                 );
+          //               }
+          //               return const Text('Upload to Realtime DB');
+          //             },
+          //           ),
+          //         ),
+          //       ),
+          //       SizedBox(height: 8.h),
+          //       SizedBox(
+          //         width: double.infinity,
+          //         child: ElevatedButton(
+          //           onPressed: () {
+          //             context.read<CouponBloc>().add(const UploadSampleCouponsToFirestore());
+          //           },
+          //           style: ElevatedButton.styleFrom(
+          //             backgroundColor: Colors.grey.shade800,
+          //             foregroundColor: Colors.white,
+          //           ),
+          //           child: BlocBuilder<CouponBloc, CouponState>(
+          //             builder: (context, state) {
+          //               if (state.status == CouponStatus.uploading) {
+          //                 return const SizedBox(
+          //                   height: 20,
+          //                   width: 20,
+          //                   child: CircularProgressIndicator(
+          //                     strokeWidth: 2,
+          //                     color: Colors.amber,
+          //                   ),
+          //                 );
+          //               }
+          //               return const Text('Upload to Firestore');
+          //             },
+          //           ),
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
           
           SizedBox(height: 24.h),
           
