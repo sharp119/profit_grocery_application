@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
+import '../../../domain/entities/user.dart';
 import '../../blocs/checkout/checkout_bloc.dart';
 import '../../blocs/checkout/checkout_event.dart';
 import '../../blocs/checkout/checkout_state.dart';
@@ -13,6 +14,7 @@ import '../../widgets/base_layout.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../coupon/coupon_page.dart';
 import '../../../services/cart_provider.dart';
+import '../profile/address_form_page.dart';
 
 class CheckoutPage extends StatelessWidget {
   const CheckoutPage({super.key});
@@ -479,45 +481,113 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(
-                Icons.location_on,
-                color: AppTheme.accentColor,
-                size: 20.sp,
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    color: AppTheme.accentColor,
+                    size: 20.sp,
+                  ),
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Delivery Address:',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 2.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: addressType == 'home'
+                          ? Colors.green.withOpacity(0.2)
+                          : addressType == 'work'
+                              ? Colors.blue.withOpacity(0.2)
+                              : Colors.purple.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(4.r),
+                    ),
+                    child: Text(
+                      addressType.toUpperCase(),
+                      style: TextStyle(
+                        color: addressType == 'home'
+                            ? Colors.green
+                            : addressType == 'work'
+                                ? Colors.blue
+                                : Colors.purple,
+                        fontSize: 10.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              SizedBox(width: 8.w),
-              Text(
-                'Delivery Address:',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: 8.w,
-                  vertical: 2.h,
-                ),
-                decoration: BoxDecoration(
-                  color: addressType == 'home'
-                      ? Colors.green.withOpacity(0.2)
-                      : addressType == 'work'
-                          ? Colors.blue.withOpacity(0.2)
-                          : Colors.purple.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4.r),
-                ),
-                child: Text(
-                  addressType.toUpperCase(),
-                  style: TextStyle(
-                    color: addressType == 'home'
-                        ? Colors.green
-                        : addressType == 'work'
-                            ? Colors.blue
-                            : Colors.purple,
-                    fontSize: 10.sp,
-                    fontWeight: FontWeight.bold,
+              
+              // Edit button
+              InkWell(
+                onTap: () {
+                  // Create an Address object from the address data
+                  final address = Address(
+                    id: _addressData!['id'] ?? '',
+                    name: _addressData!['name'] ?? '',
+                    addressLine: _addressData!['addressLine'] ?? '',
+                    city: _addressData!['city'] ?? '',
+                    state: _addressData!['state'] ?? '',
+                    pincode: _addressData!['pincode'] ?? '',
+                    landmark: _addressData!['landmark'],
+                    addressType: _addressData!['addressType'] ?? 'home',
+                    isDefault: true,
+                    phone: _addressData!['phone'],
+                  );
+                  
+                  // Navigate to address edit page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddressFormPage(
+                        address: address,
+                        isEditing: true,
+                      ),
+                    ),
+                  ).then((_) {
+                    // Reload address data when returning from edit page
+                    _loadAddressFromPrefs();
+                  });
+                },
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                  decoration: BoxDecoration(
+                    color: AppTheme.accentColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: AppTheme.accentColor,
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.edit,
+                        color: AppTheme.accentColor,
+                        size: 14.sp,
+                      ),
+                      SizedBox(width: 4.w),
+                      Text(
+                        'Edit',
+                        style: TextStyle(
+                          color: AppTheme.accentColor,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -568,6 +638,28 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
               fontSize: 14.sp,
             ),
           ),
+
+          // Phone number (new)
+          if (_addressData!['phone'] != null && _addressData!['phone'].toString().isNotEmpty) ...[
+            SizedBox(height: 4.h),
+            Row(
+              children: [
+                Icon(
+                  Icons.phone,
+                  color: Colors.grey,
+                  size: 14.sp,
+                ),
+                SizedBox(width: 4.w),
+                Text(
+                  'Phone: ${_addressData!['phone']}',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14.sp,
+                  ),
+                ),
+              ],
+            ),
+          ],
 
           // Landmark if available
           if (_addressData!['landmark'] != null && _addressData!['landmark'].toString().isNotEmpty) ...[

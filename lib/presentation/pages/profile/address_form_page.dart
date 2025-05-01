@@ -36,6 +36,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
   late TextEditingController _stateController;
   late TextEditingController _pincodeController;
   late TextEditingController _landmarkController;
+  late TextEditingController _phoneController;
   late String _addressType;
   late bool _isDefault;
   
@@ -87,6 +88,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
       _stateController = TextEditingController(text: address.state);
       _pincodeController = TextEditingController(text: address.pincode);
       _landmarkController = TextEditingController(text: address.landmark ?? '');
+      _phoneController = TextEditingController(text: address.phone ?? '');
       _addressType = address.addressType;
       _isDefault = address.isDefault;
     } else {
@@ -96,6 +98,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
       _stateController = TextEditingController();
       _pincodeController = TextEditingController();
       _landmarkController = TextEditingController();
+      _phoneController = TextEditingController();
       _addressType = 'home';
       _isDefault = false;
       
@@ -128,6 +131,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
     _stateController.dispose();
     _pincodeController.dispose();
     _landmarkController.dispose();
+    _phoneController.dispose();
     super.dispose();
   }
 
@@ -356,6 +360,29 @@ class _AddressFormPageState extends State<AddressFormPage> {
               fontSize: 14.sp,
               fontStyle: FontStyle.italic,
             ),
+          ),
+          
+          TextFormField(
+            controller: _phoneController,
+            style: const TextStyle(color: AppTheme.textPrimaryColor),
+            decoration: InputDecoration(
+              labelText: 'Phone Number',
+              hintText: 'Enter contact number for this address',
+              prefixIcon: const Icon(Icons.phone),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter a phone number';
+              }
+              if (value.length != 10 || int.tryParse(value) == null) {
+                return 'Please enter a valid 10-digit phone number';
+              }
+              return null;
+            },
           ),
         ],
       ),
@@ -701,6 +728,7 @@ class _AddressFormPageState extends State<AddressFormPage> {
         landmark: _landmarkController.text.trim(),
         isDefault: _isDefault,
         addressType: _addressType,
+        phone: _phoneController.text.isNotEmpty ? _phoneController.text : null,
       );
       
       // Dispatch event to UserBloc

@@ -454,6 +454,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
                   landmark: address.landmark,
                   isDefault: true,
                   addressType: address.addressType,
+                  phone: address.phone,
                 );
           
           // If the new address is default, unset default flag on existing addresses
@@ -470,6 +471,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
                   landmark: addresses[i].landmark,
                   isDefault: false,
                   addressType: addresses[i].addressType,
+                  phone: addresses[i].phone,
                 );
               }
             }
@@ -501,6 +503,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
               'landmark': addr.landmark,
               'isDefault': addr.isDefault,
               'addressType': addr.addressType,
+              'phone': addr.phone,
             }).toList(),
           });
           
@@ -556,6 +559,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
                   landmark: addresses[i].landmark,
                   isDefault: false,
                   addressType: addresses[i].addressType,
+                  phone: addresses[i].phone,
                 );
               }
             }
@@ -587,6 +591,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
               'landmark': addr.landmark,
               'isDefault': addr.isDefault,
               'addressType': addr.addressType,
+              'phone': addr.phone,
             }).toList(),
           });
           
@@ -645,6 +650,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
               landmark: addresses[0].landmark,
               isDefault: true,
               addressType: addresses[0].addressType,
+              phone: addresses[0].phone,
             );
           }
           
@@ -672,6 +678,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
               'landmark': addr.landmark,
               'isDefault': addr.isDefault,
               'addressType': addr.addressType,
+              'phone': addr.phone,
             }).toList(),
           });
           
@@ -720,6 +727,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
                 landmark: addresses[i].landmark,
                 isDefault: false,
                 addressType: addresses[i].addressType,
+                phone: addresses[i].phone,
               );
             }
           }
@@ -739,6 +747,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
             landmark: addresses[targetAddressIndex].landmark,
             isDefault: true,
             addressType: addresses[targetAddressIndex].addressType,
+            phone: addresses[targetAddressIndex].phone,
           );
           
           // Create updated user model
@@ -765,6 +774,7 @@ class UserRepositoryFirestoreImpl implements UserRepository {
               'landmark': addr.landmark,
               'isDefault': addr.isDefault,
               'addressType': addr.addressType,
+              'phone': addr.phone,
             }).toList(),
           });
           

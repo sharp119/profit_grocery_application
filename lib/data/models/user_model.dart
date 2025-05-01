@@ -127,6 +127,7 @@ class AddressModel extends Address {
     super.landmark,
     super.isDefault = false,
     super.addressType = 'home',
+    super.phone,
   });
 
   factory AddressModel.fromJson(Map<String, dynamic> json) {
@@ -140,6 +141,7 @@ class AddressModel extends Address {
       landmark: json['landmark'],
       isDefault: json['isDefault'] ?? false,
       addressType: json['addressType'] ?? 'home',
+      phone: json['phone'],
     );
   }
 
@@ -154,6 +156,7 @@ class AddressModel extends Address {
       'landmark': landmark,
       'isDefault': isDefault,
       'addressType': addressType,
+      'phone': phone,
     };
   }
 }

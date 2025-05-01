@@ -794,14 +794,27 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
                       ),
                     ))
                   else if (_defaultAddress != null)
-                    Text(
-                      '${_defaultAddress!.addressLine.split(',').first}, ${_defaultAddress!.city}',
-                      style: TextStyle(
-                        fontSize: 10.sp, // Match product weight/quantity size
-                        color: Colors.grey.shade400,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      maxLines: 1,
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${_defaultAddress!.addressLine.split(',').first}, ${_defaultAddress!.city}',
+                          style: TextStyle(
+                            fontSize: 10.sp, // Match product weight/quantity size
+                            color: Colors.grey.shade400,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          maxLines: 1,
+                        ),
+                        if (_defaultAddress!.phone != null)
+                          Text(
+                            'Phone: ${_defaultAddress!.phone}',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              color: Colors.grey.shade400,
+                            ),
+                          ),
+                      ],
                     )
                   else
                     Text(
@@ -1485,6 +1498,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
           'pincode': _defaultAddress!.pincode,
           'landmark': _defaultAddress!.landmark,
           'addressType': _defaultAddress!.addressType,
+          'phone': _defaultAddress!.phone, // Add phone field
         };
         await prefs.setString('selected_address', jsonEncode(addressData));
         print('Saved selected address to SharedPreferences');

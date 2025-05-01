@@ -41,6 +41,7 @@ class Address extends Equatable {
   final String? landmark;
   final bool isDefault;
   final String addressType; // 'home', 'work', 'other'
+  final String? phone;
 
   const Address({
     required this.id,
@@ -52,6 +53,7 @@ class Address extends Equatable {
     this.landmark,
     this.isDefault = false,
     this.addressType = 'home',
+    this.phone,
   });
 
   @override
@@ -65,5 +67,6 @@ class Address extends Equatable {
         landmark,
         isDefault,
         addressType,
+        phone,
       ];
 }
