@@ -35,25 +35,12 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       emit(state.copyWith(status: HomeStatus.loading));
       
-      // Generate subcategory colors
-
-      // In a real app, we would fetch this data from repositories
-      // For now, we'll use mock data
-      final tabs = _getMockTabs();
-      final banners = _getMockBanners();
-      
-      // Get all category types
-
-
-
-
-      // Get products
-
-      
-      // Get cart data
-
       // Get category groups for 4x2 grid widget
       final categoryGroups = await _categoryRepository.fetchCategories();
+      
+      // Use category groups for tabs instead of hardcoded values
+      final tabs = categoryGroups.map((group) => group.title).toList();
+      final banners = _getMockBanners();
       
       // Simulate network delay
       await Future.delayed(const Duration(seconds: 1));
@@ -62,8 +49,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         status: HomeStatus.loaded,
         tabs: tabs,
         banners: banners,
-
-
         categoryGroups: categoryGroups,
       ));
     } catch (e) {
@@ -181,16 +166,6 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }
 
   // Mock data methods
-  List<String> _getMockTabs() {
-    return [
-      'All',
-      'Electronics',
-      'Beauty',
-      'Kids',
-      'Gifting',
-    ];
-  }
-
   List<String> _getMockBanners() {
     return [
       '${AppConstants.assetsImagesPath}gift.jpg',
@@ -200,9 +175,4 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       '${AppConstants.assetsCimgsPath}4.jpg',
     ];
   }
-
-
-  
-
-  
 }

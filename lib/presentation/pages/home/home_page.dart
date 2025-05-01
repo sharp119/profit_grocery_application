@@ -18,6 +18,7 @@ import 'package:profit_grocery_application/utils/cart_logger.dart';
 import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
+import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -1120,16 +1121,6 @@ class _HomePageContentState extends State<_HomePageContent> {
     );
   }
 
-  List<IconData> _getCategoryIcons() {
-    return [
-      Icons.storefront_outlined, // All
-      Icons.devices_outlined,     // Electronics
-      Icons.face_outlined,        // Beauty
-      Icons.child_care_outlined,  // Kids
-      Icons.card_giftcard_outlined, // Gifting
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<HomeBloc, HomeState>(
@@ -1193,13 +1184,29 @@ class _HomePageContentState extends State<_HomePageContent> {
                   // Top Category Tabs
                   HorizontalCategoryTabs(
                     tabs: state.tabs,
-                    icons: _getCategoryIcons(),
+                    categoryGroups: state.categoryGroups,
                     selectedIndex: state.selectedTabIndex,
                     onTabSelected: (index) {
+                      // First update the selected tab in the HomeBloc
                       context.read<HomeBloc>().add(SelectCategoryTab(index));
+                      
+                      // Then navigate to the CategoryProductsPage with the selected category group
+                      if (state.categoryGroups.isNotEmpty && index < state.categoryGroups.length) {
+                        final selectedCategoryGroup = state.categoryGroups[index];
+                        if (selectedCategoryGroup.items.isNotEmpty) {
+                          // Navigate to the first category item in the group
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CategoryProductsPage(
+                                categoryId: selectedCategoryGroup.items.first.id,
+                              ),
+                            ),
+                          );
+                        }
+                      }
                     },
-                    showNewBadge: true,
-                    newTabIndex: 3, // Show "New" badge on Kids tab (index 3)
+                    showNewBadge: false,
                   ),
                   
                   // Search bar

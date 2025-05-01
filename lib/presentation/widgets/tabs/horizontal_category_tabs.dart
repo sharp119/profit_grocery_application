@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:profit_grocery_application/data/models/firestore/category_group_firestore_model.dart';
 
 import '../../../core/constants/app_theme.dart';
 
@@ -7,7 +9,7 @@ import '../../../core/constants/app_theme.dart';
 /// Usually displayed at the top of the home screen
 class HorizontalCategoryTabs extends StatelessWidget {
   final List<String> tabs;
-  final List<IconData>? icons;
+  final List<CategoryGroupFirestore>? categoryGroups;
   final int selectedIndex;
   final Function(int) onTabSelected;
   final bool showNewBadge;
@@ -16,7 +18,7 @@ class HorizontalCategoryTabs extends StatelessWidget {
   const HorizontalCategoryTabs({
     Key? key,
     required this.tabs,
-    this.icons,
+    this.categoryGroups,
     required this.selectedIndex,
     required this.onTabSelected,
     this.showNewBadge = false,
@@ -34,7 +36,6 @@ class HorizontalCategoryTabs extends StatelessWidget {
     final containerHeight = isSmallScreen ? 70.0 : 80.0;
     final iconBoxSize = (screenWidth / 11).clamp(36.0, 46.0);
     final textSize = (screenWidth / 45).clamp(9.0, 11.0);
-    final iconSize = (screenWidth / 27).clamp(14.0, 22.0);
     
     return Container(
       height: containerHeight,
@@ -57,6 +58,14 @@ class HorizontalCategoryTabs extends StatelessWidget {
             // Use a percentage of screen width, but enforce min/max constraints
             final itemWidth = (screenWidth / visibleItemCount).clamp(60.0, 80.0);
             
+            // Get first category item image from the category group if available
+            String? categoryImageUrl;
+            if (categoryGroups != null && 
+                index < categoryGroups!.length && 
+                categoryGroups![index].items.isNotEmpty) {
+              categoryImageUrl = categoryGroups![index].items.first.imagePath;
+            }
+            
             return Container(
               width: itemWidth,
               margin: const EdgeInsets.symmetric(horizontal: 4.0),
@@ -67,39 +76,45 @@ class HorizontalCategoryTabs extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Tab icon with optional "New" badge
+                    // Tab image with optional "New" badge
                     Stack(
                       children: [
                         Container(
                           width: iconBoxSize,
                           height: iconBoxSize,
                           decoration: BoxDecoration(
-                            color: isSelected 
-                                ? AppTheme.accentColor.withOpacity(0.2) 
+                            color: categoryImageUrl != null && categoryImageUrl.isNotEmpty
+                                ? Colors.transparent
                                 : AppTheme.secondaryColor,
                             borderRadius: BorderRadius.circular(10.0),
-                            border: Border.all(
-                              color: isSelected 
-                                  ? AppTheme.accentColor 
-                                  : Colors.transparent,
-                              width: 1.5,
-                            ),
-                            // Add subtle shadow for better visibility
-                            boxShadow: isSelected ? [
-                              BoxShadow(
-                                color: AppTheme.accentColor.withOpacity(0.15),
-                                blurRadius: 4,
-                                offset: const Offset(0, 2),
+                            // Remove the shadow for selected items
+                          ),
+                          child: categoryImageUrl != null && categoryImageUrl.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(10.0),
+                                child: CachedNetworkImage(
+                                  imageUrl: categoryImageUrl,
+                                  fit: BoxFit.contain,
+                                  placeholder: (context, url) => Center(
+                                    child: SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white, // Changed from accent color
+                                      ),
+                                    ),
+                                  ),
+                                  errorWidget: (context, url, error) => Icon(
+                                    Icons.category,
+                                    color: Colors.white, // Always white
+                                  ),
+                                ),
+                              )
+                            : Icon(
+                                Icons.category,
+                                color: Colors.white, // Always white
                               ),
-                            ] : null,
-                          ),
-                          child: Icon(
-                            icons != null && index < icons!.length 
-                                ? icons![index] 
-                                : Icons.category,
-                            color: isSelected ? AppTheme.accentColor : Colors.white,
-                            size: iconSize,
-                          ),
                         ),
                         
                         // "New" badge
@@ -135,7 +150,7 @@ class HorizontalCategoryTabs extends StatelessWidget {
                     Text(
                       tabs[index],
                       style: TextStyle(
-                        color: isSelected ? AppTheme.accentColor : Colors.white,
+                        color: Colors.white, // Always white
                         fontSize: textSize,
                         fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
