@@ -482,28 +482,36 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Left side with icon and title
               Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Icon(
                     Icons.location_on,
-                    color: AppTheme.accentColor,
-                    size: 20.sp,
+                    color: Colors.amber,
+                    size: 24.sp,
                   ),
                   SizedBox(width: 8.w),
                   Text(
                     'Delivery Address:',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 16.sp,
+                      fontSize: 18.sp,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(width: 8.w),
+                ],
+              ),
+              
+              // Right side with address type badge and edit button
+              Row(
+                children: [
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 2.h,
+                      horizontal: 10.w,
+                      vertical: 4.h,
                     ),
                     decoration: BoxDecoration(
                       color: addressType == 'home'
@@ -521,99 +529,98 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
                             : addressType == 'work'
                                 ? Colors.blue
                                 : Colors.purple,
-                        fontSize: 10.sp,
+                        fontSize: 12.sp,
                         fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  InkWell(
+                    onTap: () {
+                      // Create an Address object from the address data
+                      final address = Address(
+                        id: _addressData!['id'] ?? '',
+                        name: _addressData!['name'] ?? '',
+                        addressLine: _addressData!['addressLine'] ?? '',
+                        city: _addressData!['city'] ?? '',
+                        state: _addressData!['state'] ?? '',
+                        pincode: _addressData!['pincode'] ?? '',
+                        landmark: _addressData!['landmark'],
+                        addressType: _addressData!['addressType'] ?? 'home',
+                        isDefault: true,
+                        phone: _addressData!['phone'],
+                      );
+                      
+                      // Navigate to address edit page
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddressFormPage(
+                            address: address,
+                            isEditing: true,
+                          ),
+                        ),
+                      ).then((_) {
+                        // Reload address data when returning from edit page
+                        _loadAddressFromPrefs();
+                      });
+                    },
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                        borderRadius: BorderRadius.circular(16.r),
+                        border: Border.all(
+                          color: Colors.amber,
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.edit,
+                            color: Colors.amber,
+                            size: 16.sp,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'Edit',
+                            style: TextStyle(
+                              color: Colors.amber,
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
               ),
-              
-              // Edit button
-              InkWell(
-                onTap: () {
-                  // Create an Address object from the address data
-                  final address = Address(
-                    id: _addressData!['id'] ?? '',
-                    name: _addressData!['name'] ?? '',
-                    addressLine: _addressData!['addressLine'] ?? '',
-                    city: _addressData!['city'] ?? '',
-                    state: _addressData!['state'] ?? '',
-                    pincode: _addressData!['pincode'] ?? '',
-                    landmark: _addressData!['landmark'],
-                    addressType: _addressData!['addressType'] ?? 'home',
-                    isDefault: true,
-                    phone: _addressData!['phone'],
-                  );
-                  
-                  // Navigate to address edit page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddressFormPage(
-                        address: address,
-                        isEditing: true,
-                      ),
-                    ),
-                  ).then((_) {
-                    // Reload address data when returning from edit page
-                    _loadAddressFromPrefs();
-                  });
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                  decoration: BoxDecoration(
-                    color: AppTheme.accentColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: AppTheme.accentColor,
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        Icons.edit,
-                        color: AppTheme.accentColor,
-                        size: 14.sp,
-                      ),
-                      SizedBox(width: 4.w),
-                      Text(
-                        'Edit',
-                        style: TextStyle(
-                          color: AppTheme.accentColor,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
             ],
           ),
 
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
 
-          // User name
+          // User name - with more prominent styling
           Text(
             _addressData!['name'] ?? 'No Name',
             style: TextStyle(
               color: Colors.white,
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w500,
+              fontSize: 18.sp,
+              fontWeight: FontWeight.w600,
             ),
           ),
 
-          SizedBox(height: 4.h),
+          SizedBox(height: 8.h),
 
           // Full address
           Text(
             _addressData!['addressLine'] ?? 'No Address',
             style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14.sp,
+              color: Colors.grey.shade400,
+              fontSize: 15.sp,
             ),
           ),
 
@@ -623,53 +630,80 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
           Text(
             '${_addressData!['city'] ?? ''}, ${_addressData!['state'] ?? ''}',
             style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14.sp,
+              color: Colors.grey.shade400,
+              fontSize: 15.sp,
             ),
           ),
 
           SizedBox(height: 4.h),
 
-          // Pincode
-          Text(
-            'PIN: ${_addressData!['pincode'] ?? 'Not Available'}',
-            style: TextStyle(
-              color: Colors.grey,
-              fontSize: 14.sp,
-            ),
+          // Pincode with more consistent styling
+          Row(
+            children: [
+              Text(
+                'PIN: ',
+                style: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 15.sp,
+                ),
+              ),
+              Text(
+                '${_addressData!['pincode'] ?? 'Not Available'}',
+                style: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 15.sp,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
 
-          // Phone number (new)
+          // Phone number with icon alignment similar to the screenshot
           if (_addressData!['phone'] != null && _addressData!['phone'].toString().isNotEmpty) ...[
-            SizedBox(height: 4.h),
+            SizedBox(height: 8.h),
             Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Icon(
                   Icons.phone,
-                  color: Colors.grey,
-                  size: 14.sp,
+                  color: Colors.grey.shade400,
+                  size: 16.sp,
                 ),
-                SizedBox(width: 4.w),
+                SizedBox(width: 8.w),
                 Text(
                   'Phone: ${_addressData!['phone']}',
                   style: TextStyle(
-                    color: Colors.grey,
-                    fontSize: 14.sp,
+                    color: Colors.grey.shade400,
+                    fontSize: 15.sp,
                   ),
                 ),
               ],
             ),
           ],
 
-          // Landmark if available
+          // Landmark if available - with matching styling
           if (_addressData!['landmark'] != null && _addressData!['landmark'].toString().isNotEmpty) ...[
-            SizedBox(height: 4.h),
-            Text(
-              'Landmark: ${_addressData!['landmark']}',
-              style: TextStyle(
-                color: Colors.grey,
-                fontSize: 14.sp,
-              ),
+            SizedBox(height: 8.h),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Landmark: ',
+                  style: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 15.sp,
+                  ),
+                ),
+                Expanded(
+                  child: Text(
+                    '${_addressData!['landmark']}',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 15.sp,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ],

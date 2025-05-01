@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
+import 'package:flutter/services.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -372,8 +373,14 @@ class _AddressFormPageState extends State<AddressFormPage> {
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8.r),
               ),
+              counterText: '',
             ),
             keyboardType: TextInputType.phone,
+            maxLength: 10,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
             validator: (value) {
               if (value == null || value.isEmpty) {
                 return 'Please enter a phone number';
