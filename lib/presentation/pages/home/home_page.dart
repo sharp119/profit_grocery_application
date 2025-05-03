@@ -1181,6 +1181,15 @@ class _HomePageContentState extends State<_HomePageContent> {
             children: [
               Column(
                 children: [
+                  // Search bar (moved up)
+                  CustomSearchBar(
+                    onSearch: (query) {
+                      // Handle search
+                      debugPrint('Searching for: $query');
+                    },
+                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 18.h),
+                  ),
+                  
                   // Top Category Tabs
                   HorizontalCategoryTabs(
                     tabs: state.tabs,
@@ -1207,15 +1216,6 @@ class _HomePageContentState extends State<_HomePageContent> {
                       }
                     },
                     showNewBadge: false,
-                  ),
-                  
-                  // Search bar
-                  CustomSearchBar(
-                    onSearch: (query) {
-                      // Handle search
-                      debugPrint('Searching for: $query');
-                    },
-                    padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
                   ),
                   
                   // Main content
