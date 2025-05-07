@@ -45,6 +45,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.13.1
 
 flutter:
   uses-material-design: true
@@ -56,6 +57,9 @@ flutter:
     - assets/subcategories/
     - assets/products/
     - assets/cimgs/
+    - assets/icon/res/mipmap-xxxhdpi/ic_launcher.png
+    - assets/icon/res/mipmap-xxxhdpi/ic_launcher_background.png
+    - assets/icon/res/mipmap-xxxhdpi/ic_launcher_foreground.png
 
   # Add custom fonts later if required
   # fonts:
@@ -64,3 +68,10 @@ flutter:
   #       - asset: assets/fonts/CustomFont-Regular.ttf
   #       - asset: assets/fonts/CustomFont-Bold.ttf
   #         weight: 700
+
+flutter_icons:
+  android: true
+  image_path: "assets/icon/res/mipmap-xxxhdpi/ic_launcher.png"
+  adaptive_icon_background: "assets/icon/res/mipmap-xxxhdpi/ic_launcher_background.png"
+  adaptive_icon_foreground: "assets/icon/res/mipmap-xxxhdpi/ic_launcher_foreground.png"
+  # min_sdk_android: 21
