@@ -6,7 +6,6 @@
         ".read": "auth.uid === $userId",
         ".write": "auth.uid === $userId || !data.exists()",
         "cart": {
-          // Allow cart operations without auth for better offline support
           ".read": true,
           ".write": true
         }

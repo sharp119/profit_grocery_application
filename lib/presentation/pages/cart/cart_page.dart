@@ -60,6 +60,9 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   double _totalCartValue = 0;
   double _totalSavings = 0;
 
+  // Add this variable to track if all products are loaded
+  bool _allProductsLoaded = false;
+
   @override
   void initState() {
     super.initState();
@@ -149,6 +152,10 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   }
 
   Future<void> _loadCartItems() async {
+    setState(() {
+      _allProductsLoaded = false;
+    });
+
     final cartItems = _cartProvider.cartItems;
     int totalCount = 0;
     int removedCount = 0;
@@ -244,6 +251,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     }
     
     print('---------------------');
+
+    // After loading all products, update the state
+    setState(() {
+      _allProductsLoaded = true;
+    });
   }
   
   Future<void> _handleAllItemsLoaded() async {
@@ -723,30 +735,56 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             width: double.infinity,
             height: 50.h,
             child: ElevatedButton(
-              onPressed: () {
-                // Navigate to checkout page
-                _saveAddressToPrefs();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const CheckoutPage(),
-                  ),
-                );
-              },
+              onPressed: _allProductsLoaded && _cartEntries.isNotEmpty
+                ? () {
+                    _saveAddressToPrefs();
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const CheckoutPage(),
+                      ),
+                    );
+                  }
+                : null,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0xFFFFC107), // More vibrant amber
+                backgroundColor: _allProductsLoaded && _cartEntries.isNotEmpty
+                  ? Color(0xFFFFC107)  // More vibrant amber
+                  : Colors.grey.shade700,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8.r),
                 ),
               ),
-              child: Text(
-                'Click to Pay',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black,
-                ),
-              ),
+              child: _allProductsLoaded
+                ? Text(
+                    'Click to Pay',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: _cartEntries.isNotEmpty ? Colors.black : Colors.grey.shade400,
+                    ),
+                  )
+                : Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      SizedBox(
+                        width: 20.w,
+                        height: 20.w,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.w,
+                          valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade400),
+                        ),
+                      ),
+                      SizedBox(width: 10.w),
+                      Text(
+                        'Loading prices...',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
+                    ],
+                  ),
             ),
           ),
         ],
