@@ -6,6 +6,7 @@ import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/logging_service.dart';
 import '../../widgets/buttons/add_button.dart';
+import 'dart:math' as math;
 
 /**
  * ReusableProductCard
@@ -228,92 +229,126 @@ class ReusableProductCard extends StatelessWidget {
               ],
             ),
 
-            // Product details - layout with 3 rows
-            Padding(
-              padding: EdgeInsets.all(10.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Row 1: Product name (full width) - limited to 2 lines with ellipsis
-                  Container(
-                    width: double.infinity,
-                    height: 40.h, // Fixed height to accommodate exactly 2 lines
-                    child: Text(
-                      product.name,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 14.sp,
+            // Product details section
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // Calculate available height for product details
+                  final availableHeight = constraints.maxHeight;
+                  
+                  // Define height proportions
+                  final buttonSectionHeight = 34.h;  
+                  final infoSectionHeight = 32.h;
+                  final nameSectionHeight = 40.h; // Further reduced to move price info up
+                  
+                  return Padding(
+                    padding: EdgeInsets.all(6.r), // Reduce padding to give more space for content
+                    child: ClipRect( // Add ClipRect to prevent any overflow from being visible
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min, // Use minimum height needed
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // TOP: Product name section
+                          SizedBox(
+                            height: nameSectionHeight,
+                            child: SingleChildScrollView(
+                              child: Text(
+                                product.name,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 13.sp, // Slightly smaller font
+                                ),
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ),
+                          
+                          SizedBox(height: 0), // Remove extra spacing
+                          
+                          // MIDDLE: Weight and price info
+                          SizedBox(
+                            height: infoSectionHeight,
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.start, // Left align for better space distribution
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                // Weight/Quantity (left aligned)
+                                Expanded(
+                                  child: product.weight != null && product.weight!.isNotEmpty
+                                    ? Text(
+                                        product.weight!,
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 11.sp, // Smaller font
+                                        ),
+                                      )
+                                    : const SizedBox.shrink(),
+                                ),
+                                
+                                // Price column (right aligned)
+                                // Fixed price column with forced height and text overflow handling
+                                SizedBox(
+                                  height: infoSectionHeight,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min, // Use minimum space
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.end,
+                                    children: [
+                                      // Current price with smaller font and tight constraints
+                                      Text(
+                                        '${AppConstants.currencySymbol}${finalPrice.toStringAsFixed(0)}',
+                                        style: TextStyle(
+                                          color: hasDiscount 
+                                              ? Colors.green
+                                              : AppTheme.accentColor,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15.sp, // Increased font size for price
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      SizedBox(height: 1.h), // Minimal spacing
+                                      // Show strike price only if we have discount
+                                      originalPrice != null && originalPrice! > finalPrice
+                                        ? Text(
+                                            '${AppConstants.currencySymbol}${originalPrice?.toStringAsFixed(0)}',
+                                            style: TextStyle(
+                                              color: Colors.white70,
+                                              decoration: TextDecoration.lineThrough,
+                                              fontSize: 11.sp, // Slightly larger font for strikethrough price
+                                              height: 0.9, // Tighter line height
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                          )
+                                        // Empty space to maintain height consistency
+                                        : SizedBox(height: 0),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          SizedBox(height: 4.h), // Add space between price and button
+                          
+                          // BOTTOM: Add button section
+                          SizedBox(
+                            height: buttonSectionHeight,
+                            child: Center(
+                              child: AddButton(
+                                productId: product.id,
+                                sourceCardType: ProductCardType.reusable,
+                                height: buttonSectionHeight * 0.85, // 85% of button section height for more prominence
+                                inStock: product.inStock,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis, // Ensures text ends with "..." if trimmed
                     ),
-                  ),
-                  
-                  SizedBox(height: 8.h), // Space between name and second row
-                  
-                  // Row 2: Two equal columns for Weight/Quantity and Price
-                  Row(
-                    children: [
-                      // Left column: Weight/Quantity
-                      Expanded(
-                        child: product.weight != null && product.weight!.isNotEmpty
-                          ? Text(
-                              product.weight!,
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 12.sp,
-                              ),
-                            )
-                          : SizedBox(height: 16.h), // Maintain consistent height
-                      ),
-                      
-                      // Right column: Price and original price
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end, // Right-align text
-                          children: [
-                            // Current price
-                            Text(
-                              '${AppConstants.currencySymbol}${finalPrice.toStringAsFixed(0)}',
-                              style: TextStyle(
-                                color: hasDiscount 
-                                    ? Colors.green
-                                    : AppTheme.accentColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16.sp,
-                              ),
-                            ),
-                            // Strikethrough original price (if discounted)
-                            Container(
-                              height: 16.h, // Fixed height for this area
-                              child: originalPrice != null && originalPrice! > finalPrice
-                                ? Text(
-                                    '${AppConstants.currencySymbol}${originalPrice?.toStringAsFixed(0)}',
-                                    style: TextStyle(
-                                      color: Colors.white70,
-                                      decoration: TextDecoration.lineThrough,
-                                      fontSize: 12.sp,
-                                    ),
-                                  )
-                                : SizedBox(), // Empty but takes up the same space
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  
-                  SizedBox(height: 8.h), // Space before the button
-                  
-                  // Add button with quantity controls
-                  AddButton(
-                    productId: product.id,
-                    sourceCardType: ProductCardType.reusable,
-                    height: 36.h,
-                    inStock: product.inStock,
-                  ),
-                ],
+                  );
+                }
               ),
             ),
           ],
