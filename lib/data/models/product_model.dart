@@ -37,6 +37,12 @@ class ProductModel extends Product {
     String? sellerName,
     double? rating,
     int? reviewCount,
+    String? nutritionalInfo,
+    String? ingredients,
+    String? sku,
+    String? productType,
+    int? quantity,
+    String? categoryGroup,
   }) : super(
           id: id,
           name: name,
@@ -56,6 +62,12 @@ class ProductModel extends Product {
           sellerName: sellerName,
           rating: rating,
           reviewCount: reviewCount,
+          nutritionalInfo: nutritionalInfo,
+          ingredients: ingredients,
+          sku: sku,
+          productType: productType,
+          quantity: quantity,
+          categoryGroup: categoryGroup,
         );
 
   // Factory constructor to create a ProductModel from Firestore DocumentSnapshot
@@ -65,12 +77,12 @@ class ProductModel extends Product {
     return ProductModel(
       id: doc.id,
       name: data['name'] ?? 'Unnamed Product',
-      image: data['image'] ?? '',
+      image: data['imagePath'] ?? data['image'] ?? '',
       description: data['description'],
       price: _parsePrice(data['price']),
       mrp: data['mrp'] != null ? _parsePrice(data['mrp']) : null,
       inStock: data['inStock'] ?? true,
-      categoryId: data['categoryId'] ?? '',
+      categoryId: data['categoryId'] ?? data['categoryItem'] ?? '',
       categoryName: data['categoryName'],
       subcategoryId: data['subcategoryId'],
       tags: data['tags'] != null ? List<String>.from(data['tags']) : [],
@@ -81,6 +93,12 @@ class ProductModel extends Product {
       sellerName: data['sellerName'],
       rating: data['rating'] != null ? _parsePrice(data['rating']) : null,
       reviewCount: data['reviewCount'],
+      nutritionalInfo: data['nutritionalInfo'],
+      ingredients: data['ingredients'],
+      sku: data['sku'],
+      productType: data['productType'],
+      quantity: data['quantity'] is int ? data['quantity'] : null,
+      categoryGroup: data['categoryGroup'],
     );
   }
   
@@ -110,6 +128,12 @@ class ProductModel extends Product {
       sellerName: json['sellerName'],
       rating: json['rating'] != null ? _parsePrice(json['rating']) : null,
       reviewCount: json['reviewCount'],
+      nutritionalInfo: json['nutritionalInfo'],
+      ingredients: json['ingredients'],
+      sku: json['sku'],
+      productType: json['productType'],
+      quantity: json['quantity'],
+      categoryGroup: json['categoryGroup'],
     );
   }
 
@@ -134,10 +158,17 @@ class ProductModel extends Product {
       'sellerName': sellerName,
       'rating': rating,
       'reviewCount': reviewCount,
+      'nutritionalInfo': nutritionalInfo,
+      'ingredients': ingredients,
+      'sku': sku,
+      'productType': productType,
+      'quantity': quantity,
+      'categoryGroup': categoryGroup,
     };
   }
 
   // Create a copy of the product with updated fields
+  @override
   ProductModel copyWith({
     String? id,
     String? name,
@@ -157,6 +188,12 @@ class ProductModel extends Product {
     String? sellerName,
     double? rating,
     int? reviewCount,
+    String? nutritionalInfo,
+    String? ingredients,
+    String? sku,
+    String? productType,
+    int? quantity,
+    String? categoryGroup,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -177,6 +214,12 @@ class ProductModel extends Product {
       sellerName: sellerName ?? this.sellerName,
       rating: rating ?? this.rating,
       reviewCount: reviewCount ?? this.reviewCount,
+      nutritionalInfo: nutritionalInfo ?? this.nutritionalInfo,
+      ingredients: ingredients ?? this.ingredients,
+      sku: sku ?? this.sku,
+      productType: productType ?? this.productType,
+      quantity: quantity ?? this.quantity,
+      categoryGroup: categoryGroup ?? this.categoryGroup,
     );
   }
 }

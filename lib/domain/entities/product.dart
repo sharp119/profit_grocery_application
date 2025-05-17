@@ -64,6 +64,61 @@ class Product extends Equatable {
   // Check if the product has a discount
   bool get hasDiscount => discountPercentage != null && discountPercentage! > 0;
 
+  /// Create a copy of this Product with some fields changed
+  Product copyWith({
+    String? id,
+    String? name,
+    String? image,
+    String? description,
+    double? price,
+    double? mrp,
+    bool? inStock,
+    String? categoryId,
+    String? categoryName,
+    String? subcategoryId,
+    List<String>? tags,
+    bool? isFeatured,
+    bool? isActive,
+    String? weight,
+    String? brand,
+    String? sellerName,
+    double? rating,
+    int? reviewCount,
+    String? nutritionalInfo,
+    String? ingredients,
+    String? sku,
+    String? productType,
+    int? quantity,
+    String? categoryGroup,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      image: image ?? this.image,
+      description: description ?? this.description,
+      price: price ?? this.price,
+      mrp: mrp ?? this.mrp,
+      inStock: inStock ?? this.inStock,
+      categoryId: categoryId ?? this.categoryId,
+      categoryName: categoryName ?? this.categoryName,
+      subcategoryId: subcategoryId ?? this.subcategoryId,
+      tags: tags ?? this.tags,
+      isFeatured: isFeatured ?? this.isFeatured,
+      isActive: isActive ?? this.isActive,
+      weight: weight ?? this.weight,
+      brand: brand ?? this.brand,
+      sellerName: sellerName ?? this.sellerName,
+      rating: rating ?? this.rating,
+      reviewCount: reviewCount ?? this.reviewCount,
+      nutritionalInfo: nutritionalInfo ?? this.nutritionalInfo,
+      ingredients: ingredients ?? this.ingredients,
+      sku: sku ?? this.sku,
+      productType: productType ?? this.productType,
+      quantity: quantity ?? this.quantity,
+      categoryGroup: categoryGroup ?? this.categoryGroup,
+    );
+  }
+
   @override
   List<Object?> get props => [
         id,

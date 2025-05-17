@@ -82,8 +82,13 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   
   @override
   void dispose() {
+    // Cancel any pending async operations (cannot be done directly, but we use the mounted flag)
+    
     // Dispose all animation controllers
-    _itemAnimationControllers.forEach((_, controller) => controller.dispose());
+    for (final controller in _itemAnimationControllers.values) {
+      controller.dispose();
+    }
+    _itemAnimationControllers.clear();
     
     // Remove the cart listener
     _cartProvider.removeListener(_onCartChanged);
@@ -152,6 +157,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   }
 
   Future<void> _loadCartItems() async {
+    if (!mounted) return;
+    
     setState(() {
       _allProductsLoaded = false;
     });
@@ -165,9 +172,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     
     if (cartItems.isEmpty) {
       print('Cart is empty');
-      setState(() {
-        _allItemsLoaded = true;
-      });
+      if (mounted) {
+        setState(() {
+          _allItemsLoaded = true;
+        });
+      }
     } else {
       print('Total unique products in cart: ${cartItems.length}');
       
@@ -177,9 +186,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       });
       
       // Set the total items to the unique item count
-      setState(() {
-        _totalItems = cartItems.length;
-      });
+      if (mounted) {
+        setState(() {
+          _totalItems = cartItems.length;
+        });
+      }
       
       // Load product details for each item
       for (final entry in cartItems.entries) {
@@ -204,9 +215,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
               if (discountInfo['hasDiscount'] == true) {
                 print('  Discount: ${discountInfo['discountType']} - ${discountInfo['discountValue']}');
                 print('  Final price after discount: ${discountInfo['finalPrice']}');
-                setState(() {
-                  _discountDetails[productId] = discountInfo;
-                });
+                if (mounted) {
+                  setState(() {
+                    _discountDetails[productId] = discountInfo;
+                  });
+                }
               }
             } catch (discountError) {
               print('  Error fetching discount information: $discountError');
@@ -217,31 +230,39 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
           }
           
           // Update this specific product's state
-          setState(() {
-            _productDetails[productId] = product;
-            _loadingState[productId] = false;
-            _removedItemsCount = removedCount;
-          });
+          if (mounted) {
+            setState(() {
+              _productDetails[productId] = product;
+              _loadingState[productId] = false;
+              _removedItemsCount = removedCount;
+            });
+          }
           
           // Increment loaded items count
           loadedItemsCount++;
           
           // Check if all items are loaded
           if (loadedItemsCount == cartItems.length) {
-            await _handleAllItemsLoaded();
+            if (mounted) {
+              await _handleAllItemsLoaded();
+            }
           }
         } catch (e) {
           print('  Error fetching product details: $e');
-          setState(() {
-            _loadingState[productId] = false;
-          });
+          if (mounted) {
+            setState(() {
+              _loadingState[productId] = false;
+            });
+          }
           
           // Increment loaded items count
           loadedItemsCount++;
           
           // Check if all items are loaded
           if (loadedItemsCount == cartItems.length) {
-            await _handleAllItemsLoaded();
+            if (mounted) {
+              await _handleAllItemsLoaded();
+            }
           }
         }
       }
@@ -253,12 +274,16 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     print('---------------------');
 
     // After loading all products, update the state
-    setState(() {
-      _allProductsLoaded = true;
-    });
+    if (mounted) {
+      setState(() {
+        _allProductsLoaded = true;
+      });
+    }
   }
   
   Future<void> _handleAllItemsLoaded() async {
+    if (!mounted) return;
+    
     final unavailableProductIds = _productDetails.entries
         .where((entry) => entry.value == null)
         .map((entry) => entry.key)
@@ -274,18 +299,22 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
     // Wait for animations to complete
     await Future.delayed(const Duration(milliseconds: 350));
     
-    setState(() {
-      // Filter out unavailable products
-      _cartEntries = _cartEntries
-          .where((entry) => _productDetails[entry.key] != null)
-          .toList();
-      
-      _allItemsLoaded = true;
-    });
+    if (mounted) {
+      setState(() {
+        // Filter out unavailable products
+        _cartEntries = _cartEntries
+            .where((entry) => _productDetails[entry.key] != null)
+            .toList();
+        
+        _allItemsLoaded = true;
+      });
+    }
   }
 
   // Remove unavailable products from both cache and Firebase
   Future<void> _removeUnavailableProducts() async {
+    if (!mounted) return;
+    
     try {
       final unavailableProductIds = _productDetails.entries
           .where((entry) => entry.value == null)
@@ -304,11 +333,13 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       }
       
       // Update total items count
-      setState(() {
-        _totalItems = newTotal;
-        _productsRemoved = true;
-        _showRemovedMessage = false; // Hide the removed message since we've cleaned up
-      });
+      if (mounted) {
+        setState(() {
+          _totalItems = newTotal;
+          _productsRemoved = true;
+          _showRemovedMessage = false; // Hide the removed message since we've cleaned up
+        });
+      }
       
       // Reload cart items from provider to ensure UI is synced
       await _cartProvider.loadCartItems();
@@ -321,6 +352,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
   // Load the default address for the user
   Future<void> _loadDefaultAddress() async {
+    if (!mounted) return;
+    
     try {
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString('user_token');
@@ -337,20 +370,22 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
             )
           );
           
-          setState(() {
-            _defaultAddress = Address(
-              id: addressData['id'] ?? '',
-              name: addressData['name'] ?? '',
-              addressLine: addressData['addressLine'] ?? '',
-              city: addressData['city'] ?? '',
-              state: addressData['state'] ?? '',
-              pincode: addressData['pincode'] ?? '',
-              landmark: addressData['landmark'],
-              isDefault: true,
-              addressType: addressData['addressType'] ?? 'home',
-            );
-            _addressLoading = false;
-          });
+          if (mounted) {
+            setState(() {
+              _defaultAddress = Address(
+                id: addressData['id'] ?? '',
+                name: addressData['name'] ?? '',
+                addressLine: addressData['addressLine'] ?? '',
+                city: addressData['city'] ?? '',
+                state: addressData['state'] ?? '',
+                pincode: addressData['pincode'] ?? '',
+                landmark: addressData['landmark'],
+                isDefault: true,
+                addressType: addressData['addressType'] ?? 'home',
+              );
+              _addressLoading = false;
+            });
+          }
         } else {
           // Trigger user data loading if needed
           if (mounted && context.read<UserBloc>().state.user == null) {
@@ -359,6 +394,7 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
           
           // Listen to user bloc state changes
           Future.delayed(Duration.zero, () {
+            if (!mounted) return;
             final userState = context.read<UserBloc>().state;
             if (userState.user != null) {
               _updateAddressFromUserState(userState.user!);
@@ -368,9 +404,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       }
     } catch (e) {
       print('Error loading default address: $e');
-      setState(() {
-        _addressLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _addressLoading = false;
+        });
+      }
     }
   }
   
@@ -383,17 +421,21 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         orElse: () => user.addresses.first,
       );
       
-      setState(() {
-        _defaultAddress = defaultAddress;
-        _addressLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _defaultAddress = defaultAddress;
+          _addressLoading = false;
+        });
+      }
       
       // Cache the default address
       _cacheDefaultAddress(defaultAddress);
     } else {
-      setState(() {
-        _addressLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _addressLoading = false;
+        });
+      }
     }
   }
   
@@ -471,6 +513,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
   // Show address selection modal
   void _showAddressSelection() async {
+    if (!mounted) return;
+    
     final userState = context.read<UserBloc>().state;
     final user = userState.user;
     
@@ -502,9 +546,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
         addresses: user.addresses,
         selectedAddressId: _defaultAddress?.id,
         onAddressSelected: (address) {
-          setState(() {
-            _defaultAddress = address;
-          });
+          if (mounted) {
+            setState(() {
+              _defaultAddress = address;
+            });
+          }
           _cacheDefaultAddress(address);
           Navigator.pop(context);
         },
@@ -889,9 +935,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   Widget _buildPaymentSummarySection() {
     return InkWell(
       onTap: () {
-        setState(() {
-          _isPaymentExpanded = !_isPaymentExpanded;
-        });
+        if (mounted) {
+          setState(() {
+            _isPaymentExpanded = !_isPaymentExpanded;
+          });
+        }
       },
       child: Column(
         children: [
@@ -1434,9 +1482,11 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
       ),
       child: GestureDetector(
         onTap: () {
-          setState(() {
-            _showAllItems = true;
-          });
+          if (mounted) {
+            setState(() {
+              _showAllItems = true;
+            });
+          }
         },
         child: Container(
           padding: EdgeInsets.symmetric(vertical: 16.r),
@@ -1515,6 +1565,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
   // Save cart totals to SharedPreferences for checkout page to use
   Future<void> _saveCartTotals() async {
+    if (!mounted) return;
+    
     try {
       final prefs = await SharedPreferences.getInstance();
       final cartTotals = {
@@ -1532,6 +1584,8 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
 
   // Save selected address to SharedPreferences for checkout page
   Future<void> _saveAddressToPrefs() async {
+    if (!mounted) return;
+    
     try {
       if (_defaultAddress != null) {
         final prefs = await SharedPreferences.getInstance();
@@ -1905,7 +1959,7 @@ class _AddressSelectionModalState extends State<AddressSelectionModal> with Sing
                       },
                     ),
                   ),
-              
+            
               // Bottom padding
               SizedBox(height: 16.h),
             ],

@@ -2,11 +2,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import '../../domain/entities/bestseller_item.dart';
 import '../../services/logging_service.dart';
+import 'package:get_it/get_it.dart';
 
 /// Simplified repository for bestseller product operations.
 /// Gets bestseller items with their discount information.
 class BestsellerRepositorySimple {
   final FirebaseFirestore _firestore;
+  
+  // Cache mechanism to avoid repeated fetches
+  final Map<String, List<BestsellerItem>> _bestsellersCache = {};
+  DateTime? _lastFetchTime;
+  final Duration _cacheDuration = Duration(minutes: 15); // Cache for 15 minutes
   
   BestsellerRepositorySimple({
     FirebaseFirestore? firestore,
@@ -22,11 +28,24 @@ class BestsellerRepositorySimple {
     bool ranked = false,
   }) async {
     try {
-      LoggingService.logFirestore('BESTSELLER_REPO: Getting bestseller items (limit: $limit, ranked: $ranked)');
+      // Create a cache key
+      final cacheKey = 'bestsellers_${ranked ? 'ranked' : 'random'}_$limit';
+      
+      // Check if we have a valid cache
+      if (_bestsellersCache.containsKey(cacheKey) && 
+          _lastFetchTime != null &&
+          DateTime.now().difference(_lastFetchTime!) < _cacheDuration) {
+        LoggingService.logFirestore('BESTSELLER_REPO: Using cached bestseller items');
+        print('BESTSELLER_REPO: Using cached bestseller items (${_bestsellersCache[cacheKey]!.length} items)');
+        return _bestsellersCache[cacheKey]!;
+      }
+      
+      LoggingService.logFirestore('BESTSELLER_REPO: Cache miss - fetching bestseller items from Firestore');
       print('BESTSELLER_REPO: Getting bestseller items (limit: $limit, ranked: $ranked)');
       
       // Get all bestsellers from the bestsellers collection
       QuerySnapshot bestsellersSnapshot;
+      final Stopwatch stopwatch = Stopwatch()..start();
       
       if (ranked) {
         bestsellersSnapshot = await _firestore.collection('bestsellers')
@@ -37,11 +56,19 @@ class BestsellerRepositorySimple {
         LoggingService.logFirestore('BESTSELLER_REPO: Retrieved ${bestsellersSnapshot.docs.length} ranked bestsellers');
         print('BESTSELLER_REPO: Retrieved ${bestsellersSnapshot.docs.length} ranked bestsellers');
       } else {
-        bestsellersSnapshot = await _firestore.collection('bestsellers').get();
+        // Only fetch the number of items we need plus some buffer for efficiency
+        // No need to fetch the entire collection if we're going to randomize and limit
+        final fetchLimit = limit * 2; // Fetch twice the needed amount for better randomization
+        bestsellersSnapshot = await _firestore.collection('bestsellers')
+            .limit(fetchLimit)
+            .get();
         
         LoggingService.logFirestore('BESTSELLER_REPO: Retrieved ${bestsellersSnapshot.docs.length} bestsellers for randomization');
         print('BESTSELLER_REPO: Retrieved ${bestsellersSnapshot.docs.length} bestsellers for randomization');
       }
+      
+      stopwatch.stop();
+      print('BESTSELLER_REPO: Time to fetch bestsellers: ${stopwatch.elapsedMilliseconds}ms');
       
       // Extract BestsellerItem objects from the bestseller documents
       List<BestsellerItem> bestsellerItems = [];
@@ -67,21 +94,12 @@ class BestsellerRepositorySimple {
         );
         
         bestsellerItems.add(item);
-        
-        LoggingService.logFirestore(
-          'BESTSELLER_REPO: Doc ${doc.id} => Product ID: $productId, '
-          'Rank: $rank, Discount: ${discountType ?? 'None'} ${discountValue ?? '0'}, '
-          'Ref: ${doc.reference.path}'
-        );
-        
-        print('BESTSELLER_REPO: Doc ${doc.id} => Product ID: $productId, '
-            'Rank: $rank, Discount: ${discountType ?? 'None'} ${discountValue ?? '0'}, '
-            'Ref: ${doc.reference.path}');
       }
       
-      // Check for active discounts from the discounts collection
-      // This will supplement the bestseller items with any active discounts
-      await _checkAndApplyActiveDiscounts(bestsellerItems);
+      // Check for active discounts from the discounts collection (only if we have a reasonable number of items)
+      if (bestsellerItems.length <= 20) {  // Only process discounts if we have a reasonable number
+        await _checkAndApplyActiveDiscounts(bestsellerItems);
+      }
       
       if (!ranked && bestsellerItems.length > limit) {
         bestsellerItems.shuffle(Random());
@@ -90,6 +108,10 @@ class BestsellerRepositorySimple {
         LoggingService.logFirestore('BESTSELLER_REPO: Randomized and limited to $limit bestseller items');
         print('BESTSELLER_REPO: Randomized and limited to $limit bestseller items');
       }
+      
+      // Store in cache
+      _bestsellersCache[cacheKey] = bestsellerItems;
+      _lastFetchTime = DateTime.now();
       
       LoggingService.logFirestore('BESTSELLER_REPO: Returning ${bestsellerItems.length} bestseller items');
       print('BESTSELLER_REPO: Returning ${bestsellerItems.length} bestseller items');
@@ -108,6 +130,106 @@ class BestsellerRepositorySimple {
       // Get current timestamp
       final now = DateTime.now().millisecondsSinceEpoch;
       
+      // Get all product IDs that don't have discounts yet
+      final productIdsWithoutDiscount = items
+          .where((item) => !item.hasSpecialDiscount)
+          .map((item) => item.productId)
+          .toList();
+      
+      if (productIdsWithoutDiscount.isEmpty) return;
+      
+      // Use batch query if possible to improve performance
+      try {
+        // Process in batches of 10 (Firestore limitation for 'whereIn')
+        for (int i = 0; i < productIdsWithoutDiscount.length; i += 10) {
+          final batchIds = productIdsWithoutDiscount.sublist(
+              i, min(i + 10, productIdsWithoutDiscount.length));
+          
+          // Batch query for active discounts
+          final discountsSnapshot = await _firestore.collection('discounts')
+              .where(FieldPath.documentId, whereIn: batchIds)
+              .where('active', isEqualTo: true)
+              .get();
+          
+          for (final doc in discountsSnapshot.docs) {
+            final productId = doc.id;
+            final discountData = doc.data();
+            
+            // Find the corresponding bestseller item
+            final item = items.firstWhere(
+                (item) => item.productId == productId, 
+                orElse: () => null as BestsellerItem); // force non-null check
+            
+            if (item == null) continue;
+            
+            // Check timestamp validity if they exist
+            bool isInTimeRange = true;
+            
+            if (discountData.containsKey('startTimestamp') && discountData.containsKey('endTimestamp')) {
+              // Extract timestamps - handle both Timestamp objects and String representations
+              Timestamp? startTimestamp;
+              Timestamp? endTimestamp;
+              
+              if (discountData['startTimestamp'] is Timestamp) {
+                startTimestamp = discountData['startTimestamp'] as Timestamp;
+              } else if (discountData['startTimestamp'] is String) {
+                // Parse string to DateTime then to Timestamp
+                try {
+                  final startDate = DateTime.parse(discountData['startTimestamp'] as String);
+                  startTimestamp = Timestamp.fromDate(startDate);
+                } catch (e) {
+                  print('BESTSELLER_REPO: Error parsing startTimestamp: $e');
+                }
+              }
+              
+              if (discountData['endTimestamp'] is Timestamp) {
+                endTimestamp = discountData['endTimestamp'] as Timestamp;
+              } else if (discountData['endTimestamp'] is String) {
+                // Parse string to DateTime then to Timestamp
+                try {
+                  final endDate = DateTime.parse(discountData['endTimestamp'] as String);
+                  endTimestamp = Timestamp.fromDate(endDate);
+                } catch (e) {
+                  print('BESTSELLER_REPO: Error parsing endTimestamp: $e');
+                }
+              }
+              
+              // Check if current time is within range
+              if (startTimestamp != null && endTimestamp != null) {
+                final startMs = startTimestamp.millisecondsSinceEpoch;
+                final endMs = endTimestamp.millisecondsSinceEpoch;
+                isInTimeRange = now >= startMs && now <= endMs;
+              }
+            }
+            
+            // Apply discount if active and in time range
+            if (isInTimeRange) {
+              final discountType = discountData['discountType'] as String?;
+              final discountValue = (discountData['discountValue'] is int)
+                ? (discountData['discountValue'] as int).toDouble()
+                : discountData['discountValue'] as double?;
+              
+              // Update the bestseller item with discount information
+              if (discountType != null && discountValue != null) {
+                item.discountType = discountType;
+                item.discountValue = discountValue;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        print('BESTSELLER_REPO: Error in batch discount check: $e');
+        // Fall back to individual checks on error
+        _checkDiscountsIndividually(items, now);
+      }
+    } catch (e) {
+      print('BESTSELLER_REPO: Error checking active discounts: $e');
+    }
+  }
+  
+  /// Fallback method to check discounts individually if batch processing fails
+  Future<void> _checkDiscountsIndividually(List<BestsellerItem> items, int now) async {
+    try {
       // For each bestseller item
       for (final item in items) {
         // Skip if bestseller already has a discount
@@ -174,24 +296,23 @@ class BestsellerRepositorySimple {
               if (discountType != null && discountValue != null) {
                 item.discountType = discountType;
                 item.discountValue = discountValue;
-                
-                LoggingService.logFirestore(
-                  'BESTSELLER_REPO: Applied active discount to ${item.productId}: '
-                  'Type: $discountType, Value: $discountValue'
-                );
-                print('BESTSELLER_REPO: Applied active discount to ${item.productId}: '
-                    'Type: $discountType, Value: $discountValue');
               }
             }
           }
         } catch (e) {
           print('BESTSELLER_REPO: Error checking discount for ${item.productId}: $e');
-          // Continue with next item
         }
       }
     } catch (e) {
-      print('BESTSELLER_REPO: Error checking active discounts: $e');
+      print('BESTSELLER_REPO: Error in individual discount checks: $e');
     }
+  }
+  
+  /// Clear the bestsellers cache to force refresh
+  void clearCache() {
+    _bestsellersCache.clear();
+    _lastFetchTime = null;
+    print('BESTSELLER_REPO: Cache cleared');
   }
   
   /// Legacy method to maintain backward compatibility

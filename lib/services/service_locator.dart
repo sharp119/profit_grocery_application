@@ -2,6 +2,7 @@ import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/data/repositories/bestseller_repository_simple.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/services/product/shared_product_service.dart';
+import 'package:profit_grocery_application/services/product/product_dynamic_data_provider.dart';
 
 /// Initialize services and repositories in the GetIt service locator
 void setupServiceLocator() {
@@ -13,4 +14,7 @@ void setupServiceLocator() {
   
   // Register repositories
   getIt.registerLazySingleton<BestsellerRepositorySimple>(() => BestsellerRepositorySimple());
+  
+  // Register product dynamic data provider for RTDB integration
+  getIt.registerLazySingleton<ProductDynamicDataProvider>(() => ProductDynamicDataProvider());
 }

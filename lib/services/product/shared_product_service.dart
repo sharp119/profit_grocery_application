@@ -24,13 +24,44 @@ class SharedProductService {
   
   // Cache for products
   final Map<String, ProductModel> _productCache = {};
+  // Cache for image URLs to avoid resolving the same URL multiple times
+  final Map<String, String> _imageUrlCache = {};
   bool _isCacheInitialized = false;
+  
+  // Store categories and subcategories structure to avoid repeated queries
+  Map<String, List<String>> _categoriesAndSubcategories = {};
 
   // Cache initialization
   Future<void> _initializeCache() async {
     if (_isCacheInitialized) return;
     
     LoggingService.logFirestore('SharedProductService: Initializing product cache');
+    
+    try {
+      // Pre-fetch categories and subcategories structure to speed up future lookups
+      final categoriesSnapshot = await _firestore.collection('products').get();
+      
+      for (final categoryDoc in categoriesSnapshot.docs) {
+        final categoryId = categoryDoc.id;
+        final subcategories = <String>[];
+        
+        final subcategoriesSnapshot = await _firestore.collection('products')
+            .doc(categoryId)
+            .collection('items')
+            .get();
+        
+        for (final subcategoryDoc in subcategoriesSnapshot.docs) {
+          subcategories.add(subcategoryDoc.id);
+        }
+        
+        _categoriesAndSubcategories[categoryId] = subcategories;
+      }
+      
+      LoggingService.logFirestore('SharedProductService: Pre-fetched structure for ${_categoriesAndSubcategories.length} categories');
+    } catch (e) {
+      LoggingService.logError('SharedProductService', 'Error initializing cache: $e');
+    }
+    
     _isCacheInitialized = true;
   }
 
@@ -71,55 +102,19 @@ class SharedProductService {
     }
   }
 
-  /// Find a product in Firestore by searching all categories and subcategories
+  /// Find a product in Firestore using optimized lookup strategies
   Future<ProductModel?> _findProductInFirestore(String productId) async {
     try {
-      // First try the direct approach - look in the "products" collection
-      // Method 1: Direct query if we know the path
+      // Try more efficient lookup methods first
+      
+      // Method 1: Check if it exists in bestsellers (optimization for bestsellers section)
+      // This is faster than searching through all categories and subcategories
       try {
-        // Try to get a product directly from all categories
-        final categoriesSnapshot = await _firestore.collection('products').get();
-        
-        for (final categoryDoc in categoriesSnapshot.docs) {
-          final categoryId = categoryDoc.id;
-          
-          // Get subcategories in this category
-          final subcategoriesSnapshot = await _firestore.collection('products')
-              .doc(categoryId)
-              .collection('items')
-              .get();
-          
-          for (final subcategoryDoc in subcategoriesSnapshot.docs) {
-            final subcategoryId = subcategoryDoc.id;
-            
-            // Try to find the product in this subcategory
-            try {
-              final productDoc = await _firestore.collection('products')
-                  .doc(categoryId)
-                  .collection('items')
-                  .doc(subcategoryId)
-                  .collection('products')
-                  .doc(productId)
-                  .get();
-              
-              if (productDoc.exists) {
-                print('SharedProductService: Found product $productId in category $categoryId, subcategory $subcategoryId');
-                return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
-              }
-            } catch (e) {
-              // Continue searching in other subcategories
-              LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
-            }
-          }
-        }
-        
-        // If direct approach fails, check if it exists in bestsellers and get information from there
         final bestsellerDoc = await _firestore.collection('bestsellers').doc(productId).get();
         if (bestsellerDoc.exists) {
           print('SharedProductService: Found product ID $productId in bestsellers collection');
           
-          // Since the product isn't found in the normal structure, but exists in bestsellers,
-          // we need to search for it using a query by ID
+          // Use collectionGroup query to find the product by ID across all collections
           final querySnapshot = await _firestore.collectionGroup('products')
               .where(FieldPath.documentId, isEqualTo: productId)
               .limit(1)
@@ -154,7 +149,83 @@ class SharedProductService {
           }
         }
       } catch (e) {
-        LoggingService.logError('SharedProductService', 'Error during direct product lookup: $e');
+        LoggingService.logError('SharedProductService', 'Error checking bestsellers: $e');
+      }
+      
+      // Method 2: Look through known categories and subcategories (using pre-cached structure)
+      if (_categoriesAndSubcategories.isNotEmpty) {
+        for (final entry in _categoriesAndSubcategories.entries) {
+          final categoryId = entry.key;
+          final subcategories = entry.value;
+          
+          for (final subcategoryId in subcategories) {
+            try {
+              final productDoc = await _firestore.collection('products')
+                  .doc(categoryId)
+                  .collection('items')
+                  .doc(subcategoryId)
+                  .collection('products')
+                  .doc(productId)
+                  .get();
+              
+              if (productDoc.exists) {
+                print('SharedProductService: Found product $productId in category $categoryId, subcategory $subcategoryId');
+                return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
+              }
+            } catch (e) {
+              // Continue searching in other subcategories
+              LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
+            }
+          }
+        }
+      }
+      
+      // Method 3: Fallback to slow search if structure not cached
+      // Slower method - search through all categories and subcategories
+      if (_categoriesAndSubcategories.isEmpty) {
+        final categoriesSnapshot = await _firestore.collection('products').get();
+        
+        for (final categoryDoc in categoriesSnapshot.docs) {
+          final categoryId = categoryDoc.id;
+          
+          // Get subcategories in this category
+          final subcategoriesSnapshot = await _firestore.collection('products')
+              .doc(categoryId)
+              .collection('items')
+              .get();
+          
+          for (final subcategoryDoc in subcategoriesSnapshot.docs) {
+            final subcategoryId = subcategoryDoc.id;
+            
+            // Try to find the product in this subcategory
+            try {
+              final productDoc = await _firestore.collection('products')
+                  .doc(categoryId)
+                  .collection('items')
+                  .doc(subcategoryId)
+                  .collection('products')
+                  .doc(productId)
+                  .get();
+              
+              if (productDoc.exists) {
+                print('SharedProductService: Found product $productId in category $categoryId, subcategory $subcategoryId');
+                
+                // Cache this category/subcategory pair for future lookups
+                if (!_categoriesAndSubcategories.containsKey(categoryId)) {
+                  _categoriesAndSubcategories[categoryId] = [];
+                }
+                if (!_categoriesAndSubcategories[categoryId]!.contains(subcategoryId)) {
+                  _categoriesAndSubcategories[categoryId]!.add(subcategoryId);
+                }
+                
+                return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
+              }
+            } catch (e) {
+              // Continue searching in other subcategories
+              LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
+            }
+          }
+        }
       }
       
       // If we get here, the product was not found
@@ -237,11 +308,17 @@ class SharedProductService {
 
     // Promote to non-nullable local variable
     final nonNullPath = imagePath;
+    
+    // Check image URL cache first
+    if (_imageUrlCache.containsKey(nonNullPath)) {
+      return _imageUrlCache[nonNullPath]!;
+    }
 
     // If the image path is already a full Firebase Storage URL
     if (nonNullPath.startsWith('https://firebasestorage.googleapis.com')) {
       // Already has a token, return as is
       if (nonNullPath.contains('token=')) {
+        _imageUrlCache[nonNullPath] = nonNullPath;
         return nonNullPath;
       }
 
@@ -253,7 +330,9 @@ class SharedProductService {
           if (segments.contains('o') && segments.length > segments.indexOf('o') + 1) {
             final objectPath = Uri.decodeFull(segments[segments.indexOf('o') + 1]);
             final ref = _storage.ref().child(objectPath);
-            return await ref.getDownloadURL();
+            final url = await ref.getDownloadURL();
+            _imageUrlCache[nonNullPath] = url;
+            return url;
           }
         } catch (e) {
           LoggingService.logError('SharedProductService', 'Error getting fresh download URL for $productId: $e');
@@ -261,6 +340,7 @@ class SharedProductService {
         }
       }
 
+      _imageUrlCache[nonNullPath] = nonNullPath;
       return nonNullPath;
     }
 
@@ -271,19 +351,71 @@ class SharedProductService {
         storagePath = storagePath.substring(1);
       }
       final ref = _storage.ref().child(storagePath);
-      return await ref.getDownloadURL();
+      final url = await ref.getDownloadURL();
+      _imageUrlCache[nonNullPath] = url;
+      return url;
     } catch (e) {
       LoggingService.logError('SharedProductService', 'Error getting download URL for product $productId: $e');
       // Always return a non-null string
+      _imageUrlCache[nonNullPath] = nonNullPath;
       return nonNullPath;
     }
   }
   
-  /// Fetch multiple products by IDs at once
+  /// Fetch multiple products by IDs at once with optimized batch loading
   Future<List<Product>> getProductsByIds(List<String> productIds) async {
-    final List<Product> products = [];
+    if (productIds.isEmpty) return [];
+
+    // Group product IDs by cache status
+    final List<String> cachedProductIds = [];
+    final List<String> nonCachedProductIds = [];
     
-    for (final productId in productIds) {
+    for (final id in productIds) {
+      if (_productCache.containsKey(id)) {
+        cachedProductIds.add(id);
+      } else {
+        nonCachedProductIds.add(id);
+      }
+    }
+    
+    // Get cached products immediately
+    final List<Product> products = cachedProductIds
+        .map((id) => _productCache[id]!)
+        .toList();
+    
+    // If all products are cached, return them directly
+    if (nonCachedProductIds.isEmpty) {
+      return products;
+    }
+    
+    // Try to batch-load bestseller products first (more efficient for the bestseller section)
+    if (nonCachedProductIds.isNotEmpty) {
+      try {
+        // First check bestsellers collection for these products
+        final bestsellerDocs = await _firestore.collection('bestsellers')
+            .where(FieldPath.documentId, whereIn: nonCachedProductIds.length > 10 
+                ? nonCachedProductIds.sublist(0, 10) 
+                : nonCachedProductIds)
+            .get();
+        
+        // Build a map of found products in bestsellers
+        final bestsellerProductIds = bestsellerDocs.docs.map((doc) => doc.id).toSet();
+        
+        // If we found any in bestsellers, use collectionGroup query to get them
+        if (bestsellerProductIds.isNotEmpty) {
+          final foundProducts = await _batchLoadProductsById(bestsellerProductIds.toList());
+          products.addAll(foundProducts);
+          
+          // Remove found products from the non-cached list
+          nonCachedProductIds.removeWhere((id) => bestsellerProductIds.contains(id));
+        }
+      } catch (e) {
+        LoggingService.logError('SharedProductService', 'Error batch-loading bestseller products: $e');
+      }
+    }
+    
+    // For any remaining non-cached products, load them individually
+    for (final productId in nonCachedProductIds) {
       final product = await getProductById(productId);
       if (product != null) {
         products.add(product);
@@ -292,10 +424,52 @@ class SharedProductService {
     
     return products;
   }
+  
+  /// Load multiple products by ID using collectionGroup query
+  Future<List<Product>> _batchLoadProductsById(List<String> productIds) async {
+    if (productIds.isEmpty) return [];
+    
+    try {
+      print('SharedProductService: Batch loading ${productIds.length} products');
+      final products = <Product>[];
+      
+      // Use collectionGroup to find products across all collections
+      final querySnapshot = await _firestore.collectionGroup('products')
+          .where(FieldPath.documentId, whereIn: productIds)
+          .get();
+      
+      // Process each found product
+      for (final doc in querySnapshot.docs) {
+        try {
+          final path = doc.reference.path;
+          final pathSegments = path.split('/');
+          
+          if (pathSegments.length >= 6) {
+            final categoryId = pathSegments[1];
+            final subcategoryId = pathSegments[3];
+            
+            final product = await _createProductModelFromDoc(doc, categoryId, subcategoryId);
+            products.add(product);
+            
+            // Cache the product
+            _productCache[product.id] = product;
+          }
+        } catch (e) {
+          LoggingService.logError('SharedProductService', 'Error processing product ${doc.id}: $e');
+        }
+      }
+      
+      return products;
+    } catch (e) {
+      LoggingService.logError('SharedProductService', 'Error batch loading products: $e');
+      return [];
+    }
+  }
 
   /// Clear the product cache
   void clearCache() {
     _productCache.clear();
+    _imageUrlCache.clear();
     LoggingService.logFirestore('SharedProductService: Product cache cleared');
   }
 }
