@@ -4,7 +4,7 @@
     <!-- Internet Permission -->
     <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="ProfitGrocery"
+        android:label="Profit Grocery"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

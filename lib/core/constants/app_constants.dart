@@ -1,6 +1,6 @@
 class AppConstants {
   // App Information
-  static const String appName = 'ProfitGrocery';
+  static const String appName = 'Profit Grocery';
   static const String appVersion = '1.0.0';
   static const String appTagline = 'Smart shopping, more savings';
   
