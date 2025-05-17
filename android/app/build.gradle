@@ -8,6 +8,9 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
 if (keystorePropertiesFile.exists()) {
@@ -48,8 +51,6 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled false
-            shrinkResources false
         }
     }
 }
