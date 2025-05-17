@@ -43,6 +43,7 @@ class ProductModel extends Product {
     String? productType,
     int? quantity,
     String? categoryGroup,
+    bool hasDiscount = false,
   }) : super(
           id: id,
           name: name,
@@ -68,6 +69,7 @@ class ProductModel extends Product {
           productType: productType,
           quantity: quantity,
           categoryGroup: categoryGroup,
+          hasDiscount: hasDiscount,
         );
 
   // Factory constructor to create a ProductModel from Firestore DocumentSnapshot
@@ -99,6 +101,7 @@ class ProductModel extends Product {
       productType: data['productType'],
       quantity: data['quantity'] is int ? data['quantity'] : null,
       categoryGroup: data['categoryGroup'],
+      hasDiscount: data['hasDiscount'] ?? false,
     );
   }
   
@@ -134,6 +137,7 @@ class ProductModel extends Product {
       productType: json['productType'],
       quantity: json['quantity'],
       categoryGroup: json['categoryGroup'],
+      hasDiscount: json['hasDiscount'] ?? false,
     );
   }
 
@@ -164,6 +168,7 @@ class ProductModel extends Product {
       'productType': productType,
       'quantity': quantity,
       'categoryGroup': categoryGroup,
+      'hasDiscount': hasDiscount,
     };
   }
 
@@ -194,6 +199,7 @@ class ProductModel extends Product {
     String? productType,
     int? quantity,
     String? categoryGroup,
+    bool? hasDiscount,
   }) {
     return ProductModel(
       id: id ?? this.id,
@@ -220,6 +226,7 @@ class ProductModel extends Product {
       productType: productType ?? this.productType,
       quantity: quantity ?? this.quantity,
       categoryGroup: categoryGroup ?? this.categoryGroup,
+      hasDiscount: hasDiscount ?? this.hasDiscount,
     );
   }
 }

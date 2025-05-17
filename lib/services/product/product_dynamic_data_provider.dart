@@ -134,36 +134,32 @@ class ProductDynamicDataProvider {
 
   /// Check if we should throttle emission for a product
   bool _shouldThrottle(String productId) {
-    // Get the current time
     final now = DateTime.now();
+    final lastTime = _lastEmissionTime[productId];
     
-    // If no previous emission, allow this one
-    if (!_lastEmissionTime.containsKey(productId)) {
+    if (lastTime == null) {
       _lastEmissionTime[productId] = now;
       return false;
     }
     
-    // Check if it's been long enough since the last emission
-    final lastTime = _lastEmissionTime[productId]!;
     final elapsed = now.difference(lastTime);
-    
-    // If less than minimum interval, throttle
-    final shouldThrottle = elapsed < _minimumEmissionInterval;
-    
-    // For debug logging, only log an incoming update is throttled
-    if (shouldThrottle) {
-      LoggingService.logFirestore(
-        'PRODUCT_DYNAMIC_PROVIDER: Throttling update for $productId (${elapsed.inMilliseconds}ms since last update)'
-      );
-    } else {
-      // Update the last emission time if we're not throttling
-      _lastEmissionTime[productId] = now;
+    if (elapsed < _minimumEmissionInterval) {
+      return true; // Throttle - too soon since last emission
     }
     
-    return shouldThrottle;
+    _lastEmissionTime[productId] = now;
+    return false;
   }
 
-  /// Get a stream of dynamic data for a specific product
+  /// Get a stream of product dynamic data
+  /// Fetches real-time price, stock and discount info from RTDB
+  /// 
+  /// Parameters:
+  /// - [categoryGroup]: Category group ID (e.g., "bakeries_biscuits")
+  /// - [categoryItem]: Category item ID (e.g., "bakery_snacks")
+  /// - [productId]: Product ID
+  /// 
+  /// Returns a stream that emits ProductDynamicData when the RTDB data changes
   Stream<ProductDynamicData> getProductStream({
     required String categoryGroup,
     required String categoryItem,
@@ -174,7 +170,6 @@ class ProductDynamicDataProvider {
 
     // Return cached stream if already created
     if (_activeStreams.containsKey(cacheKey)) {
-      LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Reusing cached stream for $productId');
       return _activeStreams[cacheKey]!;
     }
 
@@ -187,77 +182,128 @@ class ProductDynamicDataProvider {
     // Create a stream controller
     final streamController = StreamController<ProductDynamicData>.broadcast();
     
-    // Initial data fetch - ensures we have data even before the first update
-    productRef.get().then((snapshot) {
-      if (snapshot.exists && snapshot.value != null) {
-        final data = snapshot.value as Map<dynamic, dynamic>;
+    // Listen to RTDB changes
+    final subscription = productRef.onValue.listen((event) {
+      // Apply rate limiting to prevent excessive emissions
+      if (_shouldThrottle(productId)) {
+        return; // Skip this emission - too soon since last one
+      }
+      
+      LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Received RTDB event for $productId');
+      
+      if (event.snapshot.exists && event.snapshot.value != null) {
+        // Convert data to Map
+        final data = event.snapshot.value as Map<dynamic, dynamic>;
+        
+        // Create ProductDynamicData from the RTDB data
         final dynamicData = ProductDynamicData.fromRTDB(data);
         
         LoggingService.logFirestore(
-          'PRODUCT_DYNAMIC_PROVIDER: Initial data for $productId - '
+          'PRODUCT_DYNAMIC_PROVIDER: Updated data for $productId - '
           'Price: ${dynamicData.price}, InStock: ${dynamicData.inStock}'
         );
         
-        // Emit initial data
+        // Add data to stream
         streamController.add(dynamicData);
-      } else {
-        LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: No initial data for $productId');
-      }
-    }).catchError((error) {
-      LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error fetching initial data for $productId: $error');
-    });
-    
-    // Listen to RTDB changes with specific event types for better debugging
-    final onValueSubscription = productRef.onValue.listen((event) {
-      LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Received onValue event for $productId');
-
-      if (event.snapshot.exists && event.snapshot.value != null) {
-        // Only throttle updates, not initial data
-        if (_shouldThrottle(productId)) {
-          return; // Skip this emission - too soon since last one
-        }
         
-        try {
-          final data = event.snapshot.value as Map<dynamic, dynamic>;
-          final dynamicData = ProductDynamicData.fromRTDB(data);
-          
-          LoggingService.logFirestore(
-            'PRODUCT_DYNAMIC_PROVIDER: Emitting update for $productId - '
-            'Price: ${dynamicData.price}, InStock: ${dynamicData.inStock}'
-          );
-          
-          // Add to stream
-          streamController.add(dynamicData);
-        } catch (e) {
-          LoggingService.logError(
-            'PRODUCT_DYNAMIC_PROVIDER',
-            'Error processing RTDB data for $productId: $e'
-          );
+        // Check if we need to combine with discount info
+        if (dynamicData.hasDiscount == true) {
+          // Product has 'hasDiscount' flag, but discountType and discountValue
+          // are stored in the discounts collection, so we need to fetch them
+          _checkForDiscount(productId).then((discountData) {
+            if (discountData.discountType != null && discountData.discountValue != null) {
+              // Apply rate limiting again for combined data
+              if (_shouldThrottle(productId)) {
+                return; // Skip this emission - too soon since last one
+              }
+              
+              // Create a combined data object with price from product and discount details
+              final combinedData = ProductDynamicData(
+                price: dynamicData.price,
+                quantity: dynamicData.quantity,
+                inStock: dynamicData.inStock,
+                hasDiscount: true,
+                discountType: discountData.discountType,
+                discountValue: discountData.discountValue,
+                updatedAt: dynamicData.updatedAt,
+              );
+              
+              // Add the combined data to the stream
+              streamController.add(combinedData);
+            }
+          }).catchError((error) {
+            // Error fetching discount, use product data only
+            LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error checking discount for $productId: $error');
+          });
         }
       } else {
-        LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Empty snapshot for $productId');
+        // If data doesn't exist in RTDB under the product path, check discounts
+        LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: No RTDB data for $productId at $cacheKey, checking discounts');
+        
+        // Check for discounts
+        _checkForDiscount(productId).then((discountData) {
+          if (discountData.hasDiscount == true) {
+            LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Found discount for $productId, fetching price...');
+            
+            // We found a discount, but we need price data
+            _searchForProductInCategories(productId).then((productData) {
+              // Combine product and discount data
+              final combined = productData.merge(discountData);
+              
+              // Apply rate limiting for the combined result
+              if (!_shouldThrottle(productId)) {
+                LoggingService.logFirestore(
+                  'PRODUCT_DYNAMIC_PROVIDER: Combined product and discount for $productId - '
+                  'Price: ${combined.price}, FinalPrice: ${combined.finalPrice}'
+                );
+                
+                streamController.add(combined);
+              }
+            }).catchError((error) {
+              // We could find discount but not price data
+              LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error finding price for $productId: $error');
+              streamController.add(discountData); // Use discount data only
+            });
+          } else {
+            // No discount found, search for product directly
+            _searchForProductInCategories(productId).then((productData) {
+              // Apply rate limiting
+              if (!_shouldThrottle(productId)) {
+                LoggingService.logFirestore(
+                  'PRODUCT_DYNAMIC_PROVIDER: Found product data for $productId - '
+                  'Price: ${productData.price}, InStock: ${productData.inStock}'
+                );
+                
+                streamController.add(productData);
+              }
+            }).catchError((error) {
+              // Neither product nor discount found
+              LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error finding product $productId: $error');
+              streamController.add(ProductDynamicData(price: 0, inStock: true));
+            });
+          }
+        }).catchError((error) {
+          LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error checking discount for $productId: $error');
+          
+          // Try to find the product directly as a fallback
+          _searchForProductInCategories(productId).then((productData) {
+            streamController.add(productData);
+          }).catchError((error) {
+            // Last resort - emit default data
+            streamController.add(ProductDynamicData(price: 0, inStock: true));
+          });
+        });
       }
     }, onError: (error) {
-      LoggingService.logError(
-        'PRODUCT_DYNAMIC_PROVIDER',
-        'Error in RTDB listener for $productId: $error'
-      );
+      LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error in RTDB stream for $productId: $error');
+      streamController.add(ProductDynamicData(price: 0, inStock: false));
     });
     
-    // Also listen specifically for price changes to improve debugging
-    productRef.child('price').onValue.listen((event) {
-      if (event.snapshot.exists && event.snapshot.value != null) {
-        LoggingService.logFirestore(
-          'PRODUCT_DYNAMIC_PROVIDER: Price changed for $productId: ${event.snapshot.value}'
-        );
-      }
-    });
-    
-    // Close resources when stream is closed
+    // Close the stream controller when it's no longer needed
     streamController.onCancel = () {
-      onValueSubscription.cancel();
+      subscription.cancel();
       _activeStreams.remove(cacheKey);
-      LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Closed stream for $productId');
+      _lastEmissionTime.remove(productId); // Clean up rate limiting data
     };
     
     // Create a reference-counted stream to handle multiple listeners
@@ -280,7 +326,6 @@ class ProductDynamicDataProvider {
 
     // Return cached stream if already created
     if (_activeStreams.containsKey(cacheKey)) {
-      LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Reusing cached ID-only stream for $productId');
       return _activeStreams[cacheKey]!;
     }
 
@@ -292,75 +337,40 @@ class ProductDynamicDataProvider {
     
     // Start by checking for discounts
     _checkForDiscount(productId).then((discountData) {
-      // Now fetch price and stock information
-      _fetchProductPriceAndStock(productId).then((priceData) {
-        // Merge discount and price data
-        final combinedData = discountData.merge(priceData);
+      // If discount exists, use it while fetching product data
+      if (discountData.hasDiscount == true) {
+        streamController.add(discountData);
         
-        // Add to stream
-        streamController.add(combinedData);
-        
-        // For debugging
-        LoggingService.logFirestore(
-          'PRODUCT_DYNAMIC_PROVIDER: Initial combined data for $productId - '
-          'Price: ${combinedData.price}, InStock: ${combinedData.inStock}, '
-          'HasDiscount: ${combinedData.hasDiscount}, Type: ${combinedData.discountType}, '
-          'Value: ${combinedData.discountValue}'
-        );
-        
-        // Try to find the indexed path to set up a real-time listener
-        _findProductPathById(productId).then((path) {
-          if (path != null) {
-            LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Found path for $productId: $path');
-            
-            // Set up a real-time listener for future updates
-            final ref = _database.ref(path);
-            
-            // Listen to changes
-            final onValueSubscription = ref.onValue.listen((event) {
-              if (event.snapshot.exists && event.snapshot.value != null) {
-                // Apply rate limiting to prevent excessive emissions
-                if (_shouldThrottle(productId)) {
-                  return; // Skip this emission - too soon since last one
-                }
-                
-                try {
-                  final data = event.snapshot.value as Map<dynamic, dynamic>;
-                  final dynamicData = ProductDynamicData.fromRTDB(data);
-                  
-                  // Merge with discount data to get final product
-                  final updatedData = discountData.merge(dynamicData);
-                  
-                  LoggingService.logFirestore(
-                    'PRODUCT_DYNAMIC_PROVIDER: Real-time update for $productId - '
-                    'Price: ${updatedData.price}, InStock: ${updatedData.inStock}'
-                  );
-                  
-                  // Add to stream
-                  streamController.add(updatedData);
-                } catch (e) {
-                  LoggingService.logError(
-                    'PRODUCT_DYNAMIC_PROVIDER',
-                    'Error processing RTDB update for $productId: $e'
-                  );
-                }
-              }
-            }, onError: (error) {
-              LoggingService.logError(
-                'PRODUCT_DYNAMIC_PROVIDER',
-                'Error in RTDB listener for $productId: $error'
-              );
-            });
-            
-            // Close resources when stream is closed
-            streamController.onCancel = () {
-              onValueSubscription.cancel();
-              _activeStreams.remove(cacheKey);
-              LoggingService.logFirestore('PRODUCT_DYNAMIC_PROVIDER: Closed ID-only stream for $productId');
-            };
-          }
+        // Also fetch product data for price information
+        _searchForProductInCategories(productId).then((productData) {
+          // Combine product and discount data
+          final combined = productData.merge(discountData);
+          
+          LoggingService.logFirestore(
+            'PRODUCT_DYNAMIC_PROVIDER: Combined product and discount for $productId - '
+            'Price: ${combined.price}, FinalPrice: ${combined.finalPrice}'
+          );
+          
+          streamController.add(combined);
+        }).catchError((error) {
+          // Error fetching product data, but we still have discount
+          LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error finding product data for $productId: $error');
         });
-      });
+      } else {
+        // No discount, search for product only
+        _searchForProductInCategories(productId).then((productData) {
+          LoggingService.logFirestore(
+            'PRODUCT_DYNAMIC_PROVIDER: Found product data for $productId - '
+            'Price: ${productData.price}, InStock: ${productData.inStock}'
+          );
+          
+          streamController.add(productData);
+        }).catchError((error) {
+          // Unable to find anything for this product
+          LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error finding any data for $productId: $error');
+          streamController.add(ProductDynamicData(price: 0, inStock: true));
+        });
+      }
     }).catchError((error) {
       // Error checking discount, try product search as fallback
       LoggingService.logError('PRODUCT_DYNAMIC_PROVIDER', 'Error checking discount for $productId: $error');
@@ -374,6 +384,11 @@ class ProductDynamicDataProvider {
       });
     });
     
+    // Close resources when stream is closed
+    streamController.onCancel = () {
+      _activeStreams.remove(cacheKey);
+    };
+    
     // Create a reference-counted stream to handle multiple listeners
     final stream = streamController.stream;
     
@@ -381,50 +396,6 @@ class ProductDynamicDataProvider {
     _activeStreams[cacheKey] = stream;
     
     return stream;
-  }
-
-  /// Find the RTDB path for a product by its ID
-  /// Used for setting up real-time listeners once we know the path
-  Future<String?> _findProductPathById(String productId) async {
-    try {
-      // Check if the product is in the index
-      final indexRef = _database.ref('product_index/$productId');
-      final indexSnapshot = await indexRef.get();
-      
-      if (indexSnapshot.exists && indexSnapshot.value != null) {
-        return indexSnapshot.value as String;
-      }
-      
-      // Not in index, search categories
-      for (final categoryGroup in _knownCategoryGroups) {
-        final categoryItemsRef = _database.ref('products/$categoryGroup/items');
-        final categoryItemsSnapshot = await categoryItemsRef.get();
-        
-        if (!categoryItemsSnapshot.exists) continue;
-        
-        final categoryItems = categoryItemsSnapshot.value as Map<dynamic, dynamic>;
-        
-        for (final categoryItem in categoryItems.keys) {
-          final path = 'products/$categoryGroup/items/$categoryItem/products/$productId';
-          final productRef = _database.ref(path);
-          final productSnapshot = await productRef.get();
-          
-          if (productSnapshot.exists) {
-            // Add to index for future lookups
-            await _database.ref('product_index/$productId').set(path);
-            return path;
-          }
-        }
-      }
-      
-      return null;
-    } catch (e) {
-      LoggingService.logError(
-        'PRODUCT_DYNAMIC_PROVIDER', 
-        'Error finding product path for $productId: $e'
-      );
-      return null;
-    }
   }
 
   /// Check for discount information for a specific product

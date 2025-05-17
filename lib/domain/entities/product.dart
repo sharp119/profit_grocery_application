@@ -25,6 +25,7 @@ class Product extends Equatable {
   final String? productType;
   final int? quantity;
   final String? categoryGroup;
+  final bool hasDiscount; // Explicit flag from RTDB
 
   const Product({
     required this.id,
@@ -51,6 +52,7 @@ class Product extends Equatable {
     this.productType,
     this.quantity,
     this.categoryGroup,
+    this.hasDiscount = false,
   });
 
   // Get discount percentage if mrp is available
@@ -61,8 +63,8 @@ class Product extends Equatable {
     return null;
   }
 
-  // Check if the product has a discount
-  bool get hasDiscount => discountPercentage != null && discountPercentage! > 0;
+  // Check if the product has a calculated discount based on price difference
+  bool get hasCalculatedDiscount => discountPercentage != null && discountPercentage! > 0;
 
   /// Create a copy of this Product with some fields changed
   Product copyWith({
@@ -90,6 +92,7 @@ class Product extends Equatable {
     String? productType,
     int? quantity,
     String? categoryGroup,
+    bool? hasDiscount,
   }) {
     return Product(
       id: id ?? this.id,
@@ -116,6 +119,7 @@ class Product extends Equatable {
       productType: productType ?? this.productType,
       quantity: quantity ?? this.quantity,
       categoryGroup: categoryGroup ?? this.categoryGroup,
+      hasDiscount: hasDiscount ?? this.hasDiscount,
     );
   }
 
@@ -145,5 +149,6 @@ class Product extends Equatable {
         productType,
         quantity,
         categoryGroup,
+        hasDiscount,
       ];
 }

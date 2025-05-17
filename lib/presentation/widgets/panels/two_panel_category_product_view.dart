@@ -1,23 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import '../../../data/models/product_model.dart';
-import '../../../data/repositories/product/firestore_product_repository.dart';
+import '../../../data/repositories/product/rtdb_product_repository.dart';
 import '../../../services/category/shared_category_service.dart';
-import '../../../services/logging_service.dart';
+import '../../../utils/stream_utils.dart';
 import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
 import '../cards/universal_product_card.dart';
-import '../../../core/constants/category_assets.dart';
 
 /// A two-panel layout with categories on the left and products on the right,
-/// optimized for efficient Firestore data loading with lazy loading support
+/// Optimized for real-time updates with Firebase Realtime Database and smooth scrolling
 class TwoPanelCategoryProductView extends StatefulWidget {
   final List<Category> categories;
   final Function(Category) onCategoryTap;
@@ -53,7 +51,7 @@ class TwoPanelCategoryProductView extends StatefulWidget {
 class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductView> {
   final ScrollController _productScrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
-  final FirestoreProductRepository _productRepository = FirestoreProductRepository();
+  final RTDBProductRepository _productRepository = RTDBProductRepository();
   final SharedCategoryService _categoryService = GetIt.instance<SharedCategoryService>();
   
   int _selectedCategoryIndex = 0;
@@ -66,11 +64,12 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   // Keep track of loading state for each category
   final Map<String, bool> _isLoadingCategory = {};
   
-  // Keep track of visibility for each category section in the scrolling view
-  final Map<String, bool> _isCategoryVisible = {};
+  // Keep track of whether categories have stream subscriptions
+  final Map<String, StreamSubscription<List<ProductModel>>?> _categoryStreams = {};
   
-  // Keep track of whether categories have been initially loaded
-  final Map<String, bool> _isCategoryInitiallyLoaded = {};
+  // Track the last scroll time for throttling
+  DateTime _lastScrollTime = DateTime.now();
+  static const _scrollThrottleMs = 100; // Throttle scroll event processing
   
   @override
   void initState() {
@@ -80,101 +79,99 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
     if (widget.categories.isNotEmpty) {
       _selectedCategory = widget.categories.first;
       
-      // Mark all categories as not initially loaded
-      for (final category in widget.categories) {
-        _isCategoryInitiallyLoaded[category.id] = false;
-        _isCategoryVisible[category.id] = false;
-      }
-      
-      // Load first category immediately
-      _loadProductsForCategory(widget.categories.first);
-      
-      // Mark first category as visible
-      _isCategoryVisible[widget.categories.first.id] = true;
+      // Setup listeners for first visible categories (optimized initial load)
+      _setupInitialCategoryListeners();
     }
     
-    // Listen to scroll events to highlight the correct category and load data as needed
-    _productScrollController.addListener(_onProductScroll);
+    // Listen to scroll events (throttled) to highlight the correct category
+    _productScrollController.addListener(_throttledOnProductScroll);
   }
   
   @override
   void dispose() {
-    _productScrollController.removeListener(_onProductScroll);
+    // Remove scroll listener
+    _productScrollController.removeListener(_throttledOnProductScroll);
     _productScrollController.dispose();
     _categoryScrollController.dispose();
+    
+    // Cancel all stream subscriptions to prevent memory leaks
+    for (final subscription in _categoryStreams.values) {
+      subscription?.cancel();
+    }
+    _categoryStreams.clear();
+    
+    // Dispose the repository to clean up its listeners
+    _productRepository.dispose();
+    
     super.dispose();
   }
   
-  /// Load products for a specific category from Firestore
-  Future<void> _loadProductsForCategory(Category category) async {
+  /// Setup listeners for the first few visible categories
+  void _setupInitialCategoryListeners() {
+    // Only setup initial listeners for the first 2-3 categories
+    final initialCategories = widget.categories.take(3).toList();
+    
+    for (final category in initialCategories) {
+      _setupCategoryListener(category);
+    }
+  }
+  
+  /// Setup a real-time listener for a specific category's products
+  Future<void> _setupCategoryListener(Category category) async {
     final categoryId = category.id;
     
-    // Skip if already loading or loaded
-    if (_isLoadingCategory[categoryId] == true || 
-        (_categoryProducts[categoryId]?.isNotEmpty ?? false)) {
+    // Skip if already subscribed
+    if (_categoryStreams.containsKey(categoryId) && _categoryStreams[categoryId] != null) {
       return;
     }
     
+    // Mark as loading
+    setState(() {
+      _isLoadingCategory[categoryId] = true;
+    });
+    
     try {
-      setState(() {
-        _isLoadingCategory[categoryId] = true;
-      });
-      
-      LoggingService.logFirestore('TWOPANEL: Loading products for category: $categoryId');
-      print('TWOPANEL: Loading products for category: $categoryId');
-      
-      // Get category group info from shared service
-      final categoryParts = categoryId.split('_');
-      String? categoryGroup;
-      
-      if (categoryParts.isNotEmpty) {
-        // Try exact match first
-        categoryGroup = await _getCategoryGroupForItem(categoryId);
-        
-        // If not found, try using just the first part of the ID
-        if (categoryGroup == null && categoryParts.length > 1) {
-          categoryGroup = categoryParts[0];
-        }
-      }
+      // Get category group info
+      final categoryGroup = await _getCategoryGroupForItem(categoryId);
       
       if (categoryGroup == null) {
-        LoggingService.logError('TWOPANEL', 'Could not determine category group for: $categoryId');
-        print('TWOPANEL ERROR: Could not determine category group for: $categoryId');
-        
-        setState(() {
-          _isLoadingCategory[categoryId] = false;
-          _categoryProducts[categoryId] = [];
-          _isCategoryInitiallyLoaded[categoryId] = true;
-        });
+        if (mounted) {
+          setState(() {
+            _isLoadingCategory[categoryId] = false;
+            _categoryProducts[categoryId] = [];
+          });
+        }
         return;
       }
       
-      // Load products from Firestore
-      final products = await _productRepository.fetchProductsByCategory(
-        categoryGroup: categoryGroup,
-        categoryItem: categoryId,
-      );
+      // Create a stream subscription for real-time updates
+      final stream = _productRepository.getProductsStream(categoryGroup, categoryId);
+      final subscription = stream.listen((products) {
+        if (mounted) {
+          setState(() {
+            _categoryProducts[categoryId] = products;
+            _isLoadingCategory[categoryId] = false;
+          });
+        }
+      }, onError: (error) {
+        if (mounted) {
+          setState(() {
+            _isLoadingCategory[categoryId] = false;
+            _categoryProducts[categoryId] = [];
+          });
+        }
+      });
       
-      // Update state with loaded products
-      if (mounted) {
-        setState(() {
-          _categoryProducts[categoryId] = products;
-          _isLoadingCategory[categoryId] = false;
-          _isCategoryInitiallyLoaded[categoryId] = true;
-        });
-      }
+      // Store the subscription for cleanup
+      _categoryStreams[categoryId] = subscription;
       
-      LoggingService.logFirestore('TWOPANEL: Loaded ${products.length} products for category: $categoryId');
-      print('TWOPANEL: Loaded ${products.length} products for category: $categoryId');
     } catch (e) {
-      LoggingService.logError('TWOPANEL', 'Error loading products for category $categoryId: $e');
-      print('TWOPANEL ERROR: Failed to load products for category $categoryId: $e');
+      debugPrint('TwoPanelView: Error setting up listener for $categoryId: $e');
       
       if (mounted) {
         setState(() {
           _isLoadingCategory[categoryId] = false;
           _categoryProducts[categoryId] = [];
-          _isCategoryInitiallyLoaded[categoryId] = true;
         });
       }
     }
@@ -187,13 +184,32 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
       final groupInfo = await _categoryService.findCategoryGroupForItem(categoryItemId);
       return groupInfo?.id;
     } catch (e) {
-      print('TWOPANEL: Error finding category group for $categoryItemId: $e');
+      debugPrint('TwoPanelView: Error finding category group for $categoryItemId: $e');
+      
+      // Fallback to using parts of the ID
+      final categoryParts = categoryItemId.split('_');
+      if (categoryParts.isNotEmpty) {
+        return categoryParts[0];
+      }
+      
       return null;
     }
   }
   
+  /// Throttled scroll event handler to reduce unnecessary processing
+  void _throttledOnProductScroll() {
+    // Skip processing if scrolled recently
+    final now = DateTime.now();
+    if (now.difference(_lastScrollTime).inMilliseconds < _scrollThrottleMs) {
+      return;
+    }
+    _lastScrollTime = now;
+    
+    // Process scroll event
+    _onProductScroll();
+  }
+  
   /// Handle scroll events to update selected category based on scroll position
-  /// and to load data for visible categories
   void _onProductScroll() {
     if (_categoryOffsets.isEmpty || !_productScrollController.hasClients) return;
     
@@ -203,7 +219,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
     // Find the category containing the current scroll position
     int newSelectedIndex = 0;
     for (int i = 0; i < widget.categories.length; i++) {
-      if (i + 1 < widget.categories.length) {
+      if (i + 1 < widget.categories.length && _categoryOffsets.containsKey(i + 1)) {
         if (currentOffset >= _categoryOffsets[i]! && 
             currentOffset < _categoryOffsets[i + 1]!) {
           newSelectedIndex = i;
@@ -225,39 +241,29 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
       widget.onCategoryTap(_selectedCategory);
     }
     
-    // Check which categories are visible in the viewport and load them if needed
+    // Set up listeners for visible and soon-to-be-visible categories
+    _setupVisibleCategoryListeners(currentOffset, viewportHeight);
+  }
+  
+  /// Setup listeners for categories that are visible or about to be visible
+  void _setupVisibleCategoryListeners(double currentOffset, double viewportHeight) {
+    // Look-ahead distance (how far ahead we should pre-load categories)
+    final lookAheadDistance = viewportHeight * 2;
+    
     for (int i = 0; i < widget.categories.length; i++) {
-      final category = widget.categories[i];
-      
       if (!_categoryOffsets.containsKey(i)) continue;
       
+      final category = widget.categories[i];
       final categoryOffset = _categoryOffsets[i]!;
-      final isVisible = (categoryOffset >= currentOffset - viewportHeight && 
-                          categoryOffset <= currentOffset + (2 * viewportHeight));
       
-      // Update visibility state
-      final wasVisible = _isCategoryVisible[category.id] ?? false;
-      _isCategoryVisible[category.id] = isVisible;
+      // Category is visible or will be soon
+      final isVisibleOrSoon = 
+          (categoryOffset >= currentOffset - lookAheadDistance) && 
+          (categoryOffset <= currentOffset + lookAheadDistance);
       
-      // If category became visible and isn't loaded yet, load its products
-      if (isVisible && !wasVisible && !(_isCategoryInitiallyLoaded[category.id] ?? false)) {
-        _loadProductsForCategory(category);
-      }
-    }
-    
-    // Preload the next category's products if we're approaching its position
-    final nextCategoryIndex = _selectedCategoryIndex + 1;
-    if (nextCategoryIndex < widget.categories.length) {
-      final nextCategory = widget.categories[nextCategoryIndex];
-      
-      // Check if we're approaching the next category
-      if (_categoryOffsets.containsKey(nextCategoryIndex)) {
-        final nextCategoryOffset = _categoryOffsets[nextCategoryIndex]!;
-        final isApproaching = nextCategoryOffset - currentOffset < viewportHeight * 1.5;
-        
-        if (isApproaching && !(_isCategoryInitiallyLoaded[nextCategory.id] ?? false)) {
-          _loadProductsForCategory(nextCategory);
-        }
+      if (isVisibleOrSoon && !_categoryStreams.containsKey(category.id)) {
+        // Setup listener for this category if not already listening
+        _setupCategoryListener(category);
       }
     }
   }
@@ -280,11 +286,10 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
       _selectedCategory = category;
     });
     
-    // Load products for this category if not already loaded
-    if (!(_isCategoryInitiallyLoaded[category.id] ?? false)) {
-      _loadProductsForCategory(category);
-    }
+    // Make sure this category has a listener
+    _setupCategoryListener(category);
     
+    // Scroll to the category
     _scrollToCategory(index);
     widget.onCategoryTap(category);
   }
@@ -367,8 +372,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                                   ),
                                 ),
                                 errorWidget: (context, url, error) {
-                                  LoggingService.logError('TWOPANEL', 'Error loading image for ${category.name}: $error, URL: $url');
-                                  print('TWOPANEL: Error loading image for ${category.name}: $error, URL: $url');
+                                  debugPrint('TwoPanelView: Error loading image for ${category.name}: $error');
                                   return Icon(
                                     Icons.category,
                                     color: isSelected
@@ -419,10 +423,11 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
               ),
             ),
             
-            // Right panel: Products for categories - Lazy loaded sections
+            // Right panel: Products for categories with real-time updates
             Expanded(
               child: CustomScrollView(
                 controller: _productScrollController,
+                physics: const BouncingScrollPhysics(),
                 slivers: [
                   // Display each category's products
                   for (int i = 0; i < widget.categories.length; i++)
@@ -435,17 +440,21 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                           // Store the offset of this category section
                           WidgetsBinding.instance.addPostFrameCallback((_) {
                             final renderBox = context.findRenderObject() as RenderBox?;
-                            if (renderBox != null) {
-                              _categoryOffsets[i] = renderBox.localToGlobal(Offset.zero).dy -
+                            if (renderBox != null && mounted) {
+                              final offset = renderBox.localToGlobal(Offset.zero).dy -
                                   AppBar().preferredSize.height -
                                   MediaQuery.of(context).padding.top;
+                              
+                              if (_categoryOffsets[i] != offset) {
+                                _categoryOffsets[i] = offset;
+                              }
                             }
                           });
                           
-                          // Check if products are loading or have been loaded
+                          // Get products and loading state
                           final isLoading = _isLoadingCategory[categoryId] ?? false;
                           final products = _categoryProducts[categoryId] ?? [];
-                          final isInitiallyLoaded = _isCategoryInitiallyLoaded[categoryId] ?? false;
+                          final hasStream = _categoryStreams.containsKey(categoryId);
                           
                           return Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -501,9 +510,9 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
                               SizedBox(height: 8.h),
                               
                               // Products grid or loading placeholder
-                              if (isLoading && !isInitiallyLoaded)
+                              if (isLoading && products.isEmpty)
                                 _buildLoadingProductsGrid()
-                              else if (products.isEmpty && isInitiallyLoaded)
+                              else if (products.isEmpty && hasStream)
                                 _buildEmptyProductsMessage()
                               else
                                 _buildProductsGrid(products, category),
@@ -554,13 +563,12 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   
   /// Build loading placeholder for products
   Widget _buildLoadingProductsGrid() {
-    // Use a simpler layout to avoid overflow issues
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 16.w),
       child: GridView.builder(
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          childAspectRatio: 0.63, // Same as product grid
+          childAspectRatio: 0.63,
           crossAxisSpacing: 12.w,
           mainAxisSpacing: 12.h,
         ),
@@ -574,77 +582,69 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8.r),
             ),
-            // Use Clip to ensure nothing exceeds the Card boundaries
-            clipBehavior: Clip.antiAlias, 
-            child: Stack(
+            clipBehavior: Clip.antiAlias,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Use a Column with loose constraints to avoid overflow
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Image area - fixed aspect ratio
-                    AspectRatio(
-                      aspectRatio: 1.2,
-                      child: Container(
-                        color: Colors.grey.shade800,
-                        child: Center(
-                          child: SizedBox(
-                            width: 32.w,
-                            height: 32.h,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                AppTheme.accentColor,
-                              ),
-                            ),
+                // Image area - Shimmer effect
+                AspectRatio(
+                  aspectRatio: 1.2,
+                  child: Container(
+                    color: Colors.grey.shade800,
+                    child: Center(
+                      child: SizedBox(
+                        width: 32.w,
+                        height: 32.h,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            AppTheme.accentColor,
                           ),
                         ),
                       ),
                     ),
-                    
-                    // Text placeholders with minimal height
-                    Padding(
-                      padding: EdgeInsets.all(8.w),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Title placeholder
-                          Container(
-                            width: double.infinity,
-                            height: 10.h,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade800,
-                              borderRadius: BorderRadius.circular(4.r),
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          
-                          // Price placeholder
-                          Container(
-                            width: 80.w,
-                            height: 10.h,
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade800,
-                              borderRadius: BorderRadius.circular(4.r),
-                            ),
-                          ),
-                          SizedBox(height: 4.h),
-                          
-                          // Button placeholder
-                          Container(
-                            width: double.infinity,
-                            height: 24.h, // Slightly shorter
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade800,
-                              borderRadius: BorderRadius.circular(4.r),
-                            ),
-                          ),
-                        ],
+                  ),
+                ),
+                
+                // Text placeholders
+                Padding(
+                  padding: EdgeInsets.all(8.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Title placeholder
+                      Container(
+                        width: double.infinity,
+                        height: 10.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade800,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
                       ),
-                    ),
-                  ],
+                      SizedBox(height: 4.h),
+                      
+                      // Price placeholder
+                      Container(
+                        width: 80.w,
+                        height: 10.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade800,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      
+                      // Button placeholder
+                      Container(
+                        width: double.infinity,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade800,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -691,7 +691,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
     return GridView.builder(
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 0.63, // Decreased to provide more height for the content
+        childAspectRatio: 0.63,
         crossAxisSpacing: 12.w,
         mainAxisSpacing: 12.h,
       ),
@@ -702,10 +702,6 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
       itemBuilder: (context, index) {
         final product = products[index];
         final quantity = quantities[product.id] ?? 0;
-        
-        // Use asynchronous method in a synchronous context by using previously loaded data
-        // or the product's own categoryGroup if available
-        String? categoryGroup = product.categoryGroup;
         
         // Convert ProductModel to Product entity for the callbacks
         final productEntity = Product(
@@ -724,7 +720,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           isActive: true,
           isFeatured: false,
           tags: [],
-          categoryGroup: categoryGroup,
+          categoryGroup: product.categoryGroup,
         );
         
         return UniversalProductCard(

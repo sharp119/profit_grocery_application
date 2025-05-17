@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../widgets/base_layout.dart';
-import '../debug/rtdb_debug_page.dart';
 import '../test/image_test_page.dart';
 import '../test/product_card_test_page.dart';
 
@@ -49,18 +48,6 @@ class DeveloperMenuPage extends StatelessWidget {
             ),
             
             _buildSectionHeader('Database Tools'),
-            _buildDevOption(
-              context,
-              title: 'RTDB Debug Tool',
-              icon: Icons.bug_report,
-              description: 'Diagnose Realtime Database issues',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const RTDBDebugPage()),
-                );
-              },
-            ),
             _buildDevOption(
               context,
               title: 'Firebase Console',
