@@ -27,10 +27,13 @@ library;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get_it/get_it.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
+import '../../../services/product/product_dynamic_data_provider.dart';
+import '../../../services/logging_service.dart';
 import '../image_loader.dart';
 import '../../widgets/buttons/add_button.dart';
 
@@ -48,8 +51,12 @@ class EnhancedProductCard extends StatelessWidget {
   final String? weight;
   final String? unit;
   final String? categoryId;
+  final String? categoryGroup;
 
-  const EnhancedProductCard({
+  // Product dynamic data provider instance from GetIt
+  final _dynamicDataProvider = GetIt.instance<ProductDynamicDataProvider>();
+
+  EnhancedProductCard({
     Key? key,
     required this.id,
     required this.name,
@@ -62,6 +69,7 @@ class EnhancedProductCard extends StatelessWidget {
     this.weight,
     this.unit,
     this.categoryId,
+    this.categoryGroup,
   }) : super(key: key);
 
   /// Create a ProductCard from a Product entity
@@ -115,6 +123,7 @@ class EnhancedProductCard extends StatelessWidget {
       weight: weight,
       unit: unit,
       categoryId: product.categoryId,
+      categoryGroup: product.categoryGroup,
     );
   }
 
@@ -131,187 +140,284 @@ class EnhancedProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Use a more flexible layout approach without fixed height constraint
-    return GestureDetector(
-      onTap: inStock ? onTap : null,
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.secondaryColor,
-          borderRadius: BorderRadius.circular(8.r),
-          border: Border.all(
-            color: AppTheme.accentColor.withOpacity(0.1),
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min, // Add this to prevent unnecessary expansion
-          children: [
-            // Discount badge and image - Use aspectRatio with shorter height
-            AspectRatio(
-              aspectRatio: 1.2, // Wider than tall for image container
-              child: Stack(
-                children: [
-                  // Product image
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(6.r),
-                    child: _buildProductImage(),
-                  ),
-                  
-                  // Discount badge - Same position
-                  if (hasDiscount)
-                    Positioned(
-                      top: 6.r,
-                      left: 6.r,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 5.r, vertical: 1.r),
-                        decoration: BoxDecoration(
-                          color: Colors.green,
-                          borderRadius: BorderRadius.circular(3.r),
-                        ),
-                        child: Text(
-                          '${discountPercentage!.toInt()}% OFF',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 9.sp,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+    // Create a stream for the dynamic product data from RTDB
+    Stream<ProductDynamicData> dynamicDataStream;
+    
+    if (categoryGroup != null && categoryGroup!.isNotEmpty && categoryId != null) {
+      // Use full category path if available
+      dynamicDataStream = _dynamicDataProvider.getProductStream(
+        categoryGroup: categoryGroup!,
+        categoryItem: categoryId!,
+        productId: id,
+      );
+    } else {
+      // Fallback to product ID only
+      dynamicDataStream = _dynamicDataProvider.getProductStreamById(id);
+    }
+
+    // Use StreamBuilder to display real-time data from RTDB
+    return StreamBuilder<ProductDynamicData>(
+      stream: dynamicDataStream,
+      builder: (context, snapshot) {
+        // Show loading state while waiting for price data
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildLoadingCard();
+        }
+        
+        // Default to original values if no RTDB data
+        double finalPrice = price;
+        bool productInStock = inStock;
+        bool productHasDiscount = hasDiscount;
+        double? productMrp = mrp;
+        double? productDiscountPercentage = discountPercentage;
+        
+        // Update with real-time values when available
+        if (snapshot.hasData && snapshot.data != null) {
+          final dynamicData = snapshot.data!;
+          
+          // Only log when we have real data coming in with connectionState.active
+          // This prevents logging on every widget rebuild
+          if (snapshot.connectionState == ConnectionState.active && 
+              snapshot.data != null) {
+            LoggingService.logFirestore(
+              'ENHANCED_CARD: Using RTDB data for ${name} - '
+              'Price: ${dynamicData.price}, FinalPrice: ${dynamicData.finalPrice}, '
+              'InStock: ${dynamicData.inStock}, Discount: ${dynamicData.hasDiscount == true ? "${dynamicData.discountType}: ${dynamicData.discountValue}" : "None"}'
+            );
+          }
+          
+          // Use RTDB price if available
+          if (dynamicData.price > 0) {
+            finalPrice = dynamicData.finalPrice;
+            
+            // If dynamic data has a discount, we need to update the MRP
+            if (dynamicData.hasDiscount == true && 
+                dynamicData.discountType != null && 
+                dynamicData.discountValue != null) {
+              productHasDiscount = true;
+              
+              // If discountType is percentage, calculate the original price
+              if (dynamicData.discountType == 'percentage' && dynamicData.discountValue! > 0) {
+                productDiscountPercentage = dynamicData.discountValue;
+                // Calculate MRP from final price and discount percentage
+                productMrp = dynamicData.price; // Original price before discount
+              } else if (dynamicData.discountType == 'flat' && dynamicData.discountValue! > 0) {
+                // For flat discount, calculate original price by adding discount value
+                productMrp = dynamicData.price; // Original price before discount
+                productDiscountPercentage = (dynamicData.discountValue! / productMrp! * 100).roundToDouble();
+              }
+            } else {
+              productHasDiscount = false;
+              productDiscountPercentage = null;
+            }
+          } else {
+            // If price is 0 or invalid, continue showing the loading state
+            // This ensures we don't display cards with zero prices
+            return _buildLoadingCard();
+          }
+          
+          // Use RTDB stock status
+          productInStock = dynamicData.inStock;
+          
+        } else if (snapshot.hasError) {
+          LoggingService.logError(
+            'ENHANCED_CARD',
+            'Error loading RTDB data for $id: ${snapshot.error}'
+          );
+          // If there's an error loading RTDB data, fall back to static data
+          // Only proceed if we have a valid price
+          if (price <= 0) {
+            // If static price is also invalid, show error state
+            return _buildErrorCard();
+          }
+        } else {
+          // No data yet, show loading
+          return _buildLoadingCard();
+        }
+
+        // Use a more flexible layout approach without fixed height constraint
+        return GestureDetector(
+          onTap: productInStock ? onTap : null,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.secondaryColor,
+              borderRadius: BorderRadius.circular(8.r),
+              border: Border.all(
+                color: AppTheme.accentColor.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Add this to prevent unnecessary expansion
+              children: [
+                // Discount badge and image - Use aspectRatio with shorter height
+                AspectRatio(
+                  aspectRatio: 1.2, // Wider than tall for image container
+                  child: Stack(
+                    children: [
+                      // Product image
+                      Container(
+                        width: double.infinity,
+                        padding: EdgeInsets.all(6.r),
+                        child: _buildProductImage(),
                       ),
-                    ),
-                  
-                  // Out of stock overlay - Same styling
-                  if (!inStock)
-                    Positioned.fill(
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.black.withOpacity(0.5),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(8.r),
-                            topRight: Radius.circular(8.r),
-                          ),
-                        ),
-                        child: Center(
+                      
+                      // Discount badge - Same position
+                      if (productHasDiscount && productDiscountPercentage != null)
+                        Positioned(
+                          top: 6.r,
+                          left: 6.r,
                           child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6.r,
-                              vertical: 3.r,
-                            ),
+                            padding: EdgeInsets.symmetric(horizontal: 5.r, vertical: 1.r),
                             decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.9),
+                              color: Colors.green,
                               borderRadius: BorderRadius.circular(3.r),
                             ),
                             child: Text(
-                              'Out of Stock',
+                              '${productDiscountPercentage.toInt()}% OFF',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 10.sp,
+                                fontSize: 9.sp,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            
-            // Product details - Compact layout with minimal spacing
-            Padding(
-              padding: EdgeInsets.fromLTRB(6.r, 2.r, 6.r, 4.r), // Even tighter padding
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min, // Prevent unnecessary expansion
-                children: [
-                  // Product name - Limited height and lines
-                  Text(
-                    name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                      height: 1.1, // Tighter line height
-                    ),
-                  ),
-                  
-                  // Combine name and weight in a single line
-                  if (weight != null && unit != null)
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '$weight $unit',
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.w400,
-                              height: 1.0, // Tighter line height
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  
-                  SizedBox(height: 1.h), // Even less spacing
-                  
-                  // Price section - Compact
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.baseline,
-                    textBaseline: TextBaseline.alphabetic,
-                    children: [
-                      // Current price
-                      Text(
-                        '${AppConstants.currencySymbol}${price.toStringAsFixed(0)}',
-                        style: TextStyle(
-                          fontSize: 15.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.accentColor,
-                          height: 1.0, // Tighter line height
-                        ),
-                      ),
                       
-                      SizedBox(width: 4.w),
-                      
-                      // Original price if there's a discount
-                      if (hasDiscount)
-                        Flexible(
-                          child: Text(
-                            '${AppConstants.currencySymbol}${mrp!.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              decoration: TextDecoration.lineThrough,
-                              color: Colors.grey,
-                              height: 1.0, // Tighter line height
+                      // Out of stock overlay - Same styling
+                      if (!productInStock)
+                        Positioned.fill(
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.5),
+                              borderRadius: BorderRadius.only(
+                                topLeft: Radius.circular(8.r),
+                                topRight: Radius.circular(8.r),
+                              ),
                             ),
-                            overflow: TextOverflow.ellipsis,
+                            child: Center(
+                              child: Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 6.r,
+                                  vertical: 3.r,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.red.withOpacity(0.9),
+                                  borderRadius: BorderRadius.circular(3.r),
+                                ),
+                                child: Text(
+                                  'Out of Stock',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                     ],
                   ),
-                  
-                  SizedBox(height: 2.h), // Reduced space before button
-                  
-                  // Add button with quantity controls
-                  SizedBox(
-                    height: 28.h,
-                    child: AddButton(
-                      productId: id,
-                      sourceCardType: ProductCardType.enhanced,
-                      height: 28.h,
-                      fontSize: 13.sp,
-                      inStock: inStock,
-                    ),
+                ),
+                
+                // Product details - Compact layout with minimal spacing
+                Padding(
+                  padding: EdgeInsets.fromLTRB(6.r, 2.r, 6.r, 4.r), // Even tighter padding
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min, // Prevent unnecessary expansion
+                    children: [
+                      // Product name - Limited height and lines
+                      Text(
+                        name,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                          height: 1.1, // Tighter line height
+                        ),
+                      ),
+                      
+                      // Combine name and weight in a single line
+                      if (weight != null && unit != null)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                '$weight $unit',
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.w400,
+                                  height: 1.0, // Tighter line height
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      
+                      SizedBox(height: 1.h), // Even less spacing
+                      
+                      // Price section - Compact
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          // Current price
+                          Text(
+                            '${AppConstants.currencySymbol}${finalPrice.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontSize: 15.sp,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.accentColor,
+                              height: 1.0, // Tighter line height
+                            ),
+                          ),
+                          
+                          SizedBox(width: 4.w),
+                          
+                          // Original price if there's a discount
+                          if (productHasDiscount && productMrp != null)
+                            Flexible(
+                              child: Text(
+                                '${AppConstants.currencySymbol}${productMrp.toStringAsFixed(0)}',
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  decoration: TextDecoration.lineThrough,
+                                  color: Colors.grey,
+                                  height: 1.0, // Tighter line height
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                      
+                      SizedBox(height: 2.h), // Reduced space before button
+                      
+                      // Add button with quantity controls
+                      SizedBox(
+                        height: 28.h,
+                        child: AddButton(
+                          productId: id,
+                          sourceCardType: ProductCardType.enhanced,
+                          height: 28.h,
+                          fontSize: 13.sp,
+                          inStock: productInStock,
+                        ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -416,6 +522,179 @@ class EnhancedProductCard extends StatelessWidget {
           color: Colors.grey,
           size: 28.r, // Smaller icon size
         ),
+      ),
+    );
+  }
+
+  // Build loading placeholder for the card
+  Widget _buildLoadingCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryColor,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: AppTheme.accentColor.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Image area placeholder
+          AspectRatio(
+            aspectRatio: 1.2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade800.withOpacity(0.3),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8.r),
+                  topRight: Radius.circular(8.r),
+                ),
+              ),
+              child: Center(
+                child: SizedBox(
+                  width: 24.w,
+                  height: 24.h,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          
+          // Product details placeholders
+          Padding(
+            padding: EdgeInsets.all(8.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Title placeholder
+                Container(
+                  width: double.infinity,
+                  height: 12.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                
+                // Price placeholder
+                Container(
+                  width: 80.w,
+                  height: 12.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                
+                // Button placeholder
+                Container(
+                  width: double.infinity,
+                  height: 28.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
+  // Build error state card
+  Widget _buildErrorCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryColor,
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(
+          color: Colors.red.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Error icon area
+          AspectRatio(
+            aspectRatio: 1.2,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.shade900.withOpacity(0.5),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(8.r),
+                  topRight: Radius.circular(8.r),
+                ),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.error_outline,
+                  color: Colors.red.withOpacity(0.7),
+                  size: 32.r,
+                ),
+              ),
+            ),
+          ),
+          
+          // Product name if available
+          Padding(
+            padding: EdgeInsets.all(8.r),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  'Price unavailable',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    color: Colors.red.withOpacity(0.7),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                
+                // Disabled button
+                Container(
+                  width: double.infinity,
+                  height: 28.h,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade800.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    'Unavailable',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

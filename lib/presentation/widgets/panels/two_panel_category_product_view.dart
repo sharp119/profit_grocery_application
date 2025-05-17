@@ -703,6 +703,10 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
         final product = products[index];
         final quantity = quantities[product.id] ?? 0;
         
+        // Use asynchronous method in a synchronous context by using previously loaded data
+        // or the product's own categoryGroup if available
+        String? categoryGroup = product.categoryGroup;
+        
         // Convert ProductModel to Product entity for the callbacks
         final productEntity = Product(
           id: product.id,
@@ -720,6 +724,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           isActive: true,
           isFeatured: false,
           tags: [],
+          categoryGroup: categoryGroup,
         );
         
         return UniversalProductCard(

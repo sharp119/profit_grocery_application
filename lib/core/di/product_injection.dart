@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/repositories/product_repository.dart';
 import '../../data/repositories/firestore/product/product_repository_impl.dart';
 import '../../services/product/product_service.dart';
+import '../../services/product/product_dynamic_data_provider.dart';
 
 final GetIt sl = GetIt.instance;
 
@@ -23,4 +24,12 @@ Future<void> initProductDependencies() async {
       repository: sl<ProductRepository>(),
     ),
   );
+
+  // Register ProductDynamicDataProvider for real-time product data from RTDB
+  // only if it's not already registered
+  if (!sl.isRegistered<ProductDynamicDataProvider>()) {
+    sl.registerLazySingleton<ProductDynamicDataProvider>(
+      () => ProductDynamicDataProvider(),
+    );
+  }
 }

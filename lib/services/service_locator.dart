@@ -16,5 +16,8 @@ void setupServiceLocator() {
   getIt.registerLazySingleton<BestsellerRepositorySimple>(() => BestsellerRepositorySimple());
   
   // Register product dynamic data provider for RTDB integration
-  getIt.registerLazySingleton<ProductDynamicDataProvider>(() => ProductDynamicDataProvider());
+  // Only register if not already registered elsewhere
+  if (!getIt.isRegistered<ProductDynamicDataProvider>()) {
+    getIt.registerLazySingleton<ProductDynamicDataProvider>(() => ProductDynamicDataProvider());
+  }
 }

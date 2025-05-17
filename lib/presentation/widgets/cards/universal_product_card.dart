@@ -153,6 +153,7 @@ class _UniversalProductCardState extends State<UniversalProductCard> {
       tags: product.tags,
       isFeatured: product.isFeatured,
       isActive: product.isActive,
+      categoryGroup: product.categoryGroup,
     );
   }
 }
