@@ -39,6 +39,8 @@ dependencies:
   sendotp_flutter_sdk: ^0.0.1
   uuid: ^4.3.3  # Still needed for address ID generation in profile/address_form_page.dart
   connectivity_plus: ^5.0.2
+  razorpay_flutter: ^1.4.0
+  fluttertoast: ^8.2.12
   # sendotp_flutter_sdk: ^0.1.1
 
 dev_dependencies:

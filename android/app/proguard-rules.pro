@@ -44,6 +44,7 @@
 -keep class com.google.android.play.core.install.** { *; }
 -keep class com.google.android.play.core.splitinstall.** { *; }
 -keep class com.google.android.play.core.tasks.** { *; }
+-keep class com.google.android.play.core.common.** { *; }
 
 # Keep Play Core classes for Flutter deferred components
 -keep class com.google.android.play.core.tasks.** { *; }
@@ -54,4 +55,20 @@
 
 # Keep Firebase
 -keep class com.google.firebase.** { *; }
--keep class com.google.android.gms.** { *; } 
+-keep class com.google.android.gms.** { *; }
+
+-keepclassmembers class * {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+-keepattributes JavascriptInterface
+-keepattributes *Annotation*
+
+-dontwarn com.razorpay.**
+-keep class com.razorpay.** {*;}
+
+-optimizations !method/inlining/*
+
+-keepclasseswithmembers class * {
+  public void onPayment*(...);
+} 

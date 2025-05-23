@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:fluttertoast/fluttertoast.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -38,6 +40,7 @@ class _CheckoutPageContent extends StatefulWidget {
 class _CheckoutPageContentState extends State<_CheckoutPageContent> {
   final TextEditingController _couponController = TextEditingController();
   final CartProvider _cartProvider = CartProvider();
+  late Razorpay _razorpay;
   
   // Cart information to display
   int _itemCount = 0;
@@ -55,6 +58,11 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
     super.initState();
     _getCartInformation();
     _loadAddressFromPrefs();
+    _razorpay = Razorpay();
+
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
     
     // Listen for cart changes
     _cartProvider.addListener(_getCartInformation);
@@ -65,8 +73,44 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
     _couponController.dispose();
     _cartProvider.removeListener(_getCartInformation);
     super.dispose();
+    _razorpay.clear();
+  }
+
+  void openCheckout(amount) {
+    amount = double.parse(amount) * 100;
+    var options = {
+      'key': 'rzp_test_cIZUW0EpmfahD0',
+      'amount': amount.toInt(),
+      'name': 'Profit Grocery',
+      'description': 'Payment for order',
+      'prefill': {
+        'contact': '9876543210',
+        'email': 'test@example.com',
+      },
+      'external': {
+        'wallets': ['paytm']
+      },
+    };
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      print('Error opening Razorpay: $e');
+    }
+  }
+
+  void handlePaymentSuccess(PaymentSuccessResponse response) { 
+    Fluttertoast.showToast(msg: 'Payment successful: ${response.paymentId}', toastLength: Toast.LENGTH_SHORT);
+  }
+
+  void handlePaymentError(PaymentFailureResponse response) {
+    Fluttertoast.showToast(msg: 'Payment failed: ${response.code} - ${response.message}', toastLength: Toast.LENGTH_SHORT);
   }
   
+  void handleExternalWallet(ExternalWalletResponse response) {
+    Fluttertoast.showToast(msg: 'External wallet selected: ${response.walletName}', toastLength: Toast.LENGTH_SHORT);
+  }
+  
+
   Future<void> _getCartInformation() async {
     try {
       // Get cart items count
@@ -333,10 +377,31 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
               margin: EdgeInsets.fromLTRB(20.r, 20.h, 20.r, 30.h),
               width: double.infinity,
               height: 50.h,
+              // child: ElevatedButton(
+              //   onPressed: state.status == CheckoutStatus.placingOrder
+              //       ? null
+              //       : () => _placeOrder(context),
+              //   style: ElevatedButton.styleFrom(
+              //     backgroundColor: Color(0xFFFFC107), // More vibrant amber
+              //     shape: RoundedRectangleBorder(
+              //       borderRadius: BorderRadius.circular(8.r),
+              //     ),
+              //   ),
+              //   child: Text(
+              //     'PLACE ORDER',
+              //     style: TextStyle(
+              //       fontSize: 16.sp,
+              //       fontWeight: FontWeight.bold,
+              //       color: Colors.black,
+              //     ),
+              //   ),
+              // ),
               child: ElevatedButton(
-                onPressed: state.status == CheckoutStatus.placingOrder
-                    ? null
-                    : () => _placeOrder(context),
+                onPressed: (){
+                  setState(() {
+                    openCheckout("1");
+                  });
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Color(0xFFFFC107), // More vibrant amber
                   shape: RoundedRectangleBorder(

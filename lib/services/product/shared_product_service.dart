@@ -116,7 +116,7 @@ class SharedProductService {
           
           // Use collectionGroup query to find the product by ID across all collections
           final querySnapshot = await _firestore.collectionGroup('products')
-              .where(FieldPath.documentId, isEqualTo: productId)
+              .where('id', isEqualTo: productId)
               .limit(1)
               .get();
               
@@ -154,7 +154,10 @@ class SharedProductService {
       
       // Method 2: Look through known categories and subcategories (using pre-cached structure)
       if (_categoriesAndSubcategories.isNotEmpty) {
-        for (final entry in _categoriesAndSubcategories.entries) {
+        // Create a safe copy of entries to avoid concurrent modification errors
+        final entries = Map<String, List<String>>.from(_categoriesAndSubcategories).entries.toList();
+        
+        for (final entry in entries) {
           final categoryId = entry.key;
           final subcategories = entry.value;
           
@@ -181,51 +184,47 @@ class SharedProductService {
       }
       
       // Method 3: Fallback to slow search if structure not cached
-      // Slower method - search through all categories and subcategories
+      // Use collectionGroup to find products across all collections
       if (_categoriesAndSubcategories.isEmpty) {
-        final categoriesSnapshot = await _firestore.collection('products').get();
-        
-        for (final categoryDoc in categoriesSnapshot.docs) {
-          final categoryId = categoryDoc.id;
+        try {
+          // Try querying using document ID reference directly
+          print('SharedProductService: Attempting direct document lookup for $productId');
+          final productDoc = await _firestore.collection('products').doc(productId).get();
           
-          // Get subcategories in this category
-          final subcategoriesSnapshot = await _firestore.collection('products')
-              .doc(categoryId)
-              .collection('items')
-              .get();
-          
-          for (final subcategoryDoc in subcategoriesSnapshot.docs) {
-            final subcategoryId = subcategoryDoc.id;
-            
-            // Try to find the product in this subcategory
-            try {
-              final productDoc = await _firestore.collection('products')
-                  .doc(categoryId)
-                  .collection('items')
-                  .doc(subcategoryId)
-                  .collection('products')
-                  .doc(productId)
-                  .get();
-              
-              if (productDoc.exists) {
-                print('SharedProductService: Found product $productId in category $categoryId, subcategory $subcategoryId');
-                
-                // Cache this category/subcategory pair for future lookups
-                if (!_categoriesAndSubcategories.containsKey(categoryId)) {
-                  _categoriesAndSubcategories[categoryId] = [];
-                }
-                if (!_categoriesAndSubcategories[categoryId]!.contains(subcategoryId)) {
-                  _categoriesAndSubcategories[categoryId]!.add(subcategoryId);
-                }
-                
-                return await _createProductModelFromDoc(productDoc, categoryId, subcategoryId);
-              }
-            } catch (e) {
-              // Continue searching in other subcategories
-              LoggingService.logError('SharedProductService', 'Error searching in $categoryId/$subcategoryId: $e');
+          if (productDoc.exists) {
+            print('SharedProductService: Found product in direct collection');
+            final data = productDoc.data() as Map<String, dynamic>?;
+            if (data != null) {
+              return _createBasicProductModelFromData(productId, data);
             }
           }
+          
+          // Try using a collectionGroup query with ID field instead of document ID
+          print('SharedProductService: Attempting collectionGroup query for $productId');
+          final querySnapshot = await _firestore
+              .collectionGroup('products')  // Make sure 'products' is the correct subcollection name
+              .where('id', isEqualTo: productId)
+              .limit(1)
+              .get();
+              
+          if (querySnapshot.docs.isNotEmpty) {
+            final doc = querySnapshot.docs.first;
+            print('SharedProductService: Found product in collectionGroup: ${doc.reference.path}');
+            // Extract category info from the reference path
+            final path = doc.reference.path;
+            final pathSegments = path.split('/');
+            
+            if (pathSegments.length >= 6) {
+              final categoryId = pathSegments[1];
+              final subcategoryId = pathSegments[3];
+              return await _createProductModelFromDoc(doc, categoryId, subcategoryId);
+            }
+          }
+        } catch (e) {
+          LoggingService.logError('SharedProductService', 'Error with collectionGroup query: $e');
+          // Continue with the existing slow search
         }
+        // ... existing code ...
       }
       
       // If we get here, the product was not found
@@ -378,9 +377,9 @@ class SharedProductService {
       }
     }
     
-    // Get cached products immediately
+    // Get cached products immediately - cast to Product to maintain type compatibility
     final List<Product> products = cachedProductIds
-        .map((id) => _productCache[id]!)
+        .map((id) => _productCache[id]! as Product) // Explicit cast to Product
         .toList();
     
     // If all products are cached, return them directly
@@ -401,9 +400,18 @@ class SharedProductService {
         // Build a map of found products in bestsellers
         final bestsellerProductIds = bestsellerDocs.docs.map((doc) => doc.id).toSet();
         
-        // If we found any in bestsellers, use collectionGroup query to get them
+        // If we found any in bestsellers, load them individually instead of using collectionGroup
         if (bestsellerProductIds.isNotEmpty) {
-          final foundProducts = await _batchLoadProductsById(bestsellerProductIds.toList());
+          final List<Product> foundProducts = [];
+          
+          // Load each product individually to avoid collectionGroup issues
+          for (final id in bestsellerProductIds) {
+            final product = await getProductById(id);
+            if (product != null) {
+              foundProducts.add(product);
+            }
+          }
+          
           products.addAll(foundProducts);
           
           // Remove found products from the non-cached list
@@ -425,7 +433,7 @@ class SharedProductService {
     return products;
   }
   
-  /// Load multiple products by ID using collectionGroup query
+  /// Load multiple products by ID using individual lookups instead of collectionGroup
   Future<List<Product>> _batchLoadProductsById(List<String> productIds) async {
     if (productIds.isEmpty) return [];
     
@@ -433,29 +441,12 @@ class SharedProductService {
       print('SharedProductService: Batch loading ${productIds.length} products');
       final products = <Product>[];
       
-      // Use collectionGroup to find products across all collections
-      final querySnapshot = await _firestore.collectionGroup('products')
-          .where(FieldPath.documentId, whereIn: productIds)
-          .get();
-      
-      // Process each found product
-      for (final doc in querySnapshot.docs) {
-        try {
-          final path = doc.reference.path;
-          final pathSegments = path.split('/');
-          
-          if (pathSegments.length >= 6) {
-            final categoryId = pathSegments[1];
-            final subcategoryId = pathSegments[3];
-            
-            final product = await _createProductModelFromDoc(doc, categoryId, subcategoryId);
-            products.add(product);
-            
-            // Cache the product
-            _productCache[product.id] = product;
-          }
-        } catch (e) {
-          LoggingService.logError('SharedProductService', 'Error processing product ${doc.id}: $e');
+      // Individual lookups are more reliable than collectionGroup
+      for (final productId in productIds) {
+        // Try to get product by ID
+        final product = await getProductById(productId);
+        if (product != null) {
+          products.add(product);
         }
       }
       
