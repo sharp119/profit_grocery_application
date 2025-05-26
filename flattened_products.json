@@ -1,0 +1,2660 @@
+{"carts": {
+    "1744059287151": {
+      "items": {
+        "0hDdYOX7FB5UDUs1Gbe6": {
+          "addedAt": 1747482365697,
+          "lastModified": 1747482962897,
+          "productId": "0hDdYOX7FB5UDUs1Gbe6",
+          "quantity": 4
+        },
+        "3reR7dS693iyozFI1liZ": {
+          "lastModified": 1747841132157,
+          "productId": "3reR7dS693iyozFI1liZ",
+          "quantity": 1
+        },
+        "9LHIJiPrwOcVSMLlN3Y6": {
+          "addedAt": 1748041074023,
+          "lastModified": 1748041075828,
+          "productId": "9LHIJiPrwOcVSMLlN3Y6",
+          "quantity": 2
+        },
+        "HZXUyMfOp2PN6B4Wkr41": {
+          "addedAt": 1746710293667,
+          "lastModified": 1747518495576,
+          "productId": "HZXUyMfOp2PN6B4Wkr41",
+          "quantity": 3
+        },
+        "ZnFLOD8DtGVdu0EDI2sk": {
+          "addedAt": 1746069975847,
+          "lastModified": 1747841129294,
+          "productId": "ZnFLOD8DtGVdu0EDI2sk",
+          "quantity": 5
+        }
+      },
+      "metadata": {
+        "lastModified": 1745992921665
+      }
+    },
+    "1744094774649": {
+      "items": {
+        "0TP7NjIaHJ1dQkjBkGqg": {
+          "addedAt": 1746070523337,
+          "lastModified": 1746070910550,
+          "productId": "0TP7NjIaHJ1dQkjBkGqg",
+          "quantity": 2
+        },
+        "30MwZOixjtGhVHjfzU0R": {
+          "addedAt": 1746070908235,
+          "lastModified": 1746070908235,
+          "productId": "30MwZOixjtGhVHjfzU0R",
+          "quantity": 1
+        },
+        "4yHElYcI8aH7hA2CYgX9": {
+          "addedAt": 1746070909193,
+          "lastModified": 1746070909193,
+          "productId": "4yHElYcI8aH7hA2CYgX9",
+          "quantity": 1
+        },
+        "9LHIJiPrwOcVSMLlN3Y6": {
+          "addedAt": 1746929673004,
+          "lastModified": 1747930372681,
+          "productId": "9LHIJiPrwOcVSMLlN3Y6",
+          "quantity": 1
+        },
+        "Lg47lJyUrUKRw5zaLmjt": {
+          "addedAt": 1746070405792,
+          "lastModified": 1746070405792,
+          "productId": "Lg47lJyUrUKRw5zaLmjt",
+          "quantity": 1
+        },
+        "MdOmjw1Hr557bfOWWQx3": {
+          "addedAt": 1746070405781,
+          "lastModified": 1746070405781,
+          "productId": "MdOmjw1Hr557bfOWWQx3",
+          "quantity": 1
+        },
+        "QGcNb3qDs8DCn9aBEDUV": {
+          "addedAt": 1746113303116,
+          "lastModified": 1746113303116,
+          "productId": "QGcNb3qDs8DCn9aBEDUV",
+          "quantity": 1
+        },
+        "w6QkIhQQ0B7tWPUXcHE4": {
+          "addedAt": 1746070908453,
+          "lastModified": 1746070908453,
+          "productId": "w6QkIhQQ0B7tWPUXcHE4",
+          "quantity": 1
+        }
+      }
+    },
+    "1744276167107": {
+      "items": {
+        "WZUrWh37jHSZBMfSpz5B": {
+          "addedAt": 1747459875261,
+          "lastModified": 1747459875261,
+          "productId": "WZUrWh37jHSZBMfSpz5B",
+          "quantity": 1
+        }
+      }
+    },
+    "1746717547414": {
+      "items": {
+        "9LHIJiPrwOcVSMLlN3Y6": {
+          "addedAt": 1746717584874,
+          "lastModified": 1746717584874,
+          "productId": "9LHIJiPrwOcVSMLlN3Y6",
+          "quantity": 1
+        },
+        "ZnFLOD8DtGVdu0EDI2sk": {
+          "addedAt": 1746717585424,
+          "lastModified": 1746717585424,
+          "productId": "ZnFLOD8DtGVdu0EDI2sk",
+          "quantity": 1
+        },
+        "w6QkIhQQ0B7tWPUXcHE4": {
+          "addedAt": 1746717585714,
+          "lastModified": 1746717585714,
+          "productId": "w6QkIhQQ0B7tWPUXcHE4",
+          "quantity": 1
+        }
+      }
+    },
+    "1746950610440": {
+      "items": {
+        "ZnFLOD8DtGVdu0EDI2sk": {
+          "addedAt": 1746950628011,
+          "lastModified": 1746950628011,
+          "productId": "ZnFLOD8DtGVdu0EDI2sk",
+          "quantity": 1
+        },
+        "w6QkIhQQ0B7tWPUXcHE4": {
+          "addedAt": 1746950628660,
+          "lastModified": 1746950628660,
+          "productId": "w6QkIhQQ0B7tWPUXcHE4",
+          "quantity": 1
+        }
+      }
+    }
+  },
+  "bestsellers": [
+      "0TP7NjIaHJ1dQKjBkGgg",
+      "0hDdYOX7FB5UDUs1Gbe6",
+      "1BETj7dkSGunVr1JDHwY",
+      "2bSRk1Atm4kKS1SjiyB7",
+      "30MwZOixjtGhVHjfzU0R",
+      "3reR7dS693iyozFI11iZ",
+      "4yHE1YcI8aH7hA2CYgX9",
+      "9Acqzf1STVZHtr3DSb1H",
+      "9LHlJiPrwOcVSML1N3Y6",
+      "BP103HXP9jCENmw0Jfz3",
+      "GFIa3bQNyCoxM6qkJ5xx",
+      "HZXUyMfOp2PN6B4Wkr41",
+      "HcSlVCsioLZwcuQHJWqr",
+      "LkLDF0ST6zyh7M1zvaM1",
+      "UvAgndQzY7SSk8suPX1g",
+      "WK2LG7dNZnrRGkUhmMNB",
+      "ZnFLOD8DtGVdu0EDI2sk",
+      "bxkXet6NE9jceKNheEMM",
+      "eAPXYtU4CoInCXYA5q0I",
+      "w6QkIhQQQB7tWPUXcHE4"
+    ],
+  "dynamic_product_info": {
+    "9LHIJiPrwOcVSMLlN3Y6": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 651000000,
+        "seconds": 1745092553
+      },
+      "mrp": 90,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 32.4
+      },
+      "path": "bakeries_biscuits/bakery_snacks"
+    },
+    "HcSlVCsioLZwcuQHJWqr": {
+      "hasDiscount": true,
+      "inStock": false,
+      "quantity": 0,
+      "updatedAt": {
+        "nanoseconds": 699000000,
+        "seconds": 1745092553
+      },
+      "mrp": 77,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 27.72
+      },
+      "path": "bakeries_biscuits/bakery_snacks"
+    },
+    "ZnFLOD8DtGVdu0EDI2sk": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 574000000,
+        "seconds": 1745092553
+      },
+      "mrp": 60,
+      "path": "bakeries_biscuits/bakery_snacks"
+    },
+    "w6QkIhQQ0B7tWPUXcHE4": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 756000000,
+        "seconds": 1745092553
+      },
+      "mrp": 80,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.8
+      },
+      "path": "bakeries_biscuits/bakery_snacks"
+    },
+    "HZXUyMfOp2PN6B4Wkr41": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 881000000,
+        "seconds": 1745092553
+      },
+      "mrp": 80,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.8
+      },
+      "path": "bakeries_biscuits/buns_pavs"
+    },
+    "WK2LG7dNZnrRGkUhmMNB": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 836000000,
+        "seconds": 1745092553
+      },
+      "mrp": 40,
+      "path": "bakeries_biscuits/buns_pavs"
+    },
+    "bxkXet6NE9jceKNheEMM": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 929000000,
+        "seconds": 1745092553
+      },
+      "mrp": 65,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 23.4
+      },
+      "path": "bakeries_biscuits/buns_pavs"
+    },
+    "eAPXYtU4CoInCXYA5q0I": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 18,
+      "updatedAt": {
+        "nanoseconds": 982000000,
+        "seconds": 1745092553
+      },
+      "mrp": 70,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 25.2
+      },
+      "path": "bakeries_biscuits/buns_pavs"
+    },
+    "0hDdYOX7FB5UDUs1Gbe6": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 12,
+      "updatedAt": {
+        "nanoseconds": 71000000,
+        "seconds": 1745092554
+      },
+      "mrp": 80,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.8
+      },
+      "path": "bakeries_biscuits/cakes_pastries"
+    },
+    "PHxwlK8Nkj3IMs3xlyaT": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 5,
+      "updatedAt": {
+        "nanoseconds": 28000000,
+        "seconds": 1745092554
+      },
+      "mrp": 499,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 179.64
+      },
+      "path": "bakeries_biscuits/cakes_pastries"
+    },
+    "kNALelCif4ShdsIVSjP1": {
+      "hasDiscount": true,
+      "inStock": false,
+      "quantity": 0,
+      "updatedAt": {
+        "nanoseconds": 160000000,
+        "seconds": 1745092554
+      },
+      "mrp": 599,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 215.64
+      },
+      "path": "bakeries_biscuits/cakes_pastries"
+    },
+    "o8K6NWes4XfCuzllUxTH": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 10,
+      "updatedAt": {
+        "nanoseconds": 113000000,
+        "seconds": 1745092554
+      },
+      "mrp": 90,
+      "path": "bakeries_biscuits/cakes_pastries"
+    },
+    "9svWkBNoeTwAgwfW320k": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 259000000,
+        "seconds": 1745092554
+      },
+      "mrp": 120,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 43.2
+      },
+      "path": "bakeries_biscuits/cookies"
+    },
+    "QGcNb3qDs8DCn9aBEDUV": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 18,
+      "updatedAt": {
+        "nanoseconds": 302000000,
+        "seconds": 1745092554
+      },
+      "mrp": 150,
+      "path": "bakeries_biscuits/cookies"
+    },
+    "R4uusOq9Tk1RFPM2cyr3": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 344000000,
+        "seconds": 1745092554
+      },
+      "mrp": 140,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 50.4
+      },
+      "path": "bakeries_biscuits/cookies"
+    },
+    "ifwHWVYO8rganYZ1jsQz": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 197000000,
+        "seconds": 1745092554
+      },
+      "mrp": 180,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 64.8
+      },
+      "path": "bakeries_biscuits/cookies"
+    },
+    "WZUrWh37jHSZBMfSpz5B": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 381000000,
+        "seconds": 1745092554
+      },
+      "mrp": 35,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 12.6
+      },
+      "path": "bakeries_biscuits/cream_biscuits"
+    },
+    "lIPn4IZmiLdZS8hePO0Q": {
+      "hasDiscount": true,
+      "inStock": false,
+      "quantity": 0,
+      "updatedAt": {
+        "nanoseconds": 516000000,
+        "seconds": 1745092554
+      },
+      "mrp": 50,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 18.0
+      },
+      "path": "bakeries_biscuits/cream_biscuits"
+    },
+    "lx25RWjEISCVIflT9WmU": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 470000000,
+        "seconds": 1745092554
+      },
+      "mrp": 45,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 16.2
+      },
+      "path": "bakeries_biscuits/cream_biscuits"
+    },
+    "zj47qy3dRdfimODzjwKz": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 424000000,
+        "seconds": 1745092554
+      },
+      "mrp": 40,
+      "path": "bakeries_biscuits/cream_biscuits"
+    },
+    "ImpZ3R5yH5HQtVHXS1qf": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 723000000,
+        "seconds": 1745092554
+      },
+      "mrp": 280,
+      "path": "bakeries_biscuits/premium_cookies"
+    },
+    "KksVCPMalF7t6MLtR0Qu": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 10,
+      "updatedAt": {
+        "nanoseconds": 588000000,
+        "seconds": 1745092554
+      },
+      "mrp": 299,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 107.64
+      },
+      "path": "bakeries_biscuits/premium_cookies"
+    },
+    "l8fT9eheC0qgTbxgeJeD": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 8,
+      "updatedAt": {
+        "nanoseconds": 632000000,
+        "seconds": 1745092554
+      },
+      "mrp": 350,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 126.0
+      },
+      "path": "bakeries_biscuits/premium_cookies"
+    },
+    "wyEu2EKN7wqKF2fEZKcx": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 12,
+      "updatedAt": {
+        "nanoseconds": 674000000,
+        "seconds": 1745092554
+      },
+      "mrp": 320,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 115.2
+      },
+      "path": "bakeries_biscuits/premium_cookies"
+    },
+    "Lg47lJyUrUKRw5zaLmjt": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 812000000,
+        "seconds": 1745092554
+      },
+      "mrp": 60,
+      "path": "bakeries_biscuits/rusk_khari"
+    },
+    "MdOmjw1Hr557bfOWWQx3": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 905000000,
+        "seconds": 1745092554
+      },
+      "mrp": 55,
+      "path": "bakeries_biscuits/rusk_khari"
+    },
+    "WHBWhst40kx2GPfLrj8O": {
+      "hasDiscount": true,
+      "inStock": false,
+      "quantity": 0,
+      "updatedAt": {
+        "nanoseconds": 858000000,
+        "seconds": 1745092554
+      },
+      "mrp": 50,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 18.0
+      },
+      "path": "bakeries_biscuits/rusk_khari"
+    },
+    "uZ0FHesAbhmgwDkSblgj": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 766000000,
+        "seconds": 1745092554
+      },
+      "mrp": 45,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 16.2
+      },
+      "path": "bakeries_biscuits/rusk_khari"
+    },
+    "BhXVzwtJD5LSEVrTw4HZ": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 946000000,
+        "seconds": 1745092554
+      },
+      "mrp": 160,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 57.6
+      },
+      "path": "bakeries_biscuits/tea_time"
+    },
+    "LnIqVyj1lVzzW4cLrIAB": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 76000000,
+        "seconds": 1745092555
+      },
+      "mrp": 55,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 19.8
+      },
+      "path": "bakeries_biscuits/tea_time"
+    },
+    "gW5DWUAk8ZlCisyUYjaC": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 35000000,
+        "seconds": 1745092555
+      },
+      "mrp": 120,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 43.2
+      },
+      "path": "bakeries_biscuits/tea_time"
+    },
+    "gtcnabSaUzTYrLcbXuP2": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 993000000,
+        "seconds": 1745092554
+      },
+      "mrp": 40,
+      "path": "bakeries_biscuits/tea_time"
+    },
+    "7OSazVYMRPTvOrRqrZ0x": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 911000000,
+        "seconds": 1745093189
+      },
+      "mrp": 149,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 53.64
+      },
+      "path": "fruits_vegetables/cut_fruits"
+    },
+    "G2pYtoyIaNw02WzjiMcw": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 750000000,
+        "seconds": 1745093189
+      },
+      "mrp": 69,
+      "path": "fruits_vegetables/cut_fruits"
+    },
+    "JGAa3yUstMdVDEUJsPTE": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 849000000,
+        "seconds": 1745093189
+      },
+      "mrp": 49,
+      "path": "fruits_vegetables/cut_fruits"
+    },
+    "e4ZrPm5nyE3AQiJoSNpe": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 955000000,
+        "seconds": 1745093189
+      },
+      "mrp": 59,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 21.24
+      },
+      "path": "fruits_vegetables/cut_fruits"
+    },
+    "ryJZ5XAjnzYQF70G3nOA": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 628000000,
+        "seconds": 1745093189
+      },
+      "mrp": 89,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 32.04
+      },
+      "path": "fruits_vegetables/cut_fruits"
+    },
+    "66hK1xIEifjMvlM3Vz91": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 10000000,
+        "seconds": 1745093190
+      },
+      "mrp": 69,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 24.84
+      },
+      "path": "fruits_vegetables/cut_vegetables"
+    },
+    "LMxmVZga5dq6sq0zR1zm": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 64000000,
+        "seconds": 1745093190
+      },
+      "mrp": 39,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 14.04
+      },
+      "path": "fruits_vegetables/cut_vegetables"
+    },
+    "gfsjsF3bhLJ0eP2bakQc": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 162000000,
+        "seconds": 1745093190
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "fruits_vegetables/cut_vegetables"
+    },
+    "iPrkpwcDWVPPYm4wDd2c": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 199000000,
+        "seconds": 1745093190
+      },
+      "mrp": 49,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 17.64
+      },
+      "path": "fruits_vegetables/cut_vegetables"
+    },
+    "rrVHg8IWFvW6IMzvA6mM": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 105000000,
+        "seconds": 1745093190
+      },
+      "mrp": 79,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.44
+      },
+      "path": "fruits_vegetables/cut_vegetables"
+    },
+    "4yHElYcI8aH7hA2CYgX9": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 330000000,
+        "seconds": 1745093190
+      },
+      "mrp": 249,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 89.64
+      },
+      "path": "fruits_vegetables/exotic_fruits"
+    },
+    "DIbHPidWO9LEF8bM2w4w": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 235000000,
+        "seconds": 1745093190
+      },
+      "mrp": 149,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 53.64
+      },
+      "path": "fruits_vegetables/exotic_fruits"
+    },
+    "F6haJVv1ReRT5xvrbYLl": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 282000000,
+        "seconds": 1745093190
+      },
+      "mrp": 199,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 71.64
+      },
+      "path": "fruits_vegetables/exotic_fruits"
+    },
+    "mdFn46bG070Ldjc8nx91": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 445000000,
+        "seconds": 1745093190
+      },
+      "mrp": 89,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 32.04
+      },
+      "path": "fruits_vegetables/exotic_fruits"
+    },
+    "rZDfhWEPDthnuQzJxbcY": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 383000000,
+        "seconds": 1745093190
+      },
+      "mrp": 179,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 64.44
+      },
+      "path": "fruits_vegetables/exotic_fruits"
+    },
+    "DdyTg4yTVqkFu24PzNgN": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 591000000,
+        "seconds": 1745093190
+      },
+      "mrp": 79,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.44
+      },
+      "path": "fruits_vegetables/exotic_vegetables"
+    },
+    "VJL5W9a24FmpO8FV6cg8": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 528000000,
+        "seconds": 1745093190
+      },
+      "mrp": 129,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 46.44
+      },
+      "path": "fruits_vegetables/exotic_vegetables"
+    },
+    "fjVKtTrytyzem9yK5qVK": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 485000000,
+        "seconds": 1745093190
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "fruits_vegetables/exotic_vegetables"
+    },
+    "rQ57JrqfJ1ZiOE6YIMtp": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 639000000,
+        "seconds": 1745093190
+      },
+      "mrp": 249,
+      "path": "fruits_vegetables/exotic_vegetables"
+    },
+    "tX8WBS11Me1zaWDAlxAn": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 760000000,
+        "seconds": 1745093190
+      },
+      "mrp": 109,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 39.24
+      },
+      "path": "fruits_vegetables/exotic_vegetables"
+    },
+    "9vSu3gZVYIQt5RIHWewk": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 9,
+      "updatedAt": 1747521248342,
+      "mrp": 78,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.08
+      },
+      "path": "fruits_vegetables/fresh_fruits"
+    },
+    "9yQX0POzgaMwoSoh8CRS": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": 1747521247843,
+      "mrp": 33.9,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 12.2
+      },
+      "path": "fruits_vegetables/fresh_fruits"
+    },
+    "EgYQcfoI91HPz3RBh09u": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": 1747521249137,
+      "mrp": 63.3,
+      "path": "fruits_vegetables/fresh_fruits"
+    },
+    "eE3EfXJRcF8BiG0gWdYl": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": 1747521248746,
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "fruits_vegetables/fresh_fruits"
+    },
+    "vjGUnyKlcUiG83dMy7e1": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": 1747521247320,
+      "mrp": 51.3,
+      "path": "fruits_vegetables/fresh_fruits"
+    },
+    "0TP7NjIaHJ1dQkjBkGqg": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 163000000,
+        "seconds": 1745093191
+      },
+      "mrp": 29,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 10.44
+      },
+      "path": "fruits_vegetables/fresh_vegetables"
+    },
+    "1BETj7dkSGunVr1JDHwY": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 317000000,
+        "seconds": 1745093191
+      },
+      "mrp": 59,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 21.24
+      },
+      "path": "fruits_vegetables/fresh_vegetables"
+    },
+    "67niNlLbawQZm1fOHIkl": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 89000000,
+        "seconds": 1745093191
+      },
+      "mrp": 39,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 14.04
+      },
+      "path": "fruits_vegetables/fresh_vegetables"
+    },
+    "mZ6NAMwX0dVCC7Nli0CT": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 90,
+      "updatedAt": {
+        "nanoseconds": 216000000,
+        "seconds": 1745093191
+      },
+      "mrp": 35,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 12.6
+      },
+      "path": "fruits_vegetables/fresh_vegetables"
+    },
+    "nGqGt4RNNbR7i0J5dmcC": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 276000000,
+        "seconds": 1745093191
+      },
+      "mrp": 49,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 17.64
+      },
+      "path": "fruits_vegetables/fresh_vegetables"
+    },
+    "IQ3Z8OjvCqxwTLUKtgjz": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 70,
+      "updatedAt": {
+        "nanoseconds": 597000000,
+        "seconds": 1745093191
+      },
+      "mrp": 39,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 14.04
+      },
+      "path": "fruits_vegetables/herbs_seasonings"
+    },
+    "d31s4FTxkX7eSY1WHfdB": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 547000000,
+        "seconds": 1745093191
+      },
+      "mrp": 49,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 17.64
+      },
+      "path": "fruits_vegetables/herbs_seasonings"
+    },
+    "jwNFYy5n4ao1d5nSvzoC": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 90,
+      "updatedAt": {
+        "nanoseconds": 477000000,
+        "seconds": 1745093191
+      },
+      "mrp": 15,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 5.4
+      },
+      "path": "fruits_vegetables/herbs_seasonings"
+    },
+    "uBDp6mVjjWOw9pU34qaJ": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 375000000,
+        "seconds": 1745093191
+      },
+      "mrp": 19,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 6.84
+      },
+      "path": "fruits_vegetables/herbs_seasonings"
+    },
+    "xVzMCXRA931ogIb5c9nG": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 421000000,
+        "seconds": 1745093191
+      },
+      "mrp": 25,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 9.0
+      },
+      "path": "fruits_vegetables/herbs_seasonings"
+    },
+    "6i9q9uvc6PaPkoJTbsQ2": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 872000000,
+        "seconds": 1745093191
+      },
+      "mrp": 89,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 32.04
+      },
+      "path": "fruits_vegetables/organic"
+    },
+    "Txr6a9jGzT0XSa7fAkV5": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 644000000,
+        "seconds": 1745093191
+      },
+      "mrp": 69,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 24.84
+      },
+      "path": "fruits_vegetables/organic"
+    },
+    "iT5a2Gwdb4F2Q4cPHi6d": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 761000000,
+        "seconds": 1745093191
+      },
+      "mrp": 199,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 71.64
+      },
+      "path": "fruits_vegetables/organic"
+    },
+    "kgy4SU3qHCqQ8514jjxt": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 709000000,
+        "seconds": 1745093191
+      },
+      "mrp": 49,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 17.64
+      },
+      "path": "fruits_vegetables/organic"
+    },
+    "vPsBH74AQ8AkOnbTjbzA": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 824000000,
+        "seconds": 1745093191
+      },
+      "mrp": 79,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.44
+      },
+      "path": "fruits_vegetables/organic"
+    },
+    "9AcqzflSTVZHtr3DSblH": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 42000000,
+        "seconds": 1745093565
+      },
+      "mrp": 250,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 90.0
+      },
+      "path": "grocery_kitchen/atta_rice_dal"
+    },
+    "IIKtwSRwcTeYIT8EKV0p": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 92000000,
+        "seconds": 1745093565
+      },
+      "mrp": 140,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 50.4
+      },
+      "path": "grocery_kitchen/atta_rice_dal"
+    },
+    "SvFUTjy6RyTxf55dNWNP": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 973000000,
+        "seconds": 1745093564
+      },
+      "mrp": 150,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 54.0
+      },
+      "path": "grocery_kitchen/atta_rice_dal"
+    },
+    "UffOD4hFDBTFeqQK73RZ": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 911000000,
+        "seconds": 1745093564
+      },
+      "mrp": 180,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 64.8
+      },
+      "path": "grocery_kitchen/atta_rice_dal"
+    },
+    "sen0jrqxrzdeBfcdx4rq": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 719000000,
+        "seconds": 1745093564
+      },
+      "mrp": 220,
+      "path": "grocery_kitchen/atta_rice_dal"
+    },
+    "SeN2TcTQnmCjSQbb03eq": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 293000000,
+        "seconds": 1745093565
+      },
+      "mrp": 109,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 39.24
+      },
+      "path": "grocery_kitchen/cleaning_household"
+    },
+    "XxwKuq2SUuBqVa1Cu1qD": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 332000000,
+        "seconds": 1745093565
+      },
+      "mrp": 129,
+      "path": "grocery_kitchen/cleaning_household"
+    },
+    "dtuNWiwtL8LsSXFrlP8K": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 193000000,
+        "seconds": 1745093565
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "grocery_kitchen/cleaning_household"
+    },
+    "gGvE0OhG3WMiFsm03vqW": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 144000000,
+        "seconds": 1745093565
+      },
+      "mrp": 189,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 68.04
+      },
+      "path": "grocery_kitchen/cleaning_household"
+    },
+    "yTxkbds29Gt5S0jHWAp4": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 248000000,
+        "seconds": 1745093565
+      },
+      "mrp": 89,
+      "path": "grocery_kitchen/cleaning_household"
+    },
+    "4ynfOOQumealQ6MveCE9": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 549000000,
+        "seconds": 1745093565
+      },
+      "mrp": 899,
+      "path": "grocery_kitchen/dry_fruits_cereals"
+    },
+    "BrYdoaXSVX9nJGMXYx4W": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 461000000,
+        "seconds": 1745093565
+      },
+      "mrp": 195,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 70.2
+      },
+      "path": "grocery_kitchen/dry_fruits_cereals"
+    },
+    "P7lIrFcLQ01ip7F0k2eU": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 506000000,
+        "seconds": 1745093565
+      },
+      "mrp": 165,
+      "path": "grocery_kitchen/dry_fruits_cereals"
+    },
+    "WBpIFfxVTkMIDDhVHXmz": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 420000000,
+        "seconds": 1745093565
+      },
+      "mrp": 699,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 251.64
+      },
+      "path": "grocery_kitchen/dry_fruits_cereals"
+    },
+    "w2KaR7Yt653hS9E6uMec": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 376000000,
+        "seconds": 1745093565
+      },
+      "mrp": 799,
+      "path": "grocery_kitchen/dry_fruits_cereals"
+    },
+    "9QjTkYcyVsGwW3Rf32Ul": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 681000000,
+        "seconds": 1745093565
+      },
+      "mrp": 85,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 30.6
+      },
+      "path": "grocery_kitchen/instant_food"
+    },
+    "SDxZD7vnQbQfe1AI70SQ": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 594000000,
+        "seconds": 1745093565
+      },
+      "mrp": 90,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 32.4
+      },
+      "path": "grocery_kitchen/instant_food"
+    },
+    "dOW5V9yikIadm3NhlWE9": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 75,
+      "updatedAt": {
+        "nanoseconds": 724000000,
+        "seconds": 1745093565
+      },
+      "mrp": 45,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 16.2
+      },
+      "path": "grocery_kitchen/instant_food"
+    },
+    "os0ttxladr5khclDiFIp": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 640000000,
+        "seconds": 1745093565
+      },
+      "mrp": 149,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 53.64
+      },
+      "path": "grocery_kitchen/instant_food"
+    },
+    "zcRTQMk87GTdY8KGsYit": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 770000000,
+        "seconds": 1745093565
+      },
+      "mrp": 169,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 60.84
+      },
+      "path": "grocery_kitchen/instant_food"
+    },
+    "5osAmCVjdAFHMB2WSvMB": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 20,
+      "updatedAt": {
+        "nanoseconds": 817000000,
+        "seconds": 1745093565
+      },
+      "mrp": 899,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 323.64
+      },
+      "path": "grocery_kitchen/kitchenware"
+    },
+    "LkLDF0ST6zyh7M1zvaMl": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 914000000,
+        "seconds": 1745093565
+      },
+      "mrp": 699,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 251.64
+      },
+      "path": "grocery_kitchen/kitchenware"
+    },
+    "UvAgndQzY7SSk8suPX1g": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 958000000,
+        "seconds": 1745093565
+      },
+      "mrp": 549,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 197.64
+      },
+      "path": "grocery_kitchen/kitchenware"
+    },
+    "ff9SioOHVjiQEsXKO0fG": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 15,
+      "updatedAt": {
+        "nanoseconds": 867000000,
+        "seconds": 1745093565
+      },
+      "mrp": 1499,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 539.64
+      },
+      "path": "grocery_kitchen/kitchenware"
+    },
+    "y326DRLpvYoo3oRkGFak": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 11000000,
+        "seconds": 1745093566
+      },
+      "mrp": 399,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 143.64
+      },
+      "path": "grocery_kitchen/kitchenware"
+    },
+    "34MJ7oRPqyphvpq5H87Z": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 97000000,
+        "seconds": 1745093566
+      },
+      "mrp": 549,
+      "path": "grocery_kitchen/oil_ghee_masala"
+    },
+    "8qAWwML6kuNsZKICWwe6": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 142000000,
+        "seconds": 1745093566
+      },
+      "mrp": 85,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 30.6
+      },
+      "path": "grocery_kitchen/oil_ghee_masala"
+    },
+    "HMknqrGqmge33L6SAvLq": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 233000000,
+        "seconds": 1745093566
+      },
+      "mrp": 149,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 53.64
+      },
+      "path": "grocery_kitchen/oil_ghee_masala"
+    },
+    "N46zOBfxgXVYZZMWsOkb": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 70,
+      "updatedAt": {
+        "nanoseconds": 59000000,
+        "seconds": 1745093566
+      },
+      "mrp": 180,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 64.8
+      },
+      "path": "grocery_kitchen/oil_ghee_masala"
+    },
+    "gaie8hnbzPFgGvExHuBy": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 187000000,
+        "seconds": 1745093566
+      },
+      "mrp": 749,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 269.64
+      },
+      "path": "grocery_kitchen/oil_ghee_masala"
+    },
+    "9r3SzGMaEcKSEzbFW6N9": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 320000000,
+        "seconds": 1745093566
+      },
+      "mrp": 249,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 89.64
+      },
+      "path": "grocery_kitchen/sauces_spreads"
+    },
+    "FudyQQFXknvuwvrGd0bV": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 276000000,
+        "seconds": 1745093566
+      },
+      "mrp": 120,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 43.2
+      },
+      "path": "grocery_kitchen/sauces_spreads"
+    },
+    "J1XX8PRFCMFghxG7EQxj": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 436000000,
+        "seconds": 1745093566
+      },
+      "mrp": 155,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 55.8
+      },
+      "path": "grocery_kitchen/sauces_spreads"
+    },
+    "cQBFGnwnNTJ6xRqfqsnK": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 70,
+      "updatedAt": {
+        "nanoseconds": 396000000,
+        "seconds": 1745093566
+      },
+      "mrp": 89,
+      "path": "grocery_kitchen/sauces_spreads"
+    },
+    "k0Q6kEzHHvMh3akpDlKB": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 358000000,
+        "seconds": 1745093566
+      },
+      "mrp": 169,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 60.84
+      },
+      "path": "grocery_kitchen/sauces_spreads"
+    },
+    "3reR7dS693iyozFI1liZ": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 659000000,
+        "seconds": 1745093566
+      },
+      "mrp": 300,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 108.0
+      },
+      "path": "grocery_kitchen/vegetables_fruits"
+    },
+    "MBqqb9cLRYVrWmWBIk1p": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 608000000,
+        "seconds": 1745093566
+      },
+      "mrp": 85,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 30.6
+      },
+      "path": "grocery_kitchen/vegetables_fruits"
+    },
+    "UTZnWuBjDxsQ4XDsRecj": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 564000000,
+        "seconds": 1745093566
+      },
+      "mrp": 79,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 28.44
+      },
+      "path": "grocery_kitchen/vegetables_fruits"
+    },
+    "sdlvFxAdSwsgMCXYAv1s": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 477000000,
+        "seconds": 1745093566
+      },
+      "mrp": 129,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 46.44
+      },
+      "path": "grocery_kitchen/vegetables_fruits"
+    },
+    "vPZhGhEf24rd8u3pgK1y": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 525000000,
+        "seconds": 1745093566
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "grocery_kitchen/vegetables_fruits"
+    },
+    "DJAwMAAxdNtA2CC6xBMA": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 404000000,
+        "seconds": 1745093567
+      },
+      "mrp": 85,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 30.6
+      },
+      "path": "snacks_drinks/chips_namkeen"
+    },
+    "EGUKsrctoMLAYk5FsSTI": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 341000000,
+        "seconds": 1745093567
+      },
+      "mrp": 40,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 14.4
+      },
+      "path": "snacks_drinks/chips_namkeen"
+    },
+    "c58BfqSwNPZUV9JdjJQI": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 488000000,
+        "seconds": 1745093567
+      },
+      "mrp": 95,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 34.2
+      },
+      "path": "snacks_drinks/chips_namkeen"
+    },
+    "mUyBumFjEyK0L0xdeqvL": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 70,
+      "updatedAt": {
+        "nanoseconds": 447000000,
+        "seconds": 1745093567
+      },
+      "mrp": 60,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 21.6
+      },
+      "path": "snacks_drinks/chips_namkeen"
+    },
+    "zjbBwHeXu5M5bELJDBZm": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 55,
+      "updatedAt": {
+        "nanoseconds": 532000000,
+        "seconds": 1745093567
+      },
+      "mrp": 70,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 25.2
+      },
+      "path": "snacks_drinks/chips_namkeen"
+    },
+    "30MwZOixjtGhVHjfzU0R": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 651000000,
+        "seconds": 1745093567
+      },
+      "mrp": 35,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 12.6
+      },
+      "path": "snacks_drinks/drinks_juices"
+    },
+    "ZSkGzY3C1B6yEn2IJCWY": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 90,
+      "updatedAt": {
+        "nanoseconds": 611000000,
+        "seconds": 1745093567
+      },
+      "mrp": 45,
+      "path": "snacks_drinks/drinks_juices"
+    },
+    "cbPUzFVEUmKCtw4T05Bo": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 691000000,
+        "seconds": 1745093567
+      },
+      "mrp": 110,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 39.6
+      },
+      "path": "snacks_drinks/drinks_juices"
+    },
+    "iJAwoeZDFdYGkB0ICGyF": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 75,
+      "updatedAt": {
+        "nanoseconds": 734000000,
+        "seconds": 1745093567
+      },
+      "mrp": 40,
+      "path": "snacks_drinks/drinks_juices"
+    },
+    "qzmB4CnKoEzv4HpwGWo9": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 568000000,
+        "seconds": 1745093567
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "snacks_drinks/drinks_juices"
+    },
+    "FomgkFQDF7tdyRxBzgyS": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 770000000,
+        "seconds": 1745093567
+      },
+      "mrp": 95,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 34.2
+      },
+      "path": "snacks_drinks/energy_drinks"
+    },
+    "hBOaSQVoij1UFp4YjNXb": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 884000000,
+        "seconds": 1745093567
+      },
+      "mrp": 120,
+      "path": "snacks_drinks/energy_drinks"
+    },
+    "iDFZICCMvseIRGBKOk5q": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 806000000,
+        "seconds": 1745093567
+      },
+      "mrp": 40,
+      "path": "snacks_drinks/energy_drinks"
+    },
+    "klXZN39yksT8YhMiK70m": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 55,
+      "updatedAt": {
+        "nanoseconds": 923000000,
+        "seconds": 1745093567
+      },
+      "mrp": 85,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 30.6
+      },
+      "path": "snacks_drinks/energy_drinks"
+    },
+    "q2NRnlvVnHhgCgbCZYoN": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 849000000,
+        "seconds": 1745093567
+      },
+      "mrp": 65,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 23.4
+      },
+      "path": "snacks_drinks/energy_drinks"
+    },
+    "4YBDDWOHdpQ2Yak2t2qf": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 54000000,
+        "seconds": 1745093568
+      },
+      "mrp": 120,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 43.2
+      },
+      "path": "snacks_drinks/ice_cream"
+    },
+    "GFIa3bQNyCoxM6qkJ5xx": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 25,
+      "updatedAt": {
+        "nanoseconds": 11000000,
+        "seconds": 1745093568
+      },
+      "mrp": 299,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 107.64
+      },
+      "path": "snacks_drinks/ice_cream"
+    },
+    "TPy9mNXpurbMRCrmYDqS": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 35,
+      "updatedAt": {
+        "nanoseconds": 138000000,
+        "seconds": 1745093568
+      },
+      "mrp": 199,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 71.64
+      },
+      "path": "snacks_drinks/ice_cream"
+    },
+    "X34BnkEztX9PkfHfWFKE": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 966000000,
+        "seconds": 1745093567
+      },
+      "mrp": 149,
+      "path": "snacks_drinks/ice_cream"
+    },
+    "XncBXYdsukE70plh5N9b": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 94000000,
+        "seconds": 1745093568
+      },
+      "mrp": 249,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 89.64
+      },
+      "path": "snacks_drinks/ice_cream"
+    },
+    "LeM6GAMnCEW87zdKIMge": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 217000000,
+        "seconds": 1745093568
+      },
+      "mrp": 149,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 53.64
+      },
+      "path": "snacks_drinks/paan_corner"
+    },
+    "NklIOIpP83tBOtBDrPbL": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 298000000,
+        "seconds": 1745093568
+      },
+      "mrp": 65,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 23.4
+      },
+      "path": "snacks_drinks/paan_corner"
+    },
+    "QtQT8M1ZHwhlMPj2HJsc": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 256000000,
+        "seconds": 1745093568
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "snacks_drinks/paan_corner"
+    },
+    "UcJI34INJMOCu5KRgie0": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 178000000,
+        "seconds": 1745093568
+      },
+      "mrp": 30,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 10.8
+      },
+      "path": "snacks_drinks/paan_corner"
+    },
+    "kJ4egtAZU1YYrfxJ66Ww": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 346000000,
+        "seconds": 1745093568
+      },
+      "mrp": 45,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 16.2
+      },
+      "path": "snacks_drinks/paan_corner"
+    },
+    "2bSRklAtm4kKS1SjiyB7": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 100,
+      "updatedAt": {
+        "nanoseconds": 464000000,
+        "seconds": 1745093568
+      },
+      "mrp": 35,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 12.6
+      },
+      "path": "snacks_drinks/soft_drinks"
+    },
+    "NkwnUDHwZxJSzsIlVmKv": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 120,
+      "updatedAt": {
+        "nanoseconds": 427000000,
+        "seconds": 1745093568
+      },
+      "mrp": 35,
+      "path": "snacks_drinks/soft_drinks"
+    },
+    "Nn8MLWMHDdNAY5mneOea": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 90,
+      "updatedAt": {
+        "nanoseconds": 558000000,
+        "seconds": 1745093568
+      },
+      "mrp": 30,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 10.8
+      },
+      "path": "snacks_drinks/soft_drinks"
+    },
+    "YaoiOCA0VinqGur7ZSiA": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 150,
+      "updatedAt": {
+        "nanoseconds": 385000000,
+        "seconds": 1745093568
+      },
+      "mrp": 40,
+      "path": "snacks_drinks/soft_drinks"
+    },
+    "tRnqgR9gCoGzCJ8ZMPxH": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 510000000,
+        "seconds": 1745093568
+      },
+      "mrp": 45,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 16.2
+      },
+      "path": "snacks_drinks/soft_drinks"
+    },
+    "W5SGAOeKXUu18fvKpHU8": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 200,
+      "updatedAt": {
+        "nanoseconds": 599000000,
+        "seconds": 1745093568
+      },
+      "mrp": 40,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 14.4
+      },
+      "path": "snacks_drinks/sweets_chocolates"
+    },
+    "YEGEinKX0ZOx5ZIuE7OR": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 786000000,
+        "seconds": 1745093568
+      },
+      "mrp": 199,
+      "path": "snacks_drinks/sweets_chocolates"
+    },
+    "bq5mFlMgxa8BJ2d9CIqL": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 80,
+      "updatedAt": {
+        "nanoseconds": 703000000,
+        "seconds": 1745093568
+      },
+      "mrp": 99,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 35.64
+      },
+      "path": "snacks_drinks/sweets_chocolates"
+    },
+    "hJNu8FP4iebWYdy9Euz1": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 745000000,
+        "seconds": 1745093568
+      },
+      "mrp": 120,
+      "path": "snacks_drinks/sweets_chocolates"
+    },
+    "r0daJnSoX9NNXqHFLMx4": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 30,
+      "updatedAt": {
+        "nanoseconds": 643000000,
+        "seconds": 1745093568
+      },
+      "mrp": 299,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 107.64
+      },
+      "path": "snacks_drinks/sweets_chocolates"
+    },
+    "ADbfBQM7Gy1o5XaYXE57": {
+      "hasDiscount": false,
+      "inStock": true,
+      "quantity": 50,
+      "updatedAt": {
+        "nanoseconds": 897000000,
+        "seconds": 1745093568
+      },
+      "mrp": 299,
+      "path": "snacks_drinks/tea_coffee_milk"
+    },
+    "BP103HX9PjCENmw0Jfz3": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 70,
+      "updatedAt": {
+        "nanoseconds": 827000000,
+        "seconds": 1745093568
+      },
+      "mrp": 249,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 89.64
+      },
+      "path": "snacks_drinks/tea_coffee_milk"
+    },
+    "EKoRNEolAjOqrQBVaNQM": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 45,
+      "updatedAt": {
+        "nanoseconds": 41000000,
+        "seconds": 1745093569
+      },
+      "mrp": 180,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 64.8
+      },
+      "path": "snacks_drinks/tea_coffee_milk"
+    },
+    "Gxmh7S6ZatWwdOM52m7c": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 60,
+      "updatedAt": {
+        "nanoseconds": 937000000,
+        "seconds": 1745093568
+      },
+      "mrp": 199,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 71.64
+      },
+      "path": "snacks_drinks/tea_coffee_milk"
+    },
+    "mwL2kA4rXewFP0Rg6ZTg": {
+      "hasDiscount": true,
+      "inStock": true,
+      "quantity": 40,
+      "updatedAt": {
+        "nanoseconds": 995000000,
+        "seconds": 1745093568
+      },
+      "mrp": 349,
+      "discount": {
+        "start": 1748269547,
+        "end": 1750861547,
+        "isActive": true,
+        "type": "flat",
+        "value": 125.64
+      },
+      "path": "snacks_drinks/tea_coffee_milk"
+    }
+  }
+}

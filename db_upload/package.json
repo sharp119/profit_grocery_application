@@ -40,7 +40,16 @@
     "upload-product-images-for-category": "node upload_product_images.js",
     "verify-product-images": "node verify_product_images.js",
     "check-products-folder": "node check_products_folder.js",
-    "add-seed-products": "node add_seed_products.js"
+    "add-seed-products": "node add_seed_products.js",
+    "download-all-products": "node download_all_products.js",
+    "download-products-by-category": "node download_products_by_category.js",
+    "list-product-categories": "node download_products_by_category.js --list",
+    "test-firebase": "node test_firebase_connection.js",
+    "debug-download": "node debug_download.js",
+    "download-all-products-fixed": "node download_all_products_fixed.js",
+    "enhance-products": "node enhance_products.js",
+    "add-item-colors": "node add_item_background_colors.js",
+    "add-image-paths": "node add_image_paths.js"
   },
   "dependencies": {
     "firebase": "^10.7.1",

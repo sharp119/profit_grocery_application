@@ -149,8 +149,8 @@ class AppRouter {
       case AppConstants.firestoreSyncRoute:
         return MaterialPageRoute(builder: (_) => const FirestoreSyncPage());
 
-      case AppConstants.bestsellerExampleRoute:
-        return MaterialPageRoute(builder: (_) => const BestsellerExamplePage());
+      // case AppConstants.bestsellerExampleRoute:
+      //   return MaterialPageRoute(builder: (_) => const BestsellerExamplePage());
           
       // Default - route not found
       default:

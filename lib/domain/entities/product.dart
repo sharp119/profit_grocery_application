@@ -25,6 +25,7 @@ class Product extends Equatable {
   final String? productType;
   final int? quantity;
   final String? categoryGroup;
+  final Map<String, dynamic>? customProperties;
 
   const Product({
     required this.id,
@@ -51,6 +52,7 @@ class Product extends Equatable {
     this.productType,
     this.quantity,
     this.categoryGroup,
+    this.customProperties,
   });
 
   // Get discount percentage if mrp is available
@@ -90,5 +92,6 @@ class Product extends Equatable {
         productType,
         quantity,
         categoryGroup,
+        customProperties,
       ];
 }

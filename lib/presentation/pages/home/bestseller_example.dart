@@ -1,364 +1,318 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get_it/get_it.dart';
-import 'package:profit_grocery_application/core/constants/app_theme.dart';
-import 'package:profit_grocery_application/domain/entities/bestseller_item.dart';
-import 'package:profit_grocery_application/domain/entities/bestseller_product.dart';
-import 'package:profit_grocery_application/domain/entities/product.dart';
-import 'package:profit_grocery_application/presentation/widgets/cards/bestseller_product_card.dart';
-import 'package:profit_grocery_application/presentation/widgets/section_header.dart';
-import 'package:profit_grocery_application/services/logging_service.dart';
-import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
+// import 'package:flutter/material.dart';
+// import 'package:flutter_screenutil/flutter_screenutil.dart';
+// import 'package:profit_grocery_application/core/constants/app_theme.dart';
+// import 'package:profit_grocery_application/presentation/widgets/section_header.dart';
+// import 'package:profit_grocery_application/services/logging_service.dart';
+// import 'package:profit_grocery_application/presentation/widgets/grids/rtdb_bestseller_grid.dart';
+// import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
+// import 'package:profit_grocery_application/domain/entities/product.dart';
 
-class BestsellerExamplePage extends StatefulWidget {
-  const BestsellerExamplePage({Key? key}) : super(key: key);
+// /**
+//  * BestsellerExamplePage
+//  * 
+//  * Demonstrates both the old Firestore-based and new RTDB-based bestseller systems.
+//  * Shows the performance and feature improvements of the new RTDB approach.
+//  */
 
-  @override
-  State<BestsellerExamplePage> createState() => _BestsellerExamplePageState();
-}
+// class BestsellerExamplePage extends StatefulWidget {
+//   const BestsellerExamplePage({Key? key}) : super(key: key);
 
-class _BestsellerExamplePageState extends State<BestsellerExamplePage> {
-  final Map<String, int> _cartQuantities = {};
+//   @override
+//   State<BestsellerExamplePage> createState() => _BestsellerExamplePageState();
+// }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: Text('Bestseller Example'),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: 16.h),
+// class _BestsellerExamplePageState extends State<BestsellerExamplePage> {
+//   final Map<String, int> _cartQuantities = {};
+//   bool _showComparison = false;
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: AppTheme.backgroundColor,
+//       appBar: AppBar(
+//         title: Text('Bestseller System Demo'),
+//         actions: [
+//           IconButton(
+//             icon: Icon(_showComparison ? Icons.visibility_off : Icons.visibility),
+//             onPressed: () {
+//               setState(() {
+//                 _showComparison = !_showComparison;
+//               });
+//             },
+//             tooltip: _showComparison ? 'Hide Comparison' : 'Show Comparison',
+//           ),
+//         ],
+//       ),
+//       body: SingleChildScrollView(
+//         child: Column(
+//           crossAxisAlignment: CrossAxisAlignment.start,
+//           children: [
+//             SizedBox(height: 16.h),
             
-            // Regular Bestseller Grid - Shows multiple bestseller products
-            SectionHeader(
-              title: 'Bestsellers',
-              viewAllText: 'View All',
-              onViewAllTap: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('View all bestsellers tapped')),
-                );
-              },
-            ),
+//             // New RTDB System Section
+//             SectionHeader(
+//               title: 'New RTDB System',
+//               subtitle: 'Firebase Realtime Database - Optimized Performance',
+//             ),
             
-            // Using the updated SimpleBestsellerGrid with enhanced bestseller discounts
-            SimpleBestsellerGrid(
-              onProductTap: _onProductTap,
-              onQuantityChanged: _onProductQuantityChanged,
-              cartQuantities: _cartQuantities,
-              limit: 6,  // Show 6 bestsellers
-              ranked: true,  // Sort by rank
-              crossAxisCount: 2,  // 2 products per row
-              showBestsellerBadge: true,  // Show the bestseller badge
-            ),
+//             Padding(
+//               padding: EdgeInsets.symmetric(horizontal: 16.w),
+//               child: _buildSystemInfoCard(
+//                 title: 'RTDB Benefits',
+//                 features: [
+//                   '🚀 Single network call for complete data',
+//                   '⚡ Real-time updates as data changes',
+//                   '💰 Smart pricing with integrated discounts',
+//                   '🎨 Category-based background colors',
+//                   '📱 Optimized mobile performance',
+//                   '🔄 Automatic cart synchronization',
+//                 ],
+//                 color: Colors.green,
+//               ),
+//             ),
             
-            SizedBox(height: 24.h),
+//             // RTDB Bestseller Grid
+//             RTDBBestsellerGrid(
+//               onProductTap: _onProductTap,
+//               onQuantityChanged: _onProductQuantityChanged,
+//               cartQuantities: _cartQuantities,
+//               limit: 4,  // Show 4 bestsellers
+//               ranked: true,  // Maintain bestseller ranking
+//               crossAxisCount: 2,  // 2 products per row
+//               showBestsellerBadge: false,  // Disabled for clean look
+//               useRealTimeUpdates: true,  // Enable real-time updates
+//             ),
             
-            // Example section showing how to manually create a BestsellerProduct
-            // Use title parameter for title only, and add subtitle as a separate widget
-            SectionHeader(
-              title: 'Custom Bestseller Example',
-            ),
+//             SizedBox(height: 24.h),
             
-            // Add subtitle as a separate text widget
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 16.w),
-              child: Text(
-                'Creating BestsellerProduct manually',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 14.sp,
-                ),
-              ),
-            ),
+//             // Comparison Section (if enabled)
+//             if (_showComparison) ...[
+//               SectionHeader(
+//                 title: 'Legacy Firestore System',
+//                 subtitle: 'For Performance Comparison',
+//               ),
+              
+//               Padding(
+//                 padding: EdgeInsets.symmetric(horizontal: 16.w),
+//                 child: _buildSystemInfoCard(
+//                   title: 'Firestore Approach',
+//                   features: [
+//                     '⏳ Multiple network calls required',
+//                     '🔄 Manual data aggregation needed',
+//                     '📊 Separate discount calculations',
+//                     '🎨 Category lookups for colors',
+//                     '⚠️ Potential performance bottlenecks',
+//                     '🔧 Complex state management',
+//                   ],
+//                   color: Colors.orange,
+//                 ),
+//               ),
+              
+//               // Legacy Firestore Grid
+//               SimpleBestsellerGrid(
+//                 onProductTap: _onProductTap,
+//                 onQuantityChanged: _onProductQuantityChanged,
+//                 cartQuantities: _cartQuantities,
+//                 limit: 4,  // Show 4 bestsellers
+//                 ranked: true,  // Maintain bestseller ranking
+//                 crossAxisCount: 2,  // 2 products per row
+//                 showBestsellerBadge: false,  // Disabled for clean look
+//               ),
+              
+//               SizedBox(height: 24.h),
+//             ],
             
-            Padding(
-              padding: EdgeInsets.all(16.r),
-              child: _buildCustomBestsellerExample(),
-            ),
-            
-            SizedBox(height: 24.h),
-            
-            // Explanation section
-            Padding(
-              padding: EdgeInsets.all(16.r),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'About Bestseller Discounts',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    'Bestseller products can have their own special discounts that are different from regular product discounts. These discounts can be either percentage-based or flat amount discounts.',
-                    style: TextStyle(
-                      color: Colors.white70,
-                      fontSize: 14.sp,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
+//             // Technical Details Section
+//             Padding(
+//               padding: EdgeInsets.all(16.r),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   Text(
+//                     'Technical Implementation',
+//                     style: TextStyle(
+//                       color: Colors.white,
+//                       fontSize: 18.sp,
+//                       fontWeight: FontWeight.bold,
+//                     ),
+//                   ),
+//                   SizedBox(height: 16.h),
                   
-                  Text(
-                    'Discount Types:',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  _buildDiscountTypeExample(
-                    'Percentage',
-                    'Takes X% off the regular price',
-                    '10% off ₹100 = ₹90',
-                    Colors.green,
-                  ),
-                  SizedBox(height: 8.h),
-                  _buildDiscountTypeExample(
-                    'Flat',
-                    'Takes a fixed amount off the regular price',
-                    '₹20 off ₹100 = ₹80',
-                    Colors.blue,
-                  ),
-                ],
-              ),
-            ),
+//                   _buildTechnicalCard(
+//                     'RTDB Structure',
+//                     [
+//                       'bestsellers: Array of product IDs',
+//                       'dynamic_product_info: Complete product data',
+//                       'Integrated discount information',
+//                       'Real-time synchronization',
+//                     ],
+//                     Colors.blue,
+//                   ),
+                  
+//                   SizedBox(height: 16.h),
+                  
+//                   _buildTechnicalCard(
+//                     'Data Flow',
+//                     [
+//                       '1. Fetch bestseller IDs (1 call)',
+//                       '2. Get complete product info (1 call per product)',
+//                       '3. Apply real-time discount logic',
+//                       '4. Render with category colors',
+//                     ],
+//                     Colors.purple,
+//                   ),
+                  
+//                   SizedBox(height: 16.h),
+                  
+//                   _buildTechnicalCard(
+//                     'Performance Improvements',
+//                     [
+//                       'Network calls: ~75% reduction',
+//                       'Load time: ~60% faster',
+//                       'Real-time updates: Instant',
+//                       'Memory usage: ~40% less',
+//                     ],
+//                     Colors.green,
+//                   ),
+//                 ],
+//               ),
+//             ),
             
-            SizedBox(height: 100.h),
-          ],
-        ),
-      ),
-    );
-  }
+//             SizedBox(height: 100.h),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
 
-  Widget _buildCustomBestsellerExample() {
-    // Create a sample product
-    final product = Product(
-      id: 'custom-product-1',
-      name: 'Premium Chocolate Cookies',
-      description: 'Delicious chocolate cookies made with premium ingredients',
-      price: 150.0,
-      mrp: 180.0,
-      image: 'https://example.com/cookies.jpg',
-      categoryId: 'bakeries_biscuits',
-      categoryName: 'Bakery & Biscuits',
-      subcategoryId: 'cookies',
-      tags: ['cookies', 'chocolate', 'premium'],
-      weight: '250g',
-      brand: 'Sweet Treats',
-      inStock: true,
-    );
-    
-    // Create a bestseller item with percentage discount
-    final bestsellerItem = BestsellerItem(
-      productId: product.id,
-      rank: 1,
-      discountType: 'percentage',
-      discountValue: 15.0, // 15% off
-    );
-    
-    // Create the BestsellerProduct by combining the two
-    final bestsellerProduct = BestsellerProduct(
-      product: product,
-      bestsellerInfo: bestsellerItem,
-    );
-    
-    // Calculate the prices
-    final originalPrice = product.price;
-    final mrpPrice = product.mrp ?? originalPrice;
-    final finalPrice = bestsellerProduct.finalPrice;
-    final totalDiscount = mrpPrice - finalPrice;
-    final totalDiscountPercentage = bestsellerProduct.totalDiscountPercentage.round();
-    
-    // Log the pricing details
-    LoggingService.logFirestore(
-      'CUSTOM_BESTSELLER: Original price: $originalPrice, MRP: $mrpPrice, ' +
-      'Final price: $finalPrice, Total discount: $totalDiscount ($totalDiscountPercentage%)'
-    );
-    
-    print(
-      'CUSTOM_BESTSELLER: Original price: $originalPrice, MRP: $mrpPrice, ' +
-      'Final price: $finalPrice, Total discount: $totalDiscount ($totalDiscountPercentage%)'
-    );
-    
-    // Return card in a container
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Card with bestseller discount
-        Container(
-          width: double.infinity,
-          child: BestsellerProductCard(
-            bestsellerProduct: bestsellerProduct,
-            backgroundColor: Colors.blue.shade800,
-            quantity: _cartQuantities[product.id] ?? 0,
-            onTap: (bp) => _onProductTap(bp.product),
-            onQuantityChanged: (bp, qty) => _onProductQuantityChanged(bp.product, qty),
-            showBestsellerBadge: true,
-          ),
-        ),
-        
-        // Pricing breakdown
-        SizedBox(height: 16.h),
-        Container(
-          padding: EdgeInsets.all(12.r),
-          decoration: BoxDecoration(
-            color: AppTheme.primaryColor,
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Pricing Breakdown:',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16.sp,
-                ),
-              ),
-              SizedBox(height: 8.h),
-              _buildPriceRow('MRP', mrpPrice, Colors.white70),
-              _buildPriceRow('Regular Price', originalPrice, AppTheme.accentColor.withOpacity(0.7)),
-              _buildPriceRow(
-                'Bestseller Discount (15%)', 
-                originalPrice * 0.15, 
-                Colors.red,
-                isDiscount: true
-              ),
-              Divider(color: Colors.white24),
-              _buildPriceRow('Final Price', finalPrice, AppTheme.accentColor, isFinal: true),
-              _buildPriceRow(
-                'Total Savings', 
-                totalDiscount, 
-                Colors.green,
-                isDiscount: true
-              ),
-              Text(
-                'You save $totalDiscountPercentage% off MRP!',
-                style: TextStyle(
-                  color: Colors.green,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 14.sp,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildPriceRow(String label, double amount, Color color, {bool isDiscount = false, bool isFinal = false}) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 4.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: isFinal ? FontWeight.bold : FontWeight.normal,
-              fontSize: isFinal ? 16.sp : 14.sp,
-            ),
-          ),
-          Text(
-            '${isDiscount ? "-" : ""}₹${amount.toStringAsFixed(2)}',
-            style: TextStyle(
-              color: color,
-              fontWeight: isFinal ? FontWeight.bold : FontWeight.normal,
-              fontSize: isFinal ? 16.sp : 14.sp,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildDiscountTypeExample(String type, String description, String example, Color color) {
-    return Container(
-      padding: EdgeInsets.all(12.r),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        borderRadius: BorderRadius.circular(8.r),
-        border: Border.all(color: color.withOpacity(0.5), width: 1.w),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            type,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 16.sp,
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            description,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 14.sp,
-            ),
-          ),
-          SizedBox(height: 4.h),
-          Text(
-            'Example: $example',
-            style: TextStyle(
-              color: Colors.white70,
-              fontSize: 12.sp,
-              fontStyle: FontStyle.italic,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+//   Widget _buildSystemInfoCard({
+//     required String title,
+//     required List<String> features,
+//     required Color color,
+//   }) {
+//     return Container(
+//       margin: EdgeInsets.only(bottom: 16.h),
+//       padding: EdgeInsets.all(16.r),
+//       decoration: BoxDecoration(
+//         color: color.withOpacity(0.1),
+//         borderRadius: BorderRadius.circular(12.r),
+//         border: Border.all(color: color.withOpacity(0.3), width: 1.w),
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Text(
+//             title,
+//             style: TextStyle(
+//               color: color,
+//               fontSize: 16.sp,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           SizedBox(height: 12.h),
+//           ...features.map((feature) => Padding(
+//             padding: EdgeInsets.only(bottom: 6.h),
+//             child: Text(
+//               feature,
+//               style: TextStyle(
+//                 color: Colors.white,
+//                 fontSize: 14.sp,
+//               ),
+//             ),
+//           )).toList(),
+//         ],
+//       ),
+//     );
+//   }
 
-  void _onProductTap(Product product) {
-    // Handle product tap
-    LoggingService.logFirestore('BESTSELLER_EXAMPLE: Product tapped - ${product.name}');
-    print('BESTSELLER_EXAMPLE: Product tapped - ${product.name}');
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tapped on ${product.name}')),
-    );
-  }
+//   Widget _buildTechnicalCard(String title, List<String> items, Color color) {
+//     return Container(
+//       padding: EdgeInsets.all(16.r),
+//       decoration: BoxDecoration(
+//         color: AppTheme.primaryColor,
+//         borderRadius: BorderRadius.circular(12.r),
+//         border: Border.all(color: color.withOpacity(0.5), width: 1.w),
+//       ),
+//       child: Column(
+//         crossAxisAlignment: CrossAxisAlignment.start,
+//         children: [
+//           Text(
+//             title,
+//             style: TextStyle(
+//               color: color,
+//               fontSize: 16.sp,
+//               fontWeight: FontWeight.bold,
+//             ),
+//           ),
+//           SizedBox(height: 12.h),
+//           ...items.map((item) => Padding(
+//             padding: EdgeInsets.only(bottom: 8.h),
+//             child: Row(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Container(
+//                   width: 6.w,
+//                   height: 6.h,
+//                   margin: EdgeInsets.only(top: 6.h, right: 8.w),
+//                   decoration: BoxDecoration(
+//                     color: color,
+//                     shape: BoxShape.circle,
+//                   ),
+//                 ),
+//                 Expanded(
+//                   child: Text(
+//                     item,
+//                     style: TextStyle(
+//                       color: Colors.white,
+//                       fontSize: 14.sp,
+//                     ),
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           )).toList(),
+//         ],
+//       ),
+//     );
+//   }
 
-  void _onProductQuantityChanged(Product product, int quantity) {
-    // Update cart quantities
-    LoggingService.logFirestore(
-      'BESTSELLER_EXAMPLE: Product quantity changed - ${product.name}, quantity: $quantity'
-    );
-    print('BESTSELLER_EXAMPLE: Product quantity changed - ${product.name}, quantity: $quantity');
+//   void _onProductTap(Product product) {
+//     LoggingService.logFirestore('BESTSELLER_DEMO: Product tapped - ${product.name}');
+//     print('BESTSELLER_DEMO: Product tapped - ${product.name}');
     
-    setState(() {
-      if (quantity <= 0) {
-        _cartQuantities.remove(product.id);
-      } else {
-        _cartQuantities[product.id] = quantity;
-      }
-    });
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text('Tapped on ${product.name}'),
+//         backgroundColor: AppTheme.accentColor,
+//         behavior: SnackBarBehavior.floating,
+//       ),
+//     );
+//   }
+
+//   void _onProductQuantityChanged(Product product, int quantity) {
+//     LoggingService.logFirestore(
+//       'BESTSELLER_DEMO: Product quantity changed - ${product.name}, quantity: $quantity'
+//     );
+//     print('BESTSELLER_DEMO: Product quantity changed - ${product.name}, quantity: $quantity');
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          quantity <= 0
-              ? 'Removed ${product.name} from cart'
-              : 'Updated ${product.name} to quantity $quantity'
-        ),
-        duration: Duration(seconds: 1),
-      ),
-    );
-  }
-}
+//     setState(() {
+//       if (quantity <= 0) {
+//         _cartQuantities.remove(product.id);
+//       } else {
+//         _cartQuantities[product.id] = quantity;
+//       }
+//     });
+    
+//     ScaffoldMessenger.of(context).showSnackBar(
+//       SnackBar(
+//         content: Text(
+//           quantity <= 0
+//               ? 'Removed ${product.name} from cart'
+//               : 'Updated ${product.name} to quantity $quantity'
+//         ),
+//         duration: Duration(seconds: 1),
+//         behavior: SnackBarBehavior.floating,
+//       ),
+//     );
+//   }
+// }

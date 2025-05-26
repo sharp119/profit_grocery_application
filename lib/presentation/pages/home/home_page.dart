@@ -15,7 +15,7 @@ import 'package:profit_grocery_application/presentation/widgets/cards/promotiona
 import 'package:profit_grocery_application/presentation/widgets/profile/profile_completion_banner.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
-import 'package:profit_grocery_application/presentation/widgets/grids/simple_bestseller_grid.dart';
+import 'package:profit_grocery_application/presentation/widgets/grids/rtdb_bestseller_grid.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
@@ -1381,13 +1381,15 @@ class _HomePageContentState extends State<_HomePageContent> {
                   // Navigate to all bestsellers
                 },
               ),
-              SimpleBestsellerGrid(
+              RTDBBestsellerGrid(
                 onProductTap: _onProductTap,
                 onQuantityChanged: _handleAddToCart,
                 cartQuantities: state.cartQuantities,
                 limit: AppConstants.bestsellerLimit ,  // Show 12 bestsellers (increased from 6)
                 ranked: AppConstants.bestsellerRanked,  // Randomize instead of sorting by rank
                 crossAxisCount: 2,  // 2 products per row
+                showBestsellerBadge: false,  // Disabled as requested
+                useRealTimeUpdates: true,  // Enable real-time RTDB updates
               ),
             ],
           ),
