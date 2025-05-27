@@ -121,7 +121,13 @@ class AppConstants {
 
   static bool bestsellerRanked = false;
 
-  static int bestsellerLimit = 4;
+  static int bestsellerLimit = 12; // Increased for horizontal scrolling
+  
+  // Horizontal Grid Constants
+  static const double horizontalCardWidth = 135.0;// Optimized for 2.33 cards visibility
+  static const double horizontalCardHeight = 290.0;
+  static const double horizontalCardSpacing = 12.0; // Spacing between cards
+  static const int horizontalGridPageSize = 12; // Items per page for pagination
   
   AppConstants._(); // Private constructor to prevent instantiation
 }

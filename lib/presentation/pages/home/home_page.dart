@@ -16,6 +16,7 @@ import 'package:profit_grocery_application/presentation/widgets/profile/profile_
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
 import 'package:profit_grocery_application/presentation/widgets/grids/rtdb_bestseller_grid.dart';
+import 'package:profit_grocery_application/presentation/widgets/grids/horizontal_bestseller_grid.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
@@ -1371,27 +1372,20 @@ class _HomePageContentState extends State<_HomePageContent> {
               },
             )).toList(),
             
-          // Bestsellers Section - Using Simple Bestseller Grid
-          Column(
-            children: [
-              SectionHeader(
-                title: 'Bestsellers',
-                viewAllText: 'View All',
-                onViewAllTap: () {
-                  // Navigate to all bestsellers
-                },
-              ),
-              RTDBBestsellerGrid(
-                onProductTap: _onProductTap,
-                onQuantityChanged: _handleAddToCart,
-                cartQuantities: state.cartQuantities,
-                limit: AppConstants.bestsellerLimit ,  // Show 12 bestsellers (increased from 6)
-                ranked: AppConstants.bestsellerRanked,  // Randomize instead of sorting by rank
-                crossAxisCount: 2,  // 2 products per row
-                showBestsellerBadge: false,  // Disabled as requested
-                useRealTimeUpdates: true,  // Enable real-time RTDB updates
-              ),
-            ],
+          // Bestsellers Section - Using Horizontal Scrollable Grid
+          HorizontalBestsellerSection(
+            title: 'Bestsellers',
+            viewAllText: 'View All',
+            onViewAllTap: () {
+              // Navigate to all bestsellers
+            },
+            onProductTap: _onProductTap,
+            onQuantityChanged: _handleAddToCart,
+            cartQuantities: state.cartQuantities,
+            limit: AppConstants.bestsellerLimit ?? 12,  // Show up to 12 bestsellers
+            ranked: AppConstants.bestsellerRanked ?? false,  // Randomize instead of sorting by rank
+            useRealTimeUpdates: true,  // Enable real-time RTDB updates
+            showBestsellerBadge: true,  // Show savings indicators
           ),
           
           SizedBox(height: 24.h),

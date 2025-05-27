@@ -9,6 +9,7 @@ enum ProductCardType {
   simple,
   reusable,
   enhanced,
+  improved,
   quantitySelector,
   productDetails
 }
@@ -21,6 +22,7 @@ class AddButton extends StatefulWidget {
   final double? height;
   final double? fontSize;
   final bool inStock;
+  final Function(int)? onQuantityChanged;
 
   const AddButton({
     Key? key,
@@ -31,6 +33,7 @@ class AddButton extends StatefulWidget {
     this.height,
     this.fontSize,
     this.inStock = true,
+    this.onQuantityChanged,
   }) : super(key: key);
 
   @override
@@ -77,6 +80,7 @@ class _AddButtonState extends State<AddButton> {
       _quantity++;
     });
     _logAction("plus");
+    widget.onQuantityChanged?.call(_quantity);
   }
 
   void _decreaseQuantity() {
@@ -85,11 +89,13 @@ class _AddButtonState extends State<AddButton> {
         _quantity--;
       });
       _logAction("minus");
+      widget.onQuantityChanged?.call(_quantity);
     } else if (_quantity == 1) {
       setState(() {
         _quantity = 0;
       });
       _logAction("minus");
+      widget.onQuantityChanged?.call(_quantity);
     }
   }
 
@@ -98,6 +104,7 @@ class _AddButtonState extends State<AddButton> {
       _quantity = 1;
     });
     _logAction("add");
+    widget.onQuantityChanged?.call(_quantity);
   }
 
   void _logAction(String action) {
