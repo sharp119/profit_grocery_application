@@ -20,6 +20,7 @@ import 'package:profit_grocery_application/presentation/widgets/grids/horizontal
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
+import 'package:profit_grocery_application/presentation/pages/revamped_two_panel_view.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -89,27 +90,12 @@ class _HomePageContentState extends State<_HomePageContent> {
   
   // User data
   User? _currentUser;
-  late IUserService _userService;
-  late final Stream<User?> _userStream;
   late final SharedCategoryService _sharedCategoryService;
   
   @override
   void initState() {
     super.initState();
-    _userService = GetIt.instance<IUserService>();
-    _currentUser = _userService.getCurrentUser();
-    _userStream = _userService.userStream;
     _sharedCategoryService = GetIt.instance<SharedCategoryService>();
-    
-    // Listen to user changes from UserService
-    _userStream.listen((user) {
-      if (mounted) {
-        setState(() {
-          _currentUser = user;
-          LoggingService.logFirestore('HomePage: User data updated: ${user?.name ?? "null"}');
-        });
-      }
-    });
     
     // Listen to UserBloc state changes
     try {
@@ -135,24 +121,12 @@ class _HomePageContentState extends State<_HomePageContent> {
       // Listen to CartBloc state changes to update HomeBloc
       cartBloc.stream.listen((state) {
         if (state.status == CartStatus.loaded && mounted) {
-          // Create a map of product IDs to quantities from cart items
-          final Map<String, int> cartQuantities = {};
-          for (final item in state.items) {
-            cartQuantities[item.productId] = item.quantity;
-          }
-          
-          // Get the first product image for cart preview
-          String? cartPreviewImage;
-          if (state.items.isNotEmpty) {
-            cartPreviewImage = state.items.first.image;
-          }
-          
           // Update HomeBloc with cart data from CartBloc
           homeBloc.add(UpdateHomeCartData(
-            cartQuantities: cartQuantities,
+            cartQuantities: state.cartQuantities,
             cartItemCount: state.itemCount,
             cartTotalAmount: state.total,
-            cartPreviewImage: cartPreviewImage,
+            cartPreviewImage: state.previewImage,
           ));
         }
       });
@@ -162,24 +136,8 @@ class _HomePageContentState extends State<_HomePageContent> {
     
     // Add a short delay to allow the UI to build, then check if user data is loaded
     Future.delayed(Duration.zero, () {
-      if (_currentUser == null || _currentUser?.name == null) {
-        // Silently try to reload user data without showing "not found" message
-        final userId = _userService.getCurrentUserId();
-        if (userId != null) {
-          // First try to load directly from service
-          _userService.loadUserData(userId);
-          
-          // Also trigger through UserBloc if available
-          try {
-            context.read<UserBloc>().add(LoadUserProfileEvent(userId));
-          } catch (e) {
-            LoggingService.logError('HomePage', 'Error triggering UserBloc: $e');
-          }
-        }
-      } else {
-        // Silently log that user data is loaded
-        LoggingService.logFirestore('HomePage: User data loaded: ${_currentUser?.name}');
-      }
+      // User data loading and updates are now handled by UserBloc
+      LoggingService.logFirestore('HomePage: Relying on UserBloc for user data.');
     });
   }
 
@@ -1460,6 +1418,24 @@ class _HomePageContentState extends State<_HomePageContent> {
           // ],
           
           SizedBox(height: 100.h),
+
+          // Button to navigate to Revamped Two-Panel View
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.w),
+            child: ElevatedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const RevampedTwoPanelView(),
+                  ),
+                );
+              },
+              child: const Text('Go to Revamped Two-Panel View'),
+            ),
+          ),
+          SizedBox(height: 24.h),
+
         ],
       ),
     );

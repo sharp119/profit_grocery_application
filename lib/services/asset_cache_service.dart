@@ -25,27 +25,6 @@ class AssetCacheService {
   Future<void> initialize() async {
     if (_isInitialized) return;
     
-    try {
-      // Preload essential assets (e.g., category images, app logo, etc.)
-      await preloadAssets([
-        'assets/categories/1.png',
-        'assets/categories/2.png',
-        'assets/categories/3.png',
-        'assets/categories/4.png',
-        'assets/categories/5.png',
-        // Add product images that are likely to be used in cart
-        'assets/products/1.png',
-        'assets/products/2.png',
-        'assets/products/3.png',
-        'assets/products/4.png',
-        'assets/products/5.png',
-      ]);
-      
-      _isInitialized = true;
-      print('AssetCacheService: Initialized successfully with ${_preloadedAssets.length} preloaded assets');
-    } catch (e) {
-      print('AssetCacheService: Error during initialization - $e');
-    }
   }
   
   /// Preload a list of assets into the cache

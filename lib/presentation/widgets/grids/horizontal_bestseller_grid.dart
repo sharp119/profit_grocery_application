@@ -2,17 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'dart:async';
 import '../../../domain/entities/product.dart';
-import '../../../domain/entities/bestseller_product.dart';
-import '../../../domain/entities/bestseller_item.dart';
+
 import '../../../data/repositories/bestseller_repository_simple.dart';
 import '../../../data/repositories/rtdb_bestseller_repository.dart';
+
 import '../../../services/logging_service.dart';
 import '../../../services/product/shared_product_service.dart';
-import '../../../services/category/shared_category_service.dart';
+
 import '../../../utils/product_card_utils.dart';
+
 import '../cards/improved_product_card.dart';
+
 import '../../../core/constants/app_theme.dart';
 import '../../../core/constants/app_constants.dart';
+
 import 'package:get_it/get_it.dart';
 
 /**
@@ -98,7 +101,6 @@ class _HorizontalBestsellerGridState extends State<HorizontalBestsellerGrid> {
   
   // Services
   late final SharedProductService _productService;
-  late final SharedCategoryService _categoryService;
   
   // State management
   List<Product> _products = [];
@@ -130,7 +132,6 @@ class _HorizontalBestsellerGridState extends State<HorizontalBestsellerGrid> {
   
   void _initializeServices() {
     _productService = GetIt.instance<SharedProductService>();
-    _categoryService = GetIt.instance<SharedCategoryService>();
     
     if (widget.useRTDB) {
       _rtdbRepository = RTDBBestsellerRepository();

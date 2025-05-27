@@ -321,11 +321,10 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
   }
   
   Widget _buildLoadingState() {
-    final cardWidth = widget.width ?? 180.w;
     final cardHeight = widget.height ?? 280.h;
     
     return Container(
-      width: cardWidth,
+      width: widget.width, // Let parent control width if null
       height: cardHeight,
       decoration: BoxDecoration(
         color: Colors.grey.shade800,
@@ -429,11 +428,10 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
   }
   
   Widget _buildErrorState() {
-    final cardWidth = widget.width ?? 180.w;
     final cardHeight = widget.height ?? 280.h;
     
     return Container(
-      width: cardWidth,
+      width: widget.width, // Let parent control width if null
       height: cardHeight,
       decoration: BoxDecoration(
         color: Colors.red.shade900.withOpacity(0.1),
@@ -483,14 +481,12 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
   
   Widget _buildProductCard() {
     final product = _displayProduct!;
-    final cardWidth = widget.width ?? 180.w;
-    // final cardHeight = widget.height ?? 280.h; // Default removed, widget.height can be null
     final backgroundColor = _cardBackgroundColor ?? AppTheme.secondaryColor;
     
     return GestureDetector(
       onTap: widget.onTap,
       child: Container(
-        width: cardWidth,
+        width: widget.width, // Let GridView or parent control width if widget.width is null
         height: widget.height, // Use widget.height directly, allows null for auto-sizing
         decoration: BoxDecoration(
           color: AppTheme.secondaryColor,
@@ -588,8 +584,8 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
           Positioned(
             bottom: 4.h,
             right: 4.w,
+            left: 4.w, // Use left and right for responsive width
             child: SizedBox(
-              width: (widget.width ?? 180.w) / 1.5,
               height: 28.h,
               child: AddButton(
                 productId: product.id,

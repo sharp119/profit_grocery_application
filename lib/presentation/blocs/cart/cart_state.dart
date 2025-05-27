@@ -16,6 +16,7 @@ enum CartStatus {
 class CartState extends Equatable {
   final CartStatus status;
   final List<CartItem> items;
+  final Map<String, int> cartQuantities;
   final double subtotal;
   final double discount;
   final double deliveryFee;
@@ -25,10 +26,12 @@ class CartState extends Equatable {
   final bool couponApplied;
   final String? errorMessage;
   final Map<String, dynamic>? couponRequirements;
+  final String? previewImage;
 
   const CartState({
     this.status = CartStatus.initial,
     this.items = const [],
+    this.cartQuantities = const {},
     this.subtotal = 0.0,
     this.discount = 0.0,
     this.deliveryFee = 0.0,
@@ -38,11 +41,13 @@ class CartState extends Equatable {
     this.couponApplied = false,
     this.errorMessage,
     this.couponRequirements,
+    this.previewImage,
   });
 
   CartState copyWith({
     CartStatus? status,
     List<CartItem>? items,
+    Map<String, int>? cartQuantities,
     double? subtotal,
     double? discount,
     double? deliveryFee,
@@ -52,10 +57,12 @@ class CartState extends Equatable {
     bool? couponApplied,
     String? errorMessage,
     Map<String, dynamic>? couponRequirements,
+    String? previewImage,
   }) {
     return CartState(
       status: status ?? this.status,
       items: items ?? this.items,
+      cartQuantities: cartQuantities ?? this.cartQuantities,
       subtotal: subtotal ?? this.subtotal,
       discount: discount ?? this.discount,
       deliveryFee: deliveryFee ?? this.deliveryFee,
@@ -65,6 +72,7 @@ class CartState extends Equatable {
       couponApplied: couponApplied ?? this.couponApplied,
       errorMessage: errorMessage ?? this.errorMessage,
       couponRequirements: couponRequirements ?? this.couponRequirements,
+      previewImage: previewImage ?? this.previewImage,
     );
   }
 
@@ -72,6 +80,7 @@ class CartState extends Equatable {
   List<Object?> get props => [
     status,
     items,
+    cartQuantities,
     subtotal,
     discount,
     deliveryFee,
@@ -81,5 +90,6 @@ class CartState extends Equatable {
     couponApplied,
     errorMessage,
     couponRequirements,
+    previewImage,
   ];
 }
