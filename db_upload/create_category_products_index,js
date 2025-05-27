@@ -1,0 +1,165 @@
+import { initializeApp } from 'firebase/app';
+import { getDatabase, ref, get } from 'firebase/database';
+import fs from 'fs';
+import path from 'path';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+console.log('🚀 FIREBASE RTDB CATEGORY PRODUCT INDEX BUILDER');
+console.log('🔧 Initializing...');
+
+// Firebase configuration from environment variables
+const firebaseConfig = {
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+  databaseURL: process.env.FIREBASE_DATABASE_URL,
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID,
+  measurementId: process.env.FIREBASE_MEASUREMENT_ID
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// Function to fetch all products from dynamic_product_info in RTDB
+async function fetchProductPaths() {
+  console.log('📂 Fetching products from dynamic_product_info in RTDB...');
+  const startTime = Date.now();
+
+  try {
+    // Reference to dynamic_product_info node
+    const productsRef = ref(db, 'dynamic_product_info');
+    const snapshot = await get(productsRef);
+
+    if (!snapshot.exists()) {
+      console.error('❌ No data found under dynamic_product_info');
+      throw new Error('No data found');
+    }
+
+    const productsData = snapshot.val();
+    const categoryProductIndex = {};
+    let totalProducts = 0;
+
+    // Iterate through each product in dynamic_product_info
+    for (const [productId, productData] of Object.entries(productsData)) {
+      // Check if path exists and is a string
+      if (!productData.path || typeof productData.path !== 'string') {
+        console.log(`  ⚠️ Product ${productId} has no valid path, skipping...`);
+        continue;
+      }
+
+      // Split the path into category group and subcategory (e.g., "bakeries_biscuits/cakes_pastries")
+      const [categoryGroup, subcategory] = productData.path.split('/');
+      if (!categoryGroup || !subcategory) {
+        console.log(`  ⚠️ Product ${productId} has invalid path format: ${productData.path}, skipping...`);
+        continue;
+      }
+
+      // Initialize the category group in the index if not already present
+      if (!categoryProductIndex[categoryGroup]) {
+        categoryProductIndex[categoryGroup] = {};
+      }
+
+      // Initialize the subcategory in the category group if not already present
+      if (!categoryProductIndex[categoryGroup][subcategory]) {
+        categoryProductIndex[categoryGroup][subcategory] = [];
+      }
+
+      // Add product ID to the subcategory's array
+      categoryProductIndex[categoryGroup][subcategory].push(productId);
+      totalProducts++;
+
+      // Log the first few mappings for verification
+      if (totalProducts <= 5) {
+        console.log(`  ✅ Mapped ${productId} to ${categoryGroup}/${subcategory}`);
+      }
+    }
+
+    console.log(`✅ Processed ${totalProducts} products`);
+    return { categoryProductIndex, totalProducts, durationMs: Date.now() - startTime };
+
+  } catch (error) {
+    console.error('❌ Error fetching products from RTDB:', error.message);
+    throw error;
+  }
+}
+
+// Function to save the category product index to a JSON file
+function saveCategoryProductIndex(categoryProductIndex, totalProducts, durationMs) {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `category_product_index_${timestamp}.json`;
+  const filepath = path.join(process.cwd(), filename);
+
+  const exportData = {
+    metadata: {
+      exportDate: new Date().toISOString(),
+      totalProducts,
+      totalCategoryGroups: Object.keys(categoryProductIndex).length,
+      totalSubcategories: Object.values(categoryProductIndex).reduce((sum, group) => sum + Object.keys(group).length, 0),
+      exportDurationMs: durationMs,
+      firebaseProject: process.env.FIREBASE_PROJECT_ID
+    },
+    category_product_index: categoryProductIndex
+  };
+
+  console.log(`💾 Saving category product index to: ${filename}`);
+  try {
+    fs.writeFileSync(filepath, JSON.stringify(exportData, null, 2), 'utf8');
+    console.log(`✅ Successfully saved to ${filename}`);
+  } catch (error) {
+    console.error('❌ Error saving category product index:', error.message);
+    throw error;
+  }
+
+  return filename;
+}
+
+// Main function to build and save the category product index
+async function buildCategoryProductIndex() {
+  console.log('\n🚀 Starting to build category product index from RTDB...');
+  console.log('='.repeat(60));
+
+  try {
+    // Fetch product paths and build the nested category product index
+    const { categoryProductIndex, totalProducts, durationMs } = await fetchProductPaths();
+
+    // Save the category product index to a JSON file
+    const filename = saveCategoryProductIndex(categoryProductIndex, totalProducts, durationMs);
+
+    // Log final summary
+    console.log('\n' + '='.repeat(60));
+    console.log('🎉 CATEGORY PRODUCT INDEX BUILD COMPLETED SUCCESSFULLY!');
+    console.log('='.repeat(60));
+    console.log(`📊 Total Products Processed: ${totalProducts}`);
+    console.log(`📁 Total Category Groups: ${Object.keys(categoryProductIndex).length}`);
+    console.log(`📋 Total Subcategories: ${Object.values(categoryProductIndex).reduce((sum, group) => sum + Object.keys(group).length, 0)}`);
+    console.log(`⏱️  Duration: ${durationMs / 1000} seconds`);
+    console.log(`💾 Output File: ${filename}`);
+    console.log('='.repeat(60));
+
+  } catch (error) {
+    console.error('\n❌ BUILD FAILED:');
+    console.error('Error Message:', error.message);
+    console.error('Error Code:', error.code || 'N/A');
+    console.error('Full Error:', error);
+    process.exit(1);
+  }
+}
+
+// Execute the script
+console.log('🏃 Starting category product index build process...');
+buildCategoryProductIndex()
+  .then(() => {
+    console.log('\n✅ Script completed successfully');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('\n💥 Script failed with error:', error.message);
+    console.error('💡 Check the error details above for troubleshooting');
+    process.exit(1);
+  });

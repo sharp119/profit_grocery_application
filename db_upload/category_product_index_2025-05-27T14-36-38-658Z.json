@@ -1,0 +1,236 @@
+{
+  "metadata": {
+    "exportDate": "2025-05-27T14:36:38.658Z",
+    "totalProducts": 152,
+    "totalCategoryGroups": 4,
+    "totalSubcategories": 32,
+    "exportDurationMs": 1254,
+    "firebaseProject": "profit-grocery"
+  },
+  "category_product_index": {
+    "fruits_vegetables": {
+      "fresh_vegetables": [
+        "0TP7NjIaHJ1dQkjBkGqg",
+        "1BETj7dkSGunVr1JDHwY",
+        "67niNlLbawQZm1fOHIkl",
+        "mZ6NAMwX0dVCC7Nli0CT",
+        "nGqGt4RNNbR7i0J5dmcC"
+      ],
+      "exotic_fruits": [
+        "4yHElYcI8aH7hA2CYgX9",
+        "DIbHPidWO9LEF8bM2w4w",
+        "F6haJVv1ReRT5xvrbYLl",
+        "mdFn46bG070Ldjc8nx91",
+        "rZDfhWEPDthnuQzJxbcY"
+      ],
+      "cut_vegetables": [
+        "66hK1xIEifjMvlM3Vz91",
+        "LMxmVZga5dq6sq0zR1zm",
+        "gfsjsF3bhLJ0eP2bakQc",
+        "iPrkpwcDWVPPYm4wDd2c",
+        "rrVHg8IWFvW6IMzvA6mM"
+      ],
+      "organic": [
+        "6i9q9uvc6PaPkoJTbsQ2",
+        "Txr6a9jGzT0XSa7fAkV5",
+        "iT5a2Gwdb4F2Q4cPHi6d",
+        "kgy4SU3qHCqQ8514jjxt",
+        "vPsBH74AQ8AkOnbTjbzA"
+      ],
+      "cut_fruits": [
+        "7OSazVYMRPTvOrRqrZ0x",
+        "G2pYtoyIaNw02WzjiMcw",
+        "JGAa3yUstMdVDEUJsPTE",
+        "e4ZrPm5nyE3AQiJoSNpe",
+        "ryJZ5XAjnzYQF70G3nOA"
+      ],
+      "fresh_fruits": [
+        "9vSu3gZVYIQt5RIHWewk",
+        "9yQX0POzgaMwoSoh8CRS",
+        "EgYQcfoI91HPz3RBh09u",
+        "eE3EfXJRcF8BiG0gWdYl",
+        "vjGUnyKlcUiG83dMy7e1"
+      ],
+      "exotic_vegetables": [
+        "DdyTg4yTVqkFu24PzNgN",
+        "VJL5W9a24FmpO8FV6cg8",
+        "fjVKtTrytyzem9yK5qVK",
+        "rQ57JrqfJ1ZiOE6YIMtp",
+        "tX8WBS11Me1zaWDAlxAn"
+      ],
+      "herbs_seasonings": [
+        "IQ3Z8OjvCqxwTLUKtgjz",
+        "d31s4FTxkX7eSY1WHfdB",
+        "jwNFYy5n4ao1d5nSvzoC",
+        "uBDp6mVjjWOw9pU34qaJ",
+        "xVzMCXRA931ogIb5c9nG"
+      ]
+    },
+    "bakeries_biscuits": {
+      "cakes_pastries": [
+        "0hDdYOX7FB5UDUs1Gbe6",
+        "PHxwlK8Nkj3IMs3xlyaT",
+        "kNALelCif4ShdsIVSjP1",
+        "o8K6NWes4XfCuzllUxTH"
+      ],
+      "bakery_snacks": [
+        "9LHIJiPrwOcVSMLlN3Y6",
+        "HcSlVCsioLZwcuQHJWqr",
+        "ZnFLOD8DtGVdu0EDI2sk",
+        "w6QkIhQQ0B7tWPUXcHE4"
+      ],
+      "cookies": [
+        "9svWkBNoeTwAgwfW320k",
+        "QGcNb3qDs8DCn9aBEDUV",
+        "R4uusOq9Tk1RFPM2cyr3",
+        "ifwHWVYO8rganYZ1jsQz"
+      ],
+      "tea_time": [
+        "BhXVzwtJD5LSEVrTw4HZ",
+        "LnIqVyj1lVzzW4cLrIAB",
+        "gW5DWUAk8ZlCisyUYjaC",
+        "gtcnabSaUzTYrLcbXuP2"
+      ],
+      "buns_pavs": [
+        "HZXUyMfOp2PN6B4Wkr41",
+        "WK2LG7dNZnrRGkUhmMNB",
+        "bxkXet6NE9jceKNheEMM",
+        "eAPXYtU4CoInCXYA5q0I"
+      ],
+      "premium_cookies": [
+        "ImpZ3R5yH5HQtVHXS1qf",
+        "KksVCPMalF7t6MLtR0Qu",
+        "l8fT9eheC0qgTbxgeJeD",
+        "wyEu2EKN7wqKF2fEZKcx"
+      ],
+      "rusk_khari": [
+        "Lg47lJyUrUKRw5zaLmjt",
+        "MdOmjw1Hr557bfOWWQx3",
+        "WHBWhst40kx2GPfLrj8O",
+        "uZ0FHesAbhmgwDkSblgj"
+      ],
+      "cream_biscuits": [
+        "WZUrWh37jHSZBMfSpz5B",
+        "lIPn4IZmiLdZS8hePO0Q",
+        "lx25RWjEISCVIflT9WmU",
+        "zj47qy3dRdfimODzjwKz"
+      ]
+    },
+    "snacks_drinks": {
+      "soft_drinks": [
+        "2bSRklAtm4kKS1SjiyB7",
+        "NkwnUDHwZxJSzsIlVmKv",
+        "Nn8MLWMHDdNAY5mneOea",
+        "YaoiOCA0VinqGur7ZSiA",
+        "tRnqgR9gCoGzCJ8ZMPxH"
+      ],
+      "drinks_juices": [
+        "30MwZOixjtGhVHjfzU0R",
+        "ZSkGzY3C1B6yEn2IJCWY",
+        "cbPUzFVEUmKCtw4T05Bo",
+        "iJAwoeZDFdYGkB0ICGyF",
+        "qzmB4CnKoEzv4HpwGWo9"
+      ],
+      "ice_cream": [
+        "4YBDDWOHdpQ2Yak2t2qf",
+        "GFIa3bQNyCoxM6qkJ5xx",
+        "TPy9mNXpurbMRCrmYDqS",
+        "X34BnkEztX9PkfHfWFKE",
+        "XncBXYdsukE70plh5N9b"
+      ],
+      "tea_coffee_milk": [
+        "ADbfBQM7Gy1o5XaYXE57",
+        "BP103HX9PjCENmw0Jfz3",
+        "EKoRNEolAjOqrQBVaNQM",
+        "Gxmh7S6ZatWwdOM52m7c",
+        "mwL2kA4rXewFP0Rg6ZTg"
+      ],
+      "chips_namkeen": [
+        "DJAwMAAxdNtA2CC6xBMA",
+        "EGUKsrctoMLAYk5FsSTI",
+        "c58BfqSwNPZUV9JdjJQI",
+        "mUyBumFjEyK0L0xdeqvL",
+        "zjbBwHeXu5M5bELJDBZm"
+      ],
+      "energy_drinks": [
+        "FomgkFQDF7tdyRxBzgyS",
+        "hBOaSQVoij1UFp4YjNXb",
+        "iDFZICCMvseIRGBKOk5q",
+        "klXZN39yksT8YhMiK70m",
+        "q2NRnlvVnHhgCgbCZYoN"
+      ],
+      "paan_corner": [
+        "LeM6GAMnCEW87zdKIMge",
+        "NklIOIpP83tBOtBDrPbL",
+        "QtQT8M1ZHwhlMPj2HJsc",
+        "UcJI34INJMOCu5KRgie0",
+        "kJ4egtAZU1YYrfxJ66Ww"
+      ],
+      "sweets_chocolates": [
+        "W5SGAOeKXUu18fvKpHU8",
+        "YEGEinKX0ZOx5ZIuE7OR",
+        "bq5mFlMgxa8BJ2d9CIqL",
+        "hJNu8FP4iebWYdy9Euz1",
+        "r0daJnSoX9NNXqHFLMx4"
+      ]
+    },
+    "grocery_kitchen": {
+      "oil_ghee_masala": [
+        "34MJ7oRPqyphvpq5H87Z",
+        "8qAWwML6kuNsZKICWwe6",
+        "HMknqrGqmge33L6SAvLq",
+        "N46zOBfxgXVYZZMWsOkb",
+        "gaie8hnbzPFgGvExHuBy"
+      ],
+      "vegetables_fruits": [
+        "3reR7dS693iyozFI1liZ",
+        "MBqqb9cLRYVrWmWBIk1p",
+        "UTZnWuBjDxsQ4XDsRecj",
+        "sdlvFxAdSwsgMCXYAv1s",
+        "vPZhGhEf24rd8u3pgK1y"
+      ],
+      "dry_fruits_cereals": [
+        "4ynfOOQumealQ6MveCE9",
+        "BrYdoaXSVX9nJGMXYx4W",
+        "P7lIrFcLQ01ip7F0k2eU",
+        "WBpIFfxVTkMIDDhVHXmz",
+        "w2KaR7Yt653hS9E6uMec"
+      ],
+      "kitchenware": [
+        "5osAmCVjdAFHMB2WSvMB",
+        "LkLDF0ST6zyh7M1zvaMl",
+        "UvAgndQzY7SSk8suPX1g",
+        "ff9SioOHVjiQEsXKO0fG",
+        "y326DRLpvYoo3oRkGFak"
+      ],
+      "atta_rice_dal": [
+        "9AcqzflSTVZHtr3DSblH",
+        "IIKtwSRwcTeYIT8EKV0p",
+        "SvFUTjy6RyTxf55dNWNP",
+        "UffOD4hFDBTFeqQK73RZ",
+        "sen0jrqxrzdeBfcdx4rq"
+      ],
+      "instant_food": [
+        "9QjTkYcyVsGwW3Rf32Ul",
+        "SDxZD7vnQbQfe1AI70SQ",
+        "dOW5V9yikIadm3NhlWE9",
+        "os0ttxladr5khclDiFIp",
+        "zcRTQMk87GTdY8KGsYit"
+      ],
+      "sauces_spreads": [
+        "9r3SzGMaEcKSEzbFW6N9",
+        "FudyQQFXknvuwvrGd0bV",
+        "J1XX8PRFCMFghxG7EQxj",
+        "cQBFGnwnNTJ6xRqfqsnK",
+        "k0Q6kEzHHvMh3akpDlKB"
+      ],
+      "cleaning_household": [
+        "SeN2TcTQnmCjSQbb03eq",
+        "XxwKuq2SUuBqVa1Cu1qD",
+        "dtuNWiwtL8LsSXFrlP8K",
+        "gGvE0OhG3WMiFsm03vqW",
+        "yTxkbds29Gt5S0jHWAp4"
+      ]
+    }
+  }
+}
