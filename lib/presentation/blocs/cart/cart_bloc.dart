@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:profit_grocery_application/services/cart_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../core/constants/app_constants.dart';
@@ -395,72 +396,101 @@ class CartBloc extends Bloc<CartEvent, CartState> {
       ));
     }
   }
+// In lib/presentation/blocs/cart/cart_bloc.dart
+
+// ... (imports and other parts of CartBloc) ...
+
+// In lib/presentation/blocs/cart/cart_bloc.dart
+// ... (imports and other parts of CartBloc) ...
 
   Future<void> _onClearCart(
     ClearCart event,
     Emitter<CartState> emit,
   ) async {
     try {
-      CartLogger.log('BLOC', 'Clearing cart');
-      emit(state.copyWith(status: CartStatus.loading));
-      
-      // Get user ID from SharedPreferences
+      CartLogger.log('BLOC', 'Processing ClearCart event...');
+      // Emit loading state immediately for optimistic UI response
+      emit(state.copyWith(
+        status: CartStatus.loading,
+        items: [], // Optimistically clear items in BLoC state
+        subtotal: 0,
+        discount: 0,
+        deliveryFee: 0, // Assuming delivery fee resets
+        total: 0,
+        itemCount: 0,
+        couponCode: null,
+        couponApplied: false,
+      ));
+
       final prefs = await SharedPreferences.getInstance();
       final userId = prefs.getString(AppConstants.userTokenKey);
-      
+
       if (userId == null || userId.isEmpty) {
-        CartLogger.error('BLOC', 'User not authenticated');
+        CartLogger.error('BLOC', 'User not authenticated for ClearCart.');
         emit(state.copyWith(
           status: CartStatus.error,
-          errorMessage: 'User not authenticated',
+          errorMessage: 'User not authenticated.',
         ));
         return;
       }
 
-      // IMMEDIATE UI FEEDBACK: Clear all items
-      emit(state.copyWith(
-        items: [],
-        subtotal: 0,
-        total: 0,
-        itemCount: 0,
-        status: CartStatus.loading,
-      ));
-      
-      // Now do the actual API call
-      final result = await _cartRepository.clearCart(userId);
-      
-      result.fold(
-        (failure) {
-          CartLogger.error('BLOC', 'Failed to clear cart: ${failure.message}');
-          emit(state.copyWith(
-            status: CartStatus.error,
-            errorMessage: _mapFailureToMessage(failure),
-          ));
-        },
-        (cart) {
-          CartLogger.success('BLOC', 'Successfully cleared cart');
-          emit(state.copyWith(
-            status: CartStatus.loaded,
-            items: cart.items,
-            subtotal: cart.subtotal,
-            discount: cart.discount,
-            deliveryFee: cart.deliveryFee,
-            total: cart.total,
-            itemCount: cart.itemCount,
-            couponCode: cart.appliedCouponCode,
-            couponApplied: cart.appliedCouponCode != null,
-          ));
-        },
-      );
-    } catch (e) {
-      CartLogger.error('BLOC', 'Error clearing cart', e);
+      bool repoCleared = false;
+      bool providerRefreshed = false;
+
+      // 1. Clear cart data via CartRepository (users/$userId/cart/...)
+      final repoResult = await _cartRepository.clearCart(userId);
+      if (repoResult.isRight()) {
+        repoCleared = true;
+        CartLogger.info('BLOC', 'CartRepository cleared data successfully.');
+      } else {
+        repoResult.fold((failure) => CartLogger.error('BLOC', 'CartRepository clear failed: ${failure.message}'), (_) {});
+      }
+
+      // 2. Instruct CartProvider to clear SimpleCartService data and refresh itself
+      try {
+        // CartProvider is a singleton, so we can get its instance.
+        await CartProvider().clearCartAndRefresh();
+        providerRefreshed = true;
+        CartLogger.info('BLOC', 'CartProvider cleared and refreshed successfully.');
+      } catch (e) {
+        CartLogger.error('BLOC', 'CartProvider.clearCartAndRefresh() failed: $e');
+      }
+
+      // 3. Emit final state based on the success of operations
+      if (repoCleared && providerRefreshed) {
+        CartLogger.success('BLOC', 'Cart fully cleared and CartProvider refreshed.');
+        emit(state.copyWith(
+          status: CartStatus.loaded, // Reflects that the operation is complete
+          items: [], // Ensure BLoC state is definitively empty
+          subtotal: 0,
+          discount: 0,
+          deliveryFee: 0,
+          total: 0,
+          itemCount: 0,
+          couponCode: null,
+          couponApplied: false,
+        ));
+      } else {
+        String errorMsg = 'Failed to fully clear cart and update UI. ';
+        if (!repoCleared) errorMsg += 'Main cart data could not be cleared. ';
+        if (!providerRefreshed) errorMsg += 'Cart display may not have updated immediately. ';
+        CartLogger.error('BLOC', errorMsg);
+        emit(state.copyWith(
+          status: CartStatus.error,
+          errorMessage: errorMsg,
+          // Keep the optimistically cleared items or revert based on how critical the failure is
+        ));
+      }
+
+    } catch (e, stackTrace) {
+      CartLogger.error('BLOC', 'Exception in _onClearCart handler', e, stackTrace);
       emit(state.copyWith(
         status: CartStatus.error,
-        errorMessage: 'Failed to clear cart: $e',
+        errorMessage: 'An unexpected error occurred while clearing the cart.',
       ));
     }
   }
-
+// ... (rest of CartBloc) ...// ... (rest of CartBloc) ...
   Future<void> _onApplyCoupon(
     ApplyCoupon event,
     Emitter<CartState> emit,

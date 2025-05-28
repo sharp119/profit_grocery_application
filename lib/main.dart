@@ -9,17 +9,13 @@ import 'package:firebase_database/firebase_database.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:get_it/get_it.dart';
-import 'package:profit_grocery_application/presentation/blocs/products/products_event.dart';
 import 'package:profit_grocery_application/services/product/product_service.dart';
 import 'package:profit_grocery_application/services/service_locator.dart';
 import 'package:profit_grocery_application/services/product/shared_product_service.dart';
-import 'package:profit_grocery_application/services/category/shared_category_service.dart';
-import 'package:profit_grocery_application/data/repositories/bestseller_repository_simple.dart';
 import 'services/asset_cache_service.dart';
 import 'package:profit_grocery_application/presentation/blocs/user/user_event.dart';
 import 'package:profit_grocery_application/services/session_manager_interface.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:dartz/dartz.dart';
 
 import 'core/di/product_injection.dart';
 import 'core/di/firestore_service_injection.dart';
@@ -33,7 +29,6 @@ import 'services/cart_provider.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
-import 'core/errors/global_error_handler.dart';
 import 'core/routing/app_router.dart';
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
@@ -48,14 +43,11 @@ import 'data/repositories/auth_repository_impl.dart';
 import 'data/repositories/user_repository_impl.dart';
 import 'data/repositories/firestore/auth_repository_firestore_impl.dart';
 import 'data/repositories/firestore/user_repository_firestore_impl.dart';
-import 'data/repositories/firestore/order_repository_impl.dart';
-import 'domain/repositories/order_repository.dart';
+
 import 'presentation/blocs/auth/auth_bloc.dart';
 import 'presentation/blocs/auth/auth_event.dart';
-import 'presentation/blocs/auth/auth_state.dart';
 import 'presentation/blocs/user/user_bloc.dart';
 import 'presentation/blocs/navigation/navigation_bloc.dart';
-import 'presentation/blocs/orders/orders_bloc.dart';
 import 'presentation/blocs/products/products_bloc.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
 import 'presentation/blocs/cart/cart_bloc.dart';
@@ -251,7 +243,7 @@ Future<void> setupDependencyInjection() async {
   // Check the type for proper registration
   if (userService is UserServiceHybrid) {
     // Register concrete implementation
-    sl.registerLazySingleton<UserServiceHybrid>(() => userService as UserServiceHybrid);
+    sl.registerLazySingleton<UserServiceHybrid>(() => userService);
   }
   
   // Register interface
@@ -267,9 +259,7 @@ Future<void> setupDependencyInjection() async {
   sl.registerLazySingleton<UserService>(() => rtdbUserService);
   
   // Register order repository implementation
-  sl.registerLazySingleton<OrderRepository>(
-    () => OrderRepositoryImpl(),
-  );
+  
   
   // Coupon dependencies are already initialized earlier
   
@@ -282,9 +272,7 @@ Future<void> setupDependencyInjection() async {
     () => UserBloc(userRepository: sl<UserRepository>()),
   );
   
-  sl.registerFactory(
-    () => OrdersBloc(orderRepository: sl<OrderRepository>()),
-  );
+  
 
   sl.registerFactory(
     () => NavigationBloc(),
@@ -326,9 +314,7 @@ class MyApp extends StatelessWidget {
             return userBloc;
           },
         ),
-        BlocProvider<OrdersBloc>(
-          create: (context) => sl<OrdersBloc>(),
-        ),
+        
         BlocProvider<NavigationBloc>(
           create: (context) => sl<NavigationBloc>(),
         ),

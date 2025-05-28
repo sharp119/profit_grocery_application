@@ -112,6 +112,44 @@ void dispose() {
 
 }
 
+
+Future<bool?> _showClearCartConfirmationDialog() async {
+    return showDialog<bool>(
+      context: context,
+      barrierDismissible: false, // User must tap a button
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.secondaryColor,
+          title: const Text(
+            'Clear Cart?',
+            style: TextStyle(color: AppTheme.textPrimaryColor),
+          ),
+          content: const Text(
+            'Are you sure you want to remove all items from your cart?',
+            style: TextStyle(color: AppTheme.textSecondaryColor),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel', style: TextStyle(color: AppTheme.accentColor)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false); // Pops the dialog and returns false
+              },
+            ),
+            TextButton(
+              style: TextButton.styleFrom(
+                backgroundColor: Colors.red.withOpacity(0.1),
+              ),
+              child: const Text('Clear Cart', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true); // Pops the dialog and returns true
+              },
+            ),
+          ],
+        );
+      },
+    );
+    }
+
 // Modify your openCheckout method or create a new one
 void _openCheckoutAndHandleState({required double amount, required String contact, required String email}) {
     // The amount parameter received here is _totalCartValue
@@ -743,6 +781,7 @@ Widget build(BuildContext context) {
 
   // Determine if we have product details to display
   final bool hasDisplayableProductDetails = _rtdbProductDetails.isNotEmpty;
+    final bool isCartBusy = _isPlacingOrder || (_isProductDataLoading && !hasDisplayableProductDetails && !isCartLogicallyEmpty);
 
   return Scaffold(
     backgroundColor: AppTheme.backgroundColor,
@@ -754,6 +793,34 @@ Widget build(BuildContext context) {
         icon: const Icon(Icons.arrow_back, color: AppTheme.accentColor),
         onPressed: () => Navigator.of(context).pop(),
       ),
+actions: <Widget>[
+          // Add the Clear Cart IconButton here
+          if (!isCartLogicallyEmpty && !isCartBusy) // Only show if cart is not empty and not busy
+            IconButton(
+              icon: const Icon(Icons.delete, color: AppTheme.accentColor),
+              tooltip: 'Clear Cart',
+              onPressed: () async {
+                final confirmed = await _showClearCartConfirmationDialog();
+                if (confirmed == true && mounted) {
+                  // Dispatch the ClearCart event
+                  BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
+                  // Optionally show a toast or feedback that clearing has started
+                  Fluttertoast.showToast(msg: "Clearing your cart...");
+                }
+              },
+            ),
+          if (isCartBusy && !isCartLogicallyEmpty) // Show a small loader if busy
+             Padding(
+               padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 10.r),
+               child: SizedBox(
+                width: 20.w,
+                height: 20.h,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentColor),
+                         ),
+             ),
+        ],
+      
+
     ),
     body: Stack(
       children: [

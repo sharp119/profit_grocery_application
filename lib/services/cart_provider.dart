@@ -37,6 +37,32 @@ class CartProvider extends ChangeNotifier {
     }
   }
   
+// In lib/services/cart_provider.dart
+// ... (other existing methods) ...
+
+  /// Clears all cart data managed by SimpleCartService and reloads CartProvider's state.
+  Future<void> clearCartAndRefresh() async {
+    print('CartProvider: Attempting to clear cart data and refresh provider state...');
+    try {
+      final cartService = SimpleCartService(); // Get instance
+
+      // 1. Instruct SimpleCartService to clear its underlying cache and RTDB data
+      await cartService.clearCurrentUserCartData();
+      print('CartProvider: Underlying SimpleCartService data cleared.');
+
+      // 2. Reload cart items for CartProvider.
+      // loadCartItems will now fetch from the cleared cache of SimpleCartService,
+      // resulting in _cartItems becoming empty, and then it calls notifyListeners().
+      await loadCartItems();
+      print('CartProvider: State refreshed. Current item count: ${_cartItems.length}');
+
+    } catch (e) {
+      print('CartProvider: Error in clearCartAndRefresh: $e');
+      // Rethrow so the caller (CartBloc) can be aware of the failure
+      rethrow;
+    }
+  }
+  
   /// Load cart items from cache and sync with Firestore
   Future<void> loadCartItems() async {
     try {

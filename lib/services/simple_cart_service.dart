@@ -18,6 +18,43 @@ class SimpleCartService {
   static const String _cartItemsKey = 'simple_cart_items';
   
   /// Add or update an item in the cart
+  /// 
+  /// // In lib/services/simple_cart_service.dart
+
+// ... (other existing methods) ...
+
+  // In lib/services/simple_cart_service.dart
+// ... (other existing methods) ...
+
+/// Clears all cart items for the current user from this service's cache and its Firestore path.
+Future<void> clearCurrentUserCartData() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final userId = prefs.getString(AppConstants.userTokenKey);
+
+    if (userId == null) {
+      print('SimpleCartService: User ID not found, cannot clear cart data.');
+      return; // Or throw an exception if preferred
+    }
+
+    // Clear local cache specific to SimpleCartService
+    await prefs.remove(_cartItemsKey); // _cartItemsKey is 'simple_cart_items'
+    print('SimpleCartService: Cleared cart items from local cache (key: $_cartItemsKey).');
+
+    // Clear items from Firestore path used by SimpleCartService
+    final database = FirebaseDatabase.instance;
+    // Path: AppConstants.cartsCollection/$userId/items (e.g., carts/$userId/items)
+    final serviceSpecificCartItemsRef = database.ref().child('${AppConstants.cartsCollection}/$userId/items');
+    await serviceSpecificCartItemsRef.remove();
+    print('SimpleCartService: Cleared cart items from Firestore for user $userId at path ${serviceSpecificCartItemsRef.path}.');
+
+  } catch (e) {
+    print('SimpleCartService: Error clearing current user cart data: $e');
+    // Optionally rethrow to allow callers to handle the error
+    throw Exception('SimpleCartService failed to clear data: $e');
+  }
+}
+
   Future<void> addOrUpdateItem({required String productId, required int quantity}) async {
     try {
       // Get user ID from shared preferences

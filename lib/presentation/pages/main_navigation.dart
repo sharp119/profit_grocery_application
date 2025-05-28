@@ -52,7 +52,7 @@ class _MainNavigationContentState extends State<_MainNavigationContent> {
     _tabBodies = [
       const HomePage(),
       const CategoryProductsPage(), // Categories page with TwoPanelView
-      const OrdersPage(),
+      OrdersPage(),
       // CartPage(),
       const ProfilePage(),
     ];
