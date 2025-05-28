@@ -31,10 +31,10 @@ class SelectPaymentMethod extends CheckoutEvent {
   List<Object?> get props => [paymentMethodId];
 }
 
-class ApplyCoupon extends CheckoutEvent {
+class ApplyCouponCO extends CheckoutEvent {
   final String code;
 
-  const ApplyCoupon(this.code);
+  const ApplyCouponCO(this.code);
 
   @override
   List<Object?> get props => [code];

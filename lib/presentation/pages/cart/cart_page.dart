@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
+import 'package:profit_grocery_application/presentation/widgets/grids/horizontal_bestseller_grid.dart';
 import 'dart:convert';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
@@ -767,21 +768,14 @@ void _onCartProviderChanged() {
 
   @override
 @override
+@override
 Widget build(BuildContext context) {
-  // The totals are now recalculated in _recalculateCartTotals whenever data changes,
-  // and _totalCartValue and _totalSavings are state variables.
-  // So, no need to call _calculateTotalCartValue() or _getTotalSavings() directly here
-  // unless _recalculateCartTotals() isn't being called at the right times (it should be).
-  // However, _saveCartTotals() might still be relevant if you want to save on every build,
-  // or preferably, call it only when totals actually change (e.g., inside _recalculateCartTotals).
-  // For simplicity, if _recalculateCartTotals updates state, this build method will use the latest state.
-
   // Determine if the cart is logically empty based on product IDs from CartProvider
-  final bool isCartLogicallyEmpty = _cartProductIds.isEmpty;
+  final bool isCartLogicallyEmpty = _cartProductIds.isEmpty; // DEFINED HERE
 
   // Determine if we have product details to display
   final bool hasDisplayableProductDetails = _rtdbProductDetails.isNotEmpty;
-    final bool isCartBusy = _isPlacingOrder || (_isProductDataLoading && !hasDisplayableProductDetails && !isCartLogicallyEmpty);
+  final bool isCartBusy = _isPlacingOrder || (_isProductDataLoading && !hasDisplayableProductDetails && !isCartLogicallyEmpty);
 
   return Scaffold(
     backgroundColor: AppTheme.backgroundColor,
@@ -793,44 +787,36 @@ Widget build(BuildContext context) {
         icon: const Icon(Icons.arrow_back, color: AppTheme.accentColor),
         onPressed: () => Navigator.of(context).pop(),
       ),
-actions: <Widget>[
-          // Add the Clear Cart IconButton here
-          if (!isCartLogicallyEmpty && !isCartBusy) // Only show if cart is not empty and not busy
-            IconButton(
-              icon: const Icon(Icons.delete, color: AppTheme.accentColor),
-              tooltip: 'Clear Cart',
-              onPressed: () async {
-                final confirmed = await _showClearCartConfirmationDialog();
-                if (confirmed == true && mounted) {
-                  // Dispatch the ClearCart event
-                  BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
-                  // Optionally show a toast or feedback that clearing has started
-                  Fluttertoast.showToast(msg: "Clearing your cart...");
-                }
-              },
+      actions: <Widget>[
+        if (!isCartLogicallyEmpty && !isCartBusy)
+          IconButton(
+            icon: const Icon(Icons.delete, color: AppTheme.accentColor),
+            tooltip: 'Clear Cart',
+            onPressed: () async {
+              final confirmed = await _showClearCartConfirmationDialog();
+              if (confirmed == true && mounted) {
+                BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
+                Fluttertoast.showToast(msg: "Clearing your cart...");
+              }
+            },
+          ),
+        if (isCartBusy && !isCartLogicallyEmpty)
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 10.r),
+            child: SizedBox(
+              width: 20.w,
+              height: 20.h,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentColor),
             ),
-          if (isCartBusy && !isCartLogicallyEmpty) // Show a small loader if busy
-             Padding(
-               padding: EdgeInsets.symmetric(horizontal: 16.r, vertical: 10.r),
-               child: SizedBox(
-                width: 20.w,
-                height: 20.h,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accentColor),
-                         ),
-             ),
-        ],
-      
-
+          ),
+      ],
     ),
     body: Stack(
       children: [
         // Main content with cart items
         if (_isProductDataLoading && !hasDisplayableProductDetails && !isCartLogicallyEmpty)
-          // Show a central loader ONLY if data is loading,
-          // there are no details yet to show, AND the cart isn't supposed to be empty.
           Center(child: CircularProgressIndicator(color: AppTheme.accentColor))
         else if (isCartLogicallyEmpty)
-          // Cart is empty according to CartProvider
           Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -886,83 +872,112 @@ actions: <Widget>[
                   ),
                 ),
 
-              // Cart items list
+              // This Expanded widget will contain the scrollable list of cart items AND the bestseller section
               Expanded(
-                child: !hasDisplayableProductDetails && !_isProductDataLoading
-                  // This case means loading finished, but no valid product details were found
-                  // for the items that are supposed to be in the cart.
-                  ? Center(
-                      child: Text(
-                        'Items in your cart are currently unavailable.',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          color: AppTheme.textSecondaryColor,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    )
-                  : Column(
-                      children: [
-                        Expanded(
-                          child: ListView.separated(
-                            padding: EdgeInsets.only(bottom: 10.h, top: 10.h),
-                            // Determine itemCount based on _rtdbProductDetails and _showAllItems
-                            itemCount: _showAllItems
-                                ? _rtdbProductDetails.length
-                                : (_rtdbProductDetails.length > 4 ? 5 : _rtdbProductDetails.length),
-                            separatorBuilder: (context, index) => SizedBox(height: 1.h),
-                            itemBuilder: (context, index) {
-                              // Handle "show more" button
-                              if (!_showAllItems && index == 4 && _rtdbProductDetails.length > 4) {
-                                // Pass the actual remaining count based on _rtdbProductDetails
-                                return _buildShowMoreButton(_rtdbProductDetails.length - 4);
-                              }
+                child: SingleChildScrollView( // Makes the content scrollable if it overflows
+                  child: Column(
+                    children: [
+                      
+                      // Cart items list
+                      if (hasDisplayableProductDetails) // Check if there are details to build the list
+                        ListView.separated(
+                          shrinkWrap: true, // Important for ListView inside SingleChildScrollView/Column
+                          physics: const NeverScrollableScrollPhysics(), // To let SingleChildScrollView handle scroll
+                          padding: EdgeInsets.only(bottom: 10.h, top: 10.h),
+                          itemCount: _showAllItems
+                              ? _rtdbProductDetails.length
+                              : (_rtdbProductDetails.length > 4 ? 5 : _rtdbProductDetails.length),
+                          separatorBuilder: (context, index) => SizedBox(height: 1.h),
+                          itemBuilder: (context, index) {
+                            // Handle "show more" button
+                            if (!_showAllItems && index == 4 && _rtdbProductDetails.length > 4) {
+                              return _buildShowMoreButton(_rtdbProductDetails.length - 4);
+                            }
 
-                              // Boundary check for the actual items
-                              if (index >= _rtdbProductDetails.length) {
-                                return const SizedBox.shrink(); // Should not happen if itemCount is correct
-                              }
+                            // Boundary check for the actual items
+                            if (index >= _rtdbProductDetails.length) {
+                              return const SizedBox.shrink(); // Should not happen if itemCount is correct
+                            }
 
-                              final product = _rtdbProductDetails[index];
-                              final quantity = _cartQuantities[product.id] ?? 0;
+                            final product = _rtdbProductDetails[index];
+                            final quantity = _cartQuantities[product.id] ?? 0;
 
-                              // If for some reason quantity is 0, or product is not in _cartProductIds anymore, don't show
-                              // (though _rtdbProductDetails should be kept in sync with _cartProductIds)
-                              if (quantity == 0 || !_cartProductIds.contains(product.id)) {
-                                return const SizedBox.shrink();
-                              }
-
-                              // The old `_loadingState[productId]` is no longer used.
-                              // We rely on `_isProductDataLoading` for overall loading,
-                              // and `_rtdbProductDetails` containing the loaded product.
-                              return Card(
-                                elevation: 2.0,
-                                margin: EdgeInsets.symmetric(horizontal: 20.r),
-                                color: AppTheme.secondaryColor,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4.r),
-                                ),
-                                child: _buildCartItemCompact(product.id, product, quantity),
-                              );
-                            },
+                            // If for some reason quantity is 0, or product is not in _cartProductIds anymore, don't show
+                            if (quantity == 0 || !_cartProductIds.contains(product.id)) {
+                              return const SizedBox.shrink();
+                            }
+                            return Card(
+                              elevation: 2.0,
+                              margin: EdgeInsets.symmetric(horizontal: 20.r),
+                              color: AppTheme.secondaryColor,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(4.r),
+                              ),
+                              child: _buildCartItemCompact(product.id, product, quantity),
+                            );
+                          },
+                        )
+                      else if (!hasDisplayableProductDetails && !_isProductDataLoading)
+                        // This case means loading finished, but no valid product details were found
+                        // for the items that are supposed to be in the cart.
+                        Padding( // Added Padding for better spacing of the message
+                          padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 20.r),
+                          child: Center(
+                            child: Text(
+                              'Items in your cart are currently unavailable.',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                color: AppTheme.textSecondaryColor,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
                           ),
                         ),
+                      // END OF CART ITEMS LIST OR UNAVAILABLE MESSAGE
 
-                        // Bottom sections for address and payment info
-                        // Only show if there are items to display and product data isn't in its initial loading phase
-                        // or if it is loading but we already have some items to show.
-                        if (hasDisplayableProductDetails)
-                          _buildBottomSections(),
-                      ],
-                    ),
-              ),
+                      // ADD THE HORIZONTAL BESTSELLER SECTION HERE
+                      if (hasDisplayableProductDetails) // Only show if cart items are (meant to be) displayable
+                        Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.h), // Add some spacing
+                          child: HorizontalBestsellerSection(
+                            title: 'You Might Also Like', // Or 'Bestsellers', etc.
+                            onProductTap: (product) {
+                              // IMPORTANT: Implement your navigation logic here
+                              // Example:
+                              // Navigator.pushNamed(context, AppConstants.productDetailsRoute, arguments: product.id);
+                              print('Bestseller tapped: ${product.name}');
+                            },
+                            cartQuantities: _cartQuantities,
+                            onQuantityChanged: (product, newQuantity) {
+                              // IMPORTANT: Implement logic to update cart if needed
+                              // This might involve your CartBloc or CartProvider
+                              // For example, to add to cart:
+                              // final cartItem = CartItem(productId: product.id, quantity: newQuantity);
+                              // BlocProvider.of<CartBloc>(context).add(AddItemToCart(cartItem));
+                              print('Bestseller quantity changed: ${product.name} to $newQuantity');
+                            },
+                            limit: 6, // Example limit
+                            useRealTimeUpdates: true, // Adjust as per your needs
+                            showBestsellerBadge: true, // Adjust as per your needs
+                          ),
+                        ),
+                      // END OF HORIZONTAL BESTSELLER SECTION
+                    ],
+                  ),
+                ),
+              ), // End of Expanded -> SingleChildScrollView
+
+              // Bottom sections for address and payment info
+              // This will be positioned below the scrollable content (cart items + bestsellers)
+              // Use the isCartLogicallyEmpty defined at the start of the build method
+              if (hasDisplayableProductDetails && !isCartLogicallyEmpty)
+                _buildBottomSections(),
             ],
           ),
       ],
     ),
   );
-}
-  // Build bottom sections for address and payment info
+} // Build bottom sections for address and payment info
   // In _buildBottomSections method, update the "Click to Pay" button's onPressed condition:
 Widget _buildBottomSections() {
   return Container(

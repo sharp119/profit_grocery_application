@@ -165,7 +165,7 @@ class _CheckoutPageContentState extends State<_CheckoutPageContent> {
   }
 
   void _applyCoupon(BuildContext context, String code) {
-    context.read<CheckoutBloc>().add(ApplyCoupon(code));
+    context.read<CheckoutBloc>().add(ApplyCouponCO(code));
   }
 
   void _removeCoupon(BuildContext context) {

@@ -14,7 +14,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
     on<LoadCheckout>(_onLoadCheckout);
     on<SelectAddress>(_onSelectAddress);
     on<SelectPaymentMethod>(_onSelectPaymentMethod);
-    on<ApplyCoupon>(_onApplyCoupon);
+    on<ApplyCouponCO>(_onApplyCoupon);
     on<RemoveCoupon>(_onRemoveCoupon);
     on<PlaceOrder>(_onPlaceOrder);
     on<AddAddress>(_onAddAddress);
@@ -103,7 +103,7 @@ class CheckoutBloc extends Bloc<CheckoutEvent, CheckoutState> {
   }
 
   Future<void> _onApplyCoupon(
-    ApplyCoupon event,
+    ApplyCouponCO event,
     Emitter<CheckoutState> emit,
   ) async {
     try {
