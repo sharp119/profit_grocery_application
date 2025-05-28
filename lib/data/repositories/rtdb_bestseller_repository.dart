@@ -404,7 +404,7 @@ class RTDBBestsellerRepository {
       
       // First, get the current bestseller product IDs
       final productIds = await _getBestsellerProductIds(limit: limit, ranked: ranked);
-      
+
       if (productIds.isEmpty) {
         LoggingService.logFirestore('RTDB_BESTSELLER: No product IDs found for stream');
         print('RTDB_BESTSELLER: No product IDs found for stream');

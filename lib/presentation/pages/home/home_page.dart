@@ -15,7 +15,6 @@ import 'package:profit_grocery_application/presentation/widgets/cards/promotiona
 import 'package:profit_grocery_application/presentation/widgets/profile/profile_completion_banner.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/utils/cart_logger.dart';
-import 'package:profit_grocery_application/presentation/widgets/grids/rtdb_bestseller_grid.dart';
 import 'package:profit_grocery_application/presentation/widgets/grids/horizontal_bestseller_grid.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
@@ -41,7 +40,6 @@ import '../../widgets/base_layout.dart';
 import '../../widgets/buttons/back_to_top_button.dart';
 import '../../widgets/buttons/cart_fab.dart';
 import '../../widgets/grids/category_grid_4x2.dart';
-import '../../widgets/grids/dense_category_grid.dart';
 import '../../widgets/grids/product_grid.dart';
 import '../../widgets/grids/firebase_product_grid.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
