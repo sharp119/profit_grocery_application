@@ -2,12 +2,15 @@ import 'dart:async';
 
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:profit_grocery_application/core/constants/app_constants.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'dart:convert';
 import '../../../core/constants/app_theme.dart';
 import '../../../domain/entities/product.dart';
 import '../../../services/cart_provider.dart';
-import '../../../services/simple_cart_service.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/image_loader.dart';
 import '../../widgets/buttons/add_button.dart';
@@ -20,6 +23,8 @@ import 'package:provider/provider.dart';
 import '../profile/address_form_page.dart';
 import '../checkout/checkout_page.dart';
 import '../../../services/rtdb_product_service.dart'; // Your new service
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 
 class CartPage extends StatefulWidget {
@@ -36,7 +41,13 @@ class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
   final RTDBProductService _rtdbProductService = RTDBProductService();
 final FirebaseDatabase _database = FirebaseDatabase.instance;
   
-  
+    late Razorpay _razorpay;
+
+      bool _freeDelivery = true;
+
+  bool _isPlacingOrder = false; // Add this
+
+
 
   bool _showAllItems = false;
   bool _isPaymentExpanded = false;
@@ -78,7 +89,12 @@ int _totalItemsInCartProvider = 0; // Keep or derive from _cartProductIds.length
   @override
   void initState() {
     super.initState();
+ _razorpay = Razorpay();
 
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, handleExternalWallet);
+    
   _cartProvider.addListener(_onCartProviderChanged); // for addListener method
   _initializeCartDataAndSetupRTDBStream();
     
@@ -92,7 +108,99 @@ void dispose() {
   _rtdbStreamSubscription?.cancel();
   _itemAnimationControllers.forEach((_, controller) => controller.dispose());
   super.dispose();
+      _razorpay.clear();
+
 }
+
+// Modify your openCheckout method or create a new one
+void _openCheckoutAndHandleState({required double amount, required String contact, required String email}) {
+    // The amount parameter received here is _totalCartValue
+    double razorpayAmount = amount * 100; // Convert to paise
+
+    var options = {
+      'key': 'rzp_test_cIZUW0EpmfahD0', // YOUR KEY ID
+      'amount': razorpayAmount.toInt(),
+      'name': 'Profit Grocery',
+      'description': 'Payment for order',
+      'prefill': {
+        'contact': contact, // Dynamic contact
+        'email': email,     // Dynamic email
+      },
+      'external': {
+        'wallets': ['paytm']
+      },
+    };
+
+    try {
+      _razorpay.open(options);
+      // _isPlacingOrder is already set to true before calling this method.
+      // It will be set to false in the payment handlers.
+    } catch (e) {
+      print('Error opening Razorpay: $e');
+      Fluttertoast.showToast(msg: 'Error initiating payment: $e');
+      if (mounted) {
+        setState(() {
+          _isPlacingOrder = false; // Reset on immediate error
+        });
+      }
+    }
+  }
+void handlePaymentSuccess(PaymentSuccessResponse response) {
+    Fluttertoast.showToast(msg: 'Payment successful! Processing Order...', toastLength: Toast.LENGTH_LONG);
+    print('RAZORPAY_SUCCESS: Payment ID: ${response.paymentId}, Order ID: ${response.orderId}, Signature: ${response.signature}');
+
+    // TODO: SERVER-SIDE VERIFICATION of response.signature, response.paymentId, response.orderId
+    // This is a critical step for production apps.
+
+    // Simulate placing order (replace with your actual order placement logic)
+    String mockOrderId = 'ORD-CART-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    print('Order placed with ID: $mockOrderId, Payment ID: ${response.paymentId}');
+    
+    if (mounted) {
+        _showOrderSuccessDialog(context, mockOrderId); // Show your success dialog
+        
+        // **Clear Cart using CartBloc**
+        try {
+            BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
+        } catch (e) {
+            print("Error dispatching ClearCart event: $e");
+            // Fallback or alternative local clearing if BLoC fails, though BLoC is preferred.
+            // For example, if _cartProvider were to have item removal methods:
+            // _cartProvider.removeAllItemsLocally(); // Hypothetical method
+        }
+        
+        // Reset local cart display details immediately after dispatching ClearCart
+        // The BLoC will handle the persistent state, but local UI might need quicker reset.
+        _rtdbProductDetails.clear();
+        _cartProductIds.clear();
+        _cartQuantities.clear();
+        _recalculateCartTotals(); // This will update _totalCartValue to 0 and save it via _saveCartTotals()
+
+        setState(() {
+            _isPlacingOrder = false;
+        });
+    }
+}
+
+void handlePaymentError(PaymentFailureResponse response) {
+    String msg = 'Payment failed: ${response.code} - ${response.message}';
+    if (response.code == Razorpay.PAYMENT_CANCELLED){
+        msg = 'Payment Cancelled.';
+    }
+    Fluttertoast.showToast(msg: msg, toastLength: Toast.LENGTH_LONG, backgroundColor: Colors.red, textColor: Colors.white);
+    if (mounted) {
+      setState(() {
+        _isPlacingOrder = false;
+      });
+    }
+}
+
+void handleExternalWallet(ExternalWalletResponse response) {
+    Fluttertoast.showToast(msg: 'External wallet selected: ${response.walletName}', toastLength: Toast.LENGTH_SHORT);
+    // Depending on the flow, you might need to reset _isPlacingOrder here too if payment isn't guaranteed to proceed.
+    // For simplicity, we assume success/error handlers will manage _isPlacingOrder.
+}
+  
 
 // In _CartPageState
 void _updateLocalCartIdsAndQuantities() {
@@ -481,6 +589,144 @@ void _onCartProviderChanged() {
     );
   }
 
+  void _showOrderSuccessDialog(BuildContext context, String orderId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return Dialog(
+          backgroundColor: AppTheme.secondaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(24.w),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Success icon
+                Container(
+                  width: 80.w,
+                  height: 80.w,
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.check_circle,
+                    color: Colors.green,
+                    size: 48.sp,
+                  ),
+                ),
+                
+                SizedBox(height: 24.h),
+                
+                // Success message
+                Text(
+                  'Order Placed Successfully!',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                SizedBox(height: 12.h),
+                
+                // Order ID
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 12.w,
+                    vertical: 6.h,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primaryColor,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                  child: Text(
+                    'Order ID: $orderId',
+                    style: TextStyle(
+                      color: AppTheme.accentColor,
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 16.h),
+                
+                // Description
+                Text(
+                  'Your order has been placed successfully. You can track your order in the Orders section.',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14.sp,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                
+                SizedBox(height: 24.h),
+                
+                // Continue shopping button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      // Close all screens and go to home
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.accentColor,
+                      foregroundColor: Colors.black,
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    child: Text(
+                      'CONTINUE SHOPPING',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+                
+                SizedBox(height: 12.h),
+                
+                // Track order button
+                SizedBox(
+                  width: double.infinity,
+                  child: TextButton(
+                    onPressed: () {
+                      // Navigate to orders page with current orders tab selected
+                      Navigator.popUntil(context, (route) => route.isFirst);
+                      Navigator.pushNamed(context, AppConstants.ordersRoute, arguments: {'initialTab': 0});
+                    },
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                    ),
+                    child: Text(
+                      'TRACK ORDER',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
 @override
 Widget build(BuildContext context) {
@@ -681,59 +927,62 @@ Widget _buildBottomSections() {
           margin: EdgeInsets.fromLTRB(20.r, 5.h, 20.r, 30.h),
           width: double.infinity,
           height: 50.h,
-          child: ElevatedButton(
-            // Disable button if product data is still loading OR if the cart is logically empty
-            onPressed: _isProductDataLoading || _cartProductIds.isEmpty
-              ? null // Button disabled
-              : () {
-                  _saveAddressToPrefs(); // Ensure this is defined or uses _defaultAddress
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const CheckoutPage(),
-                    ),
-                  );
-                },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: (_isProductDataLoading || _cartProductIds.isEmpty)
-                ? Colors.grey.shade700 // Disabled color
-                : Color(0xFFFFC107),  // Enabled color
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-            ),
-            child: _isProductDataLoading && _cartProductIds.isNotEmpty // Show loading only if cart has items but details are loading
-              ? Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    SizedBox(
-                      width: 20.w,
-                      height: 20.w,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.w,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.grey.shade400),
-                      ),
-                    ),
-                    SizedBox(width: 10.w),
-                    Text(
-                      'Loading prices...',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey.shade400,
-                      ),
-                    ),
-                  ],
-                )
-              : Text(
-                  'Click to Pay',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.bold,
-                    color: (_cartProductIds.isEmpty) ? Colors.grey.shade400 : Colors.black,
-                  ),
-                ),
-          ),
+          // Within _buildBottomSections method:
+child: ElevatedButton(
+  onPressed: _isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder // Add _isPlacingOrder
+    ? null 
+    : () async { // Make it async if _saveAddressToPrefs is async
+        if (_defaultAddress == null) {
+            Fluttertoast.showToast(msg: "Please select a delivery address first.");
+            _showAddressSelection();
+            return;
+        }
+        if (_totalCartValue <= 0) {
+            Fluttertoast.showToast(msg: "Your cart is empty or total is invalid.");
+            return;
+        }
+        
+        // Ensure address data (especially phone for prefill) is up-to-date
+        await _saveAddressToPrefs(); // Good to save it
+
+        // Prepare for payment
+        if (mounted) { // Check if widget is still in the tree
+            setState(() {
+                _isPlacingOrder = true;
+            });
+        }
+
+        // Fetch dynamic prefill data
+        String contactNumber = _defaultAddress?.phone ?? '9876543210'; // Fallback
+        // String userEmail = context.read<UserBloc>().state.user?.email ?? 'test@example.com'; // Ideal
+        String userEmail = 'test@example.com'; // Placeholder for now
+
+        // Call your modified openCheckout
+        _openCheckoutAndHandleState(
+            amount: _totalCartValue, // Pass the double value
+            contact: contactNumber,
+            email: userEmail,
+        );
+      },
+  style: ElevatedButton.styleFrom(
+    backgroundColor: (_isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder)
+      ? Colors.grey.shade700 
+      : Color(0xFFFFC107),  
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(8.r),
+    ),
+  ),
+  child: _isPlacingOrder 
+    ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+    : Text(
+        'Click to Pay ₹${_totalCartValue.toStringAsFixed(0)}',
+        style: TextStyle(
+          fontSize: 16.sp,
+          fontWeight: FontWeight.bold,
+          color: (_cartProductIds.isEmpty) ? Colors.grey.shade400 : Colors.black,
+        ),
+      ),
+),
         ),
       ],
     ),
