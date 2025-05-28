@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
@@ -14,6 +16,8 @@ import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
 // import '../cards/universal_product_card.dart';
 import '../cards/improved_product_card.dart';
+import '../../../data/repositories/rtdb_category_product_repository.dart'; 
+
 
 /// A two-panel layout with categories on the left and products on the right,
 /// optimized for efficient Firestore data loading with lazy loading support
@@ -52,15 +56,18 @@ class TwoPanelCategoryProductView extends StatefulWidget {
 class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductView> {
   final ScrollController _productScrollController = ScrollController();
   final ScrollController _categoryScrollController = ScrollController();
-  final FirestoreProductRepository _productRepository = FirestoreProductRepository();
+  final RTDBCategoryProductRepository _rtdbProductRepository = RTDBCategoryProductRepository();
   final SharedCategoryService _categoryService = GetIt.instance<SharedCategoryService>();
   
   int _selectedCategoryIndex = 0;
   final Map<int, double> _categoryOffsets = {};
   late Category _selectedCategory;
   
+  final Map<String, StreamSubscription<List<Product>>> _categoryStreamSubscriptions = {};
+
+
   // Keep track of products for each category
-  final Map<String, List<ProductModel>> _categoryProducts = {};
+  final Map<String, List<Product>> _categoryProducts = {};
   
   // Keep track of loading state for each category
   final Map<String, bool> _isLoadingCategory = {};
@@ -107,94 +114,97 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
     _productScrollController.addListener(_onProductScroll);
   }
   
-  @override
-  void dispose() {
-    _productScrollController.removeListener(_onProductScroll);
-    _productScrollController.dispose();
-    _categoryScrollController.dispose();
-    super.dispose();
+ @override
+void dispose() {
+  _productScrollController.removeListener(_onProductScroll);
+  _productScrollController.dispose();
+  _categoryScrollController.dispose();
+  // Cancel all stream subscriptions
+  for (final sub in _categoryStreamSubscriptions.values) {
+    sub.cancel();
   }
+  _categoryStreamSubscriptions.clear();
+  super.dispose();
+}
   
   /// Load products for a specific category from Firestore
   Future<void> _loadProductsForCategory(Category category) async {
-    final categoryId = category.id;
-    
-    // Skip if already loading or loaded
-    if (_isLoadingCategory[categoryId] == true || 
-        (_categoryProducts[categoryId]?.isNotEmpty ?? false)) {
-      return;
+  final categoryId = category.id; // This is your 'categoryItem'
+
+  // Prevent duplicate stream subscriptions
+  if (_categoryStreamSubscriptions.containsKey(categoryId)) {
+    return;
+  }
+
+  setState(() {
+    _isLoadingCategory[categoryId] = true;
+    _isCategoryInitiallyLoaded[categoryId] = false; // Reset for stream
+    _categoryProducts[categoryId] = []; // Clear previous products
+    _displayedProductsCount[categoryId] = 0;
+  });
+
+  LoggingService.logFirestore('TWOPANEL_RTDB: Setting up stream for category: $categoryId');
+  print('TWOPANEL_RTDB: Setting up stream for category: $categoryId');
+
+  // Determine categoryGroup
+  final categoryParts = categoryId.split('_');
+  String? categoryGroup;
+  if (categoryParts.isNotEmpty) {
+    categoryGroup = await _getCategoryGroupForItem(categoryId); // Your existing logic
+    if (categoryGroup == null && categoryParts.length > 1) {
+      categoryGroup = categoryParts[0];
     }
-    
-    try {
+  }
+
+  if (categoryGroup == null) {
+    LoggingService.logError('TWOPANEL_RTDB', 'Could not determine category group for: $categoryId');
+    print('TWOPANEL_RTDB ERROR: Could not determine category group for: $categoryId');
+    if (mounted) {
       setState(() {
-        _isLoadingCategory[categoryId] = true;
+        _isLoadingCategory[categoryId] = false;
+        _isCategoryInitiallyLoaded[categoryId] = true; // Mark as processed
       });
-      
-      LoggingService.logFirestore('TWOPANEL: Loading products for category: $categoryId');
-      print('TWOPANEL: Loading products for category: $categoryId');
-      
-      // Get category group info from shared service
-      final categoryParts = categoryId.split('_');
-      String? categoryGroup;
-      
-      if (categoryParts.isNotEmpty) {
-        // Try exact match first
-        categoryGroup = await _getCategoryGroupForItem(categoryId);
-        
-        // If not found, try using just the first part of the ID
-        if (categoryGroup == null && categoryParts.length > 1) {
-          categoryGroup = categoryParts[0];
-        }
-      }
-      
-      if (categoryGroup == null) {
-        LoggingService.logError('TWOPANEL', 'Could not determine category group for: $categoryId');
-        print('TWOPANEL ERROR: Could not determine category group for: $categoryId');
-        
-        setState(() {
-          _isLoadingCategory[categoryId] = false;
-          _categoryProducts[categoryId] = [];
-          _isCategoryInitiallyLoaded[categoryId] = true;
-          _displayedProductsCount[categoryId] = 0;
-        });
-        return;
-      }
-      
-      // Load products from Firestore
-      final products = await _productRepository.fetchProductsByCategory(
-        categoryGroup: categoryGroup,
-        categoryItem: categoryId,
-      );
-      
-      // Update state with loaded products
+    }
+    return;
+  }
+
+  final streamSubscription = _rtdbProductRepository.getCategoryProductsStream(
+    categoryGroup: categoryGroup,
+    categoryItem: categoryId,
+  ).listen(
+    (products) {
       if (mounted) {
         setState(() {
           _categoryProducts[categoryId] = products;
           _isLoadingCategory[categoryId] = false;
           _isCategoryInitiallyLoaded[categoryId] = true;
+          // Reset displayed count or adjust based on new product list length
           _displayedProductsCount[categoryId] = _productBatchSize.clamp(0, products.length);
           _isLoadingMoreProducts[categoryId] = false;
+
+          LoggingService.logFirestore('TWOPANEL_RTDB: Received ${products.length} products for $categoryId via stream');
+          print('TWOPANEL_RTDB: Received ${products.length} products for $categoryId via stream, displaying ${_displayedProductsCount[categoryId]}');
         });
       }
-      
-      LoggingService.logFirestore('TWOPANEL: Loaded ${products.length} products for category: $categoryId');
-      print('TWOPANEL: Loaded ${products.length} products for category: $categoryId, displaying ${_displayedProductsCount[categoryId]} initially');
-    } catch (e) {
-      LoggingService.logError('TWOPANEL', 'Error loading products for category $categoryId: $e');
-      print('TWOPANEL ERROR: Failed to load products for category $categoryId: $e');
-      
+    },
+    onError: (error) {
+      LoggingService.logError('TWOPANEL_RTDB', 'Error in stream for category $categoryId: $error');
+      print('TWOPANEL_RTDB ERROR: Stream error for $categoryId: $error');
       if (mounted) {
         setState(() {
           _isLoadingCategory[categoryId] = false;
-          _categoryProducts[categoryId] = [];
-          _isCategoryInitiallyLoaded[categoryId] = true;
-          _displayedProductsCount[categoryId] = 0;
-          _isLoadingMoreProducts[categoryId] = false;
+          _isCategoryInitiallyLoaded[categoryId] = true; // Mark as processed even on error
+          // Optionally, set an error state for this specific category
         });
       }
-    }
+    },
+  );
+  if (mounted) {
+      _categoryStreamSubscriptions[categoryId] = streamSubscription;
+  } else {
+      streamSubscription.cancel();
   }
-  
+}
   /// Get the category group ID for a category item ID
   Future<String?> _getCategoryGroupForItem(String categoryItemId) async {
     try {
@@ -728,7 +738,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   }
 
   /// Build grid of products with batch loading
-  Widget _buildProductsGrid(List<ProductModel> products, Category category) {
+  Widget _buildProductsGrid(List<Product> products, Category category) {
     final quantities = widget.cartQuantities;
     final categoryId = category.id;
     
@@ -759,24 +769,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
             final product = displayedProducts[index];
             final quantity = quantities[product.id] ?? 0;
             
-            // Convert ProductModel to Product entity for the callbacks
-            final productEntity = Product(
-              id: product.id,
-              name: product.name,
-              description: product.description ?? '',
-              price: product.price,
-              mrp: product.mrp,
-              image: product.image,
-              inStock: product.inStock,
-              categoryId: product.categoryId,
-              categoryName: product.categoryName,
-              subcategoryId: product.subcategoryId,
-              weight: product.weight,
-              brand: product.brand,
-              isActive: true,
-              isFeatured: false,
-              tags: [],
-            );
+            
             
             // Check if this is the last item in the current batch
             final isLastItem = index == displayedProducts.length - 1;
@@ -790,8 +783,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
             }
             
             return ImprovedProductCard(
-              product: productEntity,
-              onTap: () => widget.onProductTap(productEntity),
+              product: product,
+              onTap: () => widget.onProductTap(product),
               onQuantityChanged: (product, qty) => widget.onQuantityChanged(product, qty),
               quantity: quantity,
               backgroundColor: backgroundColor,
