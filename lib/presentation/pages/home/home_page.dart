@@ -20,7 +20,6 @@ import 'package:profit_grocery_application/presentation/widgets/grids/horizontal
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/search/custom_search_bar.dart';
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
-import 'package:profit_grocery_application/presentation/pages/revamped_two_panel_view.dart';
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -1420,20 +1419,20 @@ class _HomePageContentState extends State<_HomePageContent> {
           SizedBox(height: 100.h),
 
           // Button to navigate to Revamped Two-Panel View
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16.w),
-            child: ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RevampedTwoPanelView(),
-                  ),
-                );
-              },
-              child: const Text('Go to Revamped Two-Panel View'),
-            ),
-          ),
+          // Padding(
+          //   padding: EdgeInsets.symmetric(horizontal: 16.w),
+          //   child: ElevatedButton(
+          //     onPressed: () {
+          //       Navigator.push(
+          //         context,
+          //         MaterialPageRoute(
+          //           builder: (context) => const RevampedTwoPanelView(),
+          //         ),
+          //       );
+          //     },
+          //     child: const Text('Go to Revamped Two-Panel View'),
+          //   ),
+          // ),
           SizedBox(height: 24.h),
 
         ],

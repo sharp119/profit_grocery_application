@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_theme.dart';
@@ -13,8 +12,8 @@ import '../../../services/category/shared_category_service.dart';
 import '../../../services/logging_service.dart';
 import '../buttons/back_to_top_button.dart';
 import '../buttons/cart_fab.dart';
-import '../cards/universal_product_card.dart';
-import '../../../core/constants/category_assets.dart';
+// import '../cards/universal_product_card.dart';
+import '../cards/improved_product_card.dart';
 
 /// A two-panel layout with categories on the left and products on the right,
 /// optimized for efficient Firestore data loading with lazy loading support
@@ -72,6 +71,15 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
   // Keep track of whether categories have been initially loaded
   final Map<String, bool> _isCategoryInitiallyLoaded = {};
   
+  // Keep track of displayed products count for each category (for batch loading)
+  final Map<String, int> _displayedProductsCount = {};
+  
+  // Batch size for product loading
+  final int _productBatchSize = 8;
+  
+  // Flag to track if more products are being loaded
+  final Map<String, bool> _isLoadingMoreProducts = {};
+  
   @override
   void initState() {
     super.initState();
@@ -84,6 +92,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
       for (final category in widget.categories) {
         _isCategoryInitiallyLoaded[category.id] = false;
         _isCategoryVisible[category.id] = false;
+        _displayedProductsCount[category.id] = 0;
+        _isLoadingMoreProducts[category.id] = false;
       }
       
       // Load first category immediately
@@ -145,6 +155,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           _isLoadingCategory[categoryId] = false;
           _categoryProducts[categoryId] = [];
           _isCategoryInitiallyLoaded[categoryId] = true;
+          _displayedProductsCount[categoryId] = 0;
         });
         return;
       }
@@ -161,11 +172,13 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           _categoryProducts[categoryId] = products;
           _isLoadingCategory[categoryId] = false;
           _isCategoryInitiallyLoaded[categoryId] = true;
+          _displayedProductsCount[categoryId] = _productBatchSize.clamp(0, products.length);
+          _isLoadingMoreProducts[categoryId] = false;
         });
       }
       
       LoggingService.logFirestore('TWOPANEL: Loaded ${products.length} products for category: $categoryId');
-      print('TWOPANEL: Loaded ${products.length} products for category: $categoryId');
+      print('TWOPANEL: Loaded ${products.length} products for category: $categoryId, displaying ${_displayedProductsCount[categoryId]} initially');
     } catch (e) {
       LoggingService.logError('TWOPANEL', 'Error loading products for category $categoryId: $e');
       print('TWOPANEL ERROR: Failed to load products for category $categoryId: $e');
@@ -175,6 +188,8 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           _isLoadingCategory[categoryId] = false;
           _categoryProducts[categoryId] = [];
           _isCategoryInitiallyLoaded[categoryId] = true;
+          _displayedProductsCount[categoryId] = 0;
+          _isLoadingMoreProducts[categoryId] = false;
         });
       }
     }
@@ -308,8 +323,9 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Left panel: Category navigation
-            SizedBox(
-              width: 100.w,
+            Expanded(
+              // width: 80.w,
+              flex: 1,
               child: ListView.builder(
                 controller: _categoryScrollController,
                 itemCount: widget.categories.length,
@@ -421,6 +437,7 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
             
             // Right panel: Products for categories - Lazy loaded sections
             Expanded(
+              flex: 4,
               child: CustomScrollView(
                 controller: _productScrollController,
                 slivers: [
@@ -681,55 +698,137 @@ class _TwoPanelCategoryProductViewState extends State<TwoPanelCategoryProductVie
     );
   }
   
-  /// Build grid of products
+  /// Load more products for a category when user scrolls to the bottom
+  void _loadMoreProducts(String categoryId) {
+    if (_isLoadingMoreProducts[categoryId] == true) return;
+    
+    final allProducts = _categoryProducts[categoryId] ?? [];
+    final currentlyDisplayed = _displayedProductsCount[categoryId] ?? 0;
+    
+    // If we're already showing all products, don't do anything
+    if (currentlyDisplayed >= allProducts.length) return;
+    
+    setState(() {
+      _isLoadingMoreProducts[categoryId] = true;
+    });
+    
+    // Simulate loading delay for better UX
+    Future.delayed(const Duration(milliseconds: 300), () {
+      if (mounted) {
+        setState(() {
+          // Calculate how many more to show (up to batch size)
+          final newDisplayCount = (currentlyDisplayed + _productBatchSize).clamp(0, allProducts.length);
+          _displayedProductsCount[categoryId] = newDisplayCount;
+          _isLoadingMoreProducts[categoryId] = false;
+          
+          print('TWOPANEL: Loaded more products for $categoryId, now showing $newDisplayCount of ${allProducts.length}');
+        });
+      }
+    });
+  }
+
+  /// Build grid of products with batch loading
   Widget _buildProductsGrid(List<ProductModel> products, Category category) {
     final quantities = widget.cartQuantities;
+    final categoryId = category.id;
     
     // Get category color
-    final Color backgroundColor = widget.subcategoryColors?[category.id] ?? Colors.transparent;
+    final Color backgroundColor = widget.subcategoryColors?[categoryId] ?? Colors.transparent;
     
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 0.63, // Decreased to provide more height for the content
-        crossAxisSpacing: 12.w,
-        mainAxisSpacing: 12.h,
-      ),
-      itemCount: products.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      padding: EdgeInsets.symmetric(horizontal: 16.w),
-      itemBuilder: (context, index) {
-        final product = products[index];
-        final quantity = quantities[product.id] ?? 0;
+    // Get the number of products to display (batch loading)
+    final displayCount = _displayedProductsCount[categoryId] ?? _productBatchSize.clamp(0, products.length);
+    final displayedProducts = products.take(displayCount).toList();
+    final isLoadingMore = _isLoadingMoreProducts[categoryId] ?? false;
+    final hasMoreToLoad = displayCount < products.length;
+    
+    return Column(
+      children: [
+        // Products grid
+        GridView.builder(
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            childAspectRatio: 0.50, // Decreased to provide more height for the content
+            crossAxisSpacing: 12.w,
+            mainAxisSpacing: 12.h,
+          ),
+          itemCount: displayedProducts.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          padding: EdgeInsets.symmetric(horizontal: 16.w),
+          itemBuilder: (context, index) {
+            final product = displayedProducts[index];
+            final quantity = quantities[product.id] ?? 0;
+            
+            // Convert ProductModel to Product entity for the callbacks
+            final productEntity = Product(
+              id: product.id,
+              name: product.name,
+              description: product.description ?? '',
+              price: product.price,
+              mrp: product.mrp,
+              image: product.image,
+              inStock: product.inStock,
+              categoryId: product.categoryId,
+              categoryName: product.categoryName,
+              subcategoryId: product.subcategoryId,
+              weight: product.weight,
+              brand: product.brand,
+              isActive: true,
+              isFeatured: false,
+              tags: [],
+            );
+            
+            // Check if this is the last item in the current batch
+            final isLastItem = index == displayedProducts.length - 1;
+            
+            // If this is the last item and there are more to load, trigger loading more
+            if (isLastItem && hasMoreToLoad && !isLoadingMore) {
+              // Use post-frame callback to avoid build issues
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                _loadMoreProducts(categoryId);
+              });
+            }
+            
+            return ImprovedProductCard(
+              product: productEntity,
+              onTap: () => widget.onProductTap(productEntity),
+              onQuantityChanged: (product, qty) => widget.onQuantityChanged(product, qty),
+              quantity: quantity,
+              backgroundColor: backgroundColor,
+              showBrand: true,
+              showWeight: true,
+              enableQuantityControls: true,
+            );
+          },
+        ),
         
-        // Convert ProductModel to Product entity for the callbacks
-        final productEntity = Product(
-          id: product.id,
-          name: product.name,
-          description: product.description ?? '',
-          price: product.price,
-          mrp: product.mrp,
-          image: product.image,
-          inStock: product.inStock,
-          categoryId: product.categoryId,
-          categoryName: product.categoryName,
-          subcategoryId: product.subcategoryId,
-          weight: product.weight,
-          brand: product.brand,
-          isActive: true,
-          isFeatured: false,
-          tags: [],
-        );
-        
-        return UniversalProductCard(
-          product: productEntity,
-          onTap: () => widget.onProductTap(productEntity),
-          // quantity: quantity,
-          backgroundColor: backgroundColor,
-          useBackgroundColor: backgroundColor != Colors.transparent,
-        );
-      },
+        // Loading indicator for more products
+        if (hasMoreToLoad)
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            child: isLoadingMore
+                ? Center(
+                    child: SizedBox(
+                      width: 24.w,
+                      height: 24.h,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.w,
+                        valueColor: AlwaysStoppedAnimation<Color>(AppTheme.accentColor),
+                      ),
+                    ),
+                  )
+                : TextButton(
+                    onPressed: () => _loadMoreProducts(categoryId),
+                    child: Text(
+                      'Load more products',
+                      style: TextStyle(
+                        color: AppTheme.accentColor,
+                        fontSize: 14.sp,
+                      ),
+                    ),
+                  ),
+          ),
+      ],
     );
   }
 }

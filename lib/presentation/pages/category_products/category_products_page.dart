@@ -4,9 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 
 import '../../../core/constants/app_theme.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../domain/entities/category.dart';
-import '../../../domain/entities/product.dart';
+
 import '../../../domain/repositories/cart_repository.dart';
 import '../../../services/simple_cart_service.dart';
 import '../../../services/logging_service.dart';

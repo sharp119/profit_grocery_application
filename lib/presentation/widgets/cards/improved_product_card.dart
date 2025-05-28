@@ -710,7 +710,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
             SizedBox(height: 6.h),
           ],
           Padding(
-            padding: const EdgeInsets.fromLTRB(8, 16, 0, 8),
+            padding: const EdgeInsets.fromLTRB(8, 6, 0, 0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -735,7 +735,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
               ],
             ),
           ),
-          SizedBox(height: 8.h), // Space between price/weight row and bottom
+          // SizedBox(height: 1.h), // Space between price/weight row and bottom
           // Removed SizedBox(height: 10.h) and Add to Cart Button
         ],
       ),
