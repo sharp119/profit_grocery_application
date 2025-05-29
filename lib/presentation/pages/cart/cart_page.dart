@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
+import 'package:profit_grocery_application/domain/usecases/order/create_order_usecase.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_bloc.dart';
 import 'package:profit_grocery_application/presentation/blocs/cart/cart_event.dart';
 import 'package:profit_grocery_application/presentation/widgets/grids/horizontal_bestseller_grid.dart';
@@ -26,6 +27,10 @@ import '../checkout/checkout_page.dart';
 import '../../../services/rtdb_product_service.dart'; // Your new service
 import 'package:fluttertoast/fluttertoast.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:profit_grocery_application/domain/entities/order.dart';
+// import 'package:profit_grocery_application/domain/usecases/create_order_usecase.dart';
+import 'package:profit_grocery_application/services/service_locator.dart'; // Your GetIt instance access
+import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp
 
 
 class CartPage extends StatefulWidget {
@@ -184,40 +189,155 @@ void _openCheckoutAndHandleState({required double amount, required String contac
       }
     }
   }
-void handlePaymentSuccess(PaymentSuccessResponse response) {
+// Inside _CartPageState class of lib/presentation/pages/cart/cart_page.dart
+
+// (Razorpay handlers and other methods remain largely the same, focus is on this one)
+
+void handlePaymentSuccess(PaymentSuccessResponse response) async {
     Fluttertoast.showToast(msg: 'Payment successful! Processing Order...', toastLength: Toast.LENGTH_LONG);
     print('RAZORPAY_SUCCESS: Payment ID: ${response.paymentId}, Order ID: ${response.orderId}, Signature: ${response.signature}');
 
-    // TODO: SERVER-SIDE VERIFICATION of response.signature, response.paymentId, response.orderId
-    // This is a critical step for production apps.
+    // SERVER-SIDE VERIFICATION of payment response is CRITICAL for production apps.
+    // This client-side order placement is for demonstration purposes.
 
-    // Simulate placing order (replace with your actual order placement logic)
-    String mockOrderId = 'ORD-CART-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
-    print('Order placed with ID: $mockOrderId, Payment ID: ${response.paymentId}');
-    
-    if (mounted) {
-        _showOrderSuccessDialog(context, mockOrderId); // Show your success dialog
-        
-        // **Clear Cart using CartBloc**
-        try {
-            BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
-        } catch (e) {
-            print("Error dispatching ClearCart event: $e");
-            // Fallback or alternative local clearing if BLoC fails, though BLoC is preferred.
-            // For example, if _cartProvider were to have item removal methods:
-            // _cartProvider.removeAllItemsLocally(); // Hypothetical method
+    if (!mounted) return;
+
+    // 1. Get User ID from SharedPreferences (as currently done in _loadDefaultAddress)
+    //    or UserBloc if the user state is guaranteed to be up-to-date with Firebase Auth UID.
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('user_token'); // This should be Firebase UID
+
+    if (userId == null || userId.isEmpty) {
+        Fluttertoast.showToast(msg: 'User not identified. Cannot place order.', backgroundColor: Colors.red);
+        if (mounted) setState(() => _isPlacingOrder = false);
+        return;
+    }
+
+    if (_defaultAddress == null) {
+        Fluttertoast.showToast(msg: 'Shipping address not available. Cannot place order.', backgroundColor: Colors.red);
+        if (mounted) setState(() => _isPlacingOrder = false);
+        return;
+    }
+
+    // 2. Prepare OrderItems from _rtdbProductDetails and _cartQuantities
+    List<OrderItem> orderItems = [];
+    for (Product product in _rtdbProductDetails) {
+        final quantity = _cartQuantities[product.id] ?? 0;
+        if (quantity > 0) {
+            // product.mrp (from RTDB) is the original price before discount.
+            // product.price (from RTDB) is the final buyingPrice after discount.
+            double itemMrp = product.mrp ?? product.price; // Use product.price if mrp is somehow null
+            // If you stored 'rawMrp' consistently in customProperties, that might be even more reliable for true MRP
+            if (product.customProperties?.containsKey('rawMrp') ?? false) {
+                itemMrp = (product.customProperties!['rawMrp'] as num).toDouble();
+            }
+
+            orderItems.add(OrderItem(
+                productId: product.id,
+                name: product.name,
+                image: product.image, // Ensure product.image is a valid URL
+                mrp: itemMrp,
+                buyingPrice: product.price,
+                quantity: quantity,
+            ));
         }
-        
-        // Reset local cart display details immediately after dispatching ClearCart
-        // The BLoC will handle the persistent state, but local UI might need quicker reset.
-        _rtdbProductDetails.clear();
-        _cartProductIds.clear();
-        _cartQuantities.clear();
-        _recalculateCartTotals(); // This will update _totalCartValue to 0 and save it via _saveCartTotals()
+    }
 
-        setState(() {
-            _isPlacingOrder = false;
-        });
+    if (orderItems.isEmpty) {
+        Fluttertoast.showToast(msg: 'Your cart is empty. Cannot place order.', backgroundColor: Colors.red);
+        if (mounted) setState(() => _isPlacingOrder = false);
+        return;
+    }
+
+    // 3. Prepare ShippingAddressOrder from _defaultAddress (type Address)
+    final shippingAddressForOrder = ShippingAddressOrder(
+        name: _defaultAddress!.name,
+        addressLine: _defaultAddress!.addressLine,
+        city: _defaultAddress!.city,
+        state: _defaultAddress!.state,
+        pincode: _defaultAddress!.pincode,
+        phone: _defaultAddress!.phone,
+        landmark: _defaultAddress!.landmark,
+        addressType: _defaultAddress!.addressType,
+    );
+
+    // 4. Prepare PaymentDetailsOrder
+    final paymentDetailsForOrder = PaymentDetailsOrder(
+        paymentId: response.paymentId ?? 'RPAY-${DateTime.now().millisecondsSinceEpoch}', // Fallback if null
+        method: "razorpay",
+        amountPaid: _totalCartValue, // Final amount paid by user
+        currency: "INR", // Assuming INR
+        // initiationTime: null, // Optional: Set if you track payment start
+        successTime: Timestamp.now(), // Time of successful payment confirmation
+    );
+
+    // 5. Prepare PricingSummaryOrder
+    //    Subtotal: Sum of (OrderItem.mrp * OrderItem.quantity) for all items
+    //    ItemDiscountsTotal: Sum of ((OrderItem.mrp - OrderItem.buyingPrice) * OrderItem.quantity)
+    //    GrandTotal: _totalCartValue (final amount paid)
+    double calculatedSubtotal = orderItems.fold(0.0, (sum, item) => sum + (item.mrp * item.quantity));
+    double calculatedItemDiscounts = orderItems.fold(0.0, (sum, item) => sum + ((item.mrp - item.buyingPrice) * item.quantity));
+
+    // Verify _totalSavings: Your _recalculateCartTotals method correctly calculates totalSavings as:
+    // (originalPrice - product.price) * quantity, where originalPrice is effectively itemMrp.
+    // So, _totalSavings from CartPage state should be equivalent to calculatedItemDiscounts.
+
+    final pricingSummaryForOrder = PricingSummaryOrder(
+        subtotal: calculatedSubtotal,
+        itemDiscountsTotal: _totalSavings, // Use the already calculated _totalSavings
+        couponCodeApplied: null, // TODO: Integrate if coupon logic affects final price
+        couponDiscountAmount: 0.0, // TODO: Integrate
+        deliveryFee: 0.0, // As per UI (shows free delivery)
+        packagingFee: 0.0, // Default, unless you have specific packaging charges
+        grandTotal: _totalCartValue,
+    );
+
+    // 6. Create the OrderEntity instance
+    // The 'id' field of OrderEntity can be null; Firestore will generate the document ID.
+    final orderToCreate = OrderEntity(
+        // id: null, // Let Firestore generate it
+        userId: userId,
+        orderTimestamp: Timestamp.now(),
+        status: "pending", // Initial status after payment success
+        items: orderItems,
+        shippingAddress: shippingAddressForOrder,
+        paymentDetails: paymentDetailsForOrder,
+        pricingSummary: pricingSummaryForOrder,
+    );
+
+    // 7. Call the CreateOrderUsecase
+    try {
+      final createOrderUsecase = sl<CreateOrderUsecase>(); // Get from service locator
+      final String createdOrderId = await createOrderUsecase.call(orderToCreate);
+
+      print('Order created successfully in Firestore. Order ID: $createdOrderId');
+
+      if (mounted) {
+          _showOrderSuccessDialog(context, createdOrderId); // Show dialog with actual Firestore order ID
+
+          // Clear cart via BLoC (already in your code)
+          BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
+
+          // Reset local cart display state (already in your code)
+          _rtdbProductDetails.clear();
+          _cartProductIds.clear();
+          _cartQuantities.clear();
+          _recalculateCartTotals(); // This updates totals and saves to SharedPreferences
+
+          setState(() {
+              _isPlacingOrder = false;
+          });
+      }
+    } catch (e) {
+      print('Error saving order to Firestore: $e');
+      Fluttertoast.showToast(
+          msg: 'Failed to place order. Please try again or contact support.',
+          backgroundColor: Colors.red,
+          toastLength: Toast.LENGTH_LONG,
+      );
+      if (mounted) {
+          setState(() { _isPlacingOrder = false; });
+      }
     }
 }
 
