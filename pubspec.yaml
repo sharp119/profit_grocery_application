@@ -62,6 +62,7 @@ flutter:
     - assets/icon/res/mipmap-xxxhdpi/ic_launcher.png
     - assets/icon/res/mipmap-xxxhdpi/ic_launcher_background.png
     - assets/icon/res/mipmap-xxxhdpi/ic_launcher_foreground.png
+    - assets/icon/play_store_512.png
 
   # Add custom fonts later if required
   # fonts:

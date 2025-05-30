@@ -8,8 +8,8 @@ import '../../../core/constants/app_theme.dart';
 import '../../blocs/auth/auth_bloc.dart';
 import '../../blocs/auth/auth_event.dart';
 import '../../blocs/auth/auth_state.dart';
-import '../home/home_page.dart';
-import '../main_navigation.dart';
+import '../home/home_page.dart'; // Ensure this import is correct
+import '../main_navigation.dart'; // Ensure this import is correct for homeRoute
 import 'phone_entry_page.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -30,13 +30,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   void initState() {
     super.initState();
     
-    // Initialize animation controller
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
     
-    // Setup animations
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _animationController,
@@ -51,10 +49,8 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       ),
     );
     
-    // Start animation
     _animationController.forward();
     
-    // Trigger auth check after delay
     _authTimer = Timer(const Duration(seconds: 2), () {
       if (mounted) {
         context.read<AuthBloc>().add(const CheckAuthStatus());
@@ -73,20 +69,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   Widget build(BuildContext context) {
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
-        // Handle authentication state changes
         if (state.status == AuthStatus.authenticated) {
-          // User is authenticated, navigate to main navigation with bottom bar
           Navigator.of(context).pushNamedAndRemoveUntil(
-            AppConstants.homeRoute,
+            AppConstants.homeRoute, // Assuming homeRoute leads to MainNavigation or similar
             (route) => false,
           );
         } else if (state.status == AuthStatus.unauthenticated) {
-          // User is not authenticated, navigate to login page
           Navigator.of(context).pushReplacement(
             MaterialPageRoute(builder: (context) => const PhoneEntryPage()),
           );
         } else if (state.status == AuthStatus.error) {
-          // Authentication check failed, show error and go to login page
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.errorMessage ?? 'Authentication check failed'),
@@ -94,8 +86,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               duration: const Duration(seconds: 3),
             ),
           );
-          
-          // Delay navigation slightly to show the error
           Future.delayed(const Duration(milliseconds: 1500), () {
             if (mounted) {
               Navigator.of(context).pushReplacement(
@@ -118,53 +108,30 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Logo
-                      Container(
-                        width: 150.w,
-                        height: 150.w,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primaryColor,
-                          border: Border.all(
-                            color: AppTheme.accentColor,
-                            width: 3.w,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withOpacity(0.3),
-                              blurRadius: 20,
-                              spreadRadius: 5,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'PG',
-                            style: TextStyle(
-                              color: AppTheme.accentColor,
-                              fontSize: 60.sp,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                      // MODIFIED PART: Show actual logo
+                      // TODO: Replace 'assets/images/app_logo.png' with the actual path to your logo
+                      // TODO: Ensure your logo asset is declared in pubspec.yaml
+                      Image.asset(
+                        'assets/icon/play_store_512.png', // <<< YOUR LOGO PATH HERE
+                        width: 250.w,
+                        height: 250.w,
+                        // You might want to add fit: BoxFit.contain or similar
                       ),
                       
                       SizedBox(height: 40.h),
                       
-                      // App name
-                      Text(
-                        AppConstants.appName,
-                        style: TextStyle(
-                          color: AppTheme.accentColor,
-                          fontSize: 36.sp,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
+                      // Text(
+                      //   AppConstants.appName,
+                      //   style: TextStyle(
+                      //     color: AppTheme.accentColor,
+                      //     fontSize: 36.sp,
+                      //     fontWeight: FontWeight.bold,
+                      //     letterSpacing: 1.2,
+                      //   ),
+                      // ),
                       
-                      SizedBox(height: 16.h),
+                      // SizedBox(height: 16.h),
                       
-                      // Tagline
                       Text(
                         AppConstants.appTagline,
                         style: TextStyle(
@@ -177,7 +144,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       
                       SizedBox(height: 80.h),
                       
-                      // Loading indicator
                       SizedBox(
                         width: 24.w,
                         height: 24.w,
