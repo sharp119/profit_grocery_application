@@ -57,14 +57,15 @@ class CategoryProductsPage extends StatelessWidget {
         listener: (context, state) {
           // When state changes, check if a product was added to show feedback
           if (state is CategoryProductsLoaded && state.lastAddedProduct != null) {
-            String cartMessage = "Product '${state.lastAddedProduct!.name}' added to cart";
+            // String cartMessage = "Product '${state.lastAddedProduct!.name}' added to cart";
+            String cartMessage = "Added to cart";
             
             // Show a snackbar message
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('✅ $cartMessage'),
                 backgroundColor: Colors.green,
-                duration: const Duration(seconds: 2),
+                duration: const Duration(seconds: 650),
               ),
             );
           }

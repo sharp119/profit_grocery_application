@@ -41,6 +41,7 @@ class CartPage extends StatefulWidget {
 }
 
 class _CartPageState extends State<CartPage> with TickerProviderStateMixin {
+
   final CartProvider _cartProvider = CartProvider();
   // final SharedProductService _productService = SharedProductService();
 
@@ -53,7 +54,12 @@ final FirebaseDatabase _database = FirebaseDatabase.instance;
 
   bool _isPlacingOrder = false; // Add this
 
-
+  // COD state variables
+  bool _isCashOnDeliverySelected = false;
+  String? _appliedCouponCode; // For coupon integration (if not already present)
+  double _couponDiscount = 0.0; // For coupon integration (if not already present)
+  double _deliveryFee = 0.0; // For delivery fee (if not already present)
+  double _packagingFee = 0.0; // For packaging fee (if not already present)
 
   bool _showAllItems = false;
   bool _isPaymentExpanded = false;
@@ -514,7 +520,7 @@ void _recalculateCartTotals() {
       // product.price is the final price after discounts, parsed by RTDBProductService
       newTotalValue += product.price * quantity;
 
-      // product.mrp is set by RTDBProductService only if a discount was applied making it different from final price
+      // product.mrp is set by RTDBProductService only if a discount was applied making product.price < product.mrp
       // Or, use customProperties['rawMrp'] if you stored it for a consistent original price.
       double originalPrice = product.customProperties?['rawMrp'] as double? ?? product.price;
       if (product.mrp != null) { // This means a discount was applied that made product.price < product.mrp
@@ -1124,68 +1130,84 @@ Widget _buildBottomSections() {
             child: _buildPaymentSummarySection(),
           ),
 
+        // COD Checkbox
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.r),
+            child: CheckboxListTile(
+              title: Text("Cash on Delivery", style: TextStyle(color: Colors.white)),
+              value: _isCashOnDeliverySelected,
+              onChanged: (bool? newValue) {
+                if (mounted) {
+                  setState(() {
+                    _isCashOnDeliverySelected = newValue ?? false;
+                  });
+                }
+              },
+              controlAffinity: ListTileControlAffinity.leading,
+              contentPadding: EdgeInsets.zero,
+              activeColor: AppTheme.accentColor,
+              checkColor: Colors.black,
+            ),
+          ),
+          SizedBox(height: 8.h),
+
         // Click to Pay button
         Container(
           margin: EdgeInsets.fromLTRB(20.r, 5.h, 20.r, 30.h),
           width: double.infinity,
           height: 50.h,
-          // Within _buildBottomSections method:
-child: ElevatedButton(
-  onPressed: _isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder // Add _isPlacingOrder
-    ? null 
-    : () async { // Make it async if _saveAddressToPrefs is async
-        if (_defaultAddress == null) {
-            Fluttertoast.showToast(msg: "Please select a delivery address first.");
-            _showAddressSelection();
-            return;
-        }
-        if (_totalCartValue <= 0) {
-            Fluttertoast.showToast(msg: "Your cart is empty or total is invalid.");
-            return;
-        }
-        
-        // Ensure address data (especially phone for prefill) is up-to-date
-        await _saveAddressToPrefs(); // Good to save it
-
-        // Prepare for payment
-        if (mounted) { // Check if widget is still in the tree
-            setState(() {
-                _isPlacingOrder = true;
-            });
-        }
-
-        // Fetch dynamic prefill data
-        String contactNumber = _defaultAddress?.phone ?? '9876543210'; // Fallback
-        // String userEmail = context.read<UserBloc>().state.user?.email ?? 'test@example.com'; // Ideal
-        String userEmail = 'test@example.com'; // Placeholder for now
-
-        // Call your modified openCheckout
-        _openCheckoutAndHandleState(
-            amount: _totalCartValue, // Pass the double value
-            contact: contactNumber,
-            email: userEmail,
-        );
-      },
-  style: ElevatedButton.styleFrom(
-    backgroundColor: (_isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder)
-      ? Colors.grey.shade700 
-      : Color(0xFFFFC107),  
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(8.r),
-    ),
-  ),
-  child: _isPlacingOrder 
-    ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-    : Text(
-        'Click to Pay ₹${_totalCartValue.toStringAsFixed(0)}',
-        style: TextStyle(
-          fontSize: 16.sp,
-          fontWeight: FontWeight.bold,
-          color: (_cartProductIds.isEmpty) ? Colors.grey.shade400 : Colors.black,
+          child: ElevatedButton(
+            onPressed: _isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder
+                ? null
+                : () async {
+                    if (_defaultAddress == null) {
+                      Fluttertoast.showToast(msg: "Please select a delivery address first.");
+                      _showAddressSelection();
+                      return;
+                    }
+                    if (_totalCartValue <= 0 && !_isCashOnDeliverySelected) {
+                      Fluttertoast.showToast(msg: "Your cart is empty or total is invalid.");
+                      return;
+                    }
+                    await _saveAddressToPrefs();
+                    if (mounted) {
+                      setState(() {
+                        _isPlacingOrder = true;
+                      });
+                    }
+                    if (_isCashOnDeliverySelected) {
+                      await _handleCODOrder();
+                    } else {
+                      String contactNumber = _defaultAddress?.phone ?? '9876543210';
+                      String userEmail = 'test@example.com';
+                      _openCheckoutAndHandleState(
+                        amount: _totalCartValue,
+                        contact: contactNumber,
+                        email: userEmail,
+                      );
+                    }
+                  },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: (_isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder)
+                ? Colors.grey.shade700
+                : Color(0xFFFFC107),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            child: _isPlacingOrder
+                ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                : Text(
+                    'Place Order',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.bold,
+                      color: (_cartProductIds.isEmpty) ? Colors.grey.shade400 : Colors.black,
+                    ),
+                  ),
+          ),
         ),
-      ),
-),
-        ),
+        SizedBox(height: 20),
       ],
     ),
   );
@@ -1317,7 +1339,7 @@ child: ElevatedButton(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'To Pay',
+                        'Total',
                         style: TextStyle(
                           fontSize: 14.sp, // Match product name size
                           fontWeight: FontWeight.w500,
@@ -1808,6 +1830,131 @@ Widget _buildShowMoreButton(int remainingItems) { // Accept remainingItems
       print('Error saving address to SharedPreferences: $e');
     }
   }
+
+  // --- COD Order Handler ---
+  Future<void> _handleCODOrder() async {
+    if (!mounted) return;
+    Fluttertoast.showToast(msg: 'Placing your Cash on Delivery order...', toastLength: Toast.LENGTH_LONG);
+
+    final prefs = await SharedPreferences.getInstance();
+    final String? userId = prefs.getString('user_token');
+
+    if (userId == null || userId.isEmpty) {
+      Fluttertoast.showToast(msg: 'User not identified. Cannot place order.', backgroundColor: Colors.red);
+      if (mounted) setState(() => _isPlacingOrder = false);
+      return;
+    }
+
+    if (_defaultAddress == null) {
+      Fluttertoast.showToast(msg: 'Shipping address not available. Cannot place order.', backgroundColor: Colors.red);
+      if (mounted) setState(() => _isPlacingOrder = false);
+      return;
+    }
+
+    List<OrderItem> orderItems = [];
+    for (Product product in _rtdbProductDetails) {
+      final quantity = _cartQuantities[product.id] ?? 0;
+      if (quantity > 0) {
+        double itemMrp = product.mrp ?? product.price;
+        if (product.customProperties?.containsKey('rawMrp') ?? false) {
+          itemMrp = (product.customProperties!['rawMrp'] as num).toDouble();
+        }
+        orderItems.add(OrderItem(
+          productId: product.id,
+          name: product.name,
+          image: product.image,
+          mrp: itemMrp,
+          buyingPrice: product.price,
+          quantity: quantity,
+        ));
+      }
+    }
+
+    if (orderItems.isEmpty) {
+      Fluttertoast.showToast(msg: 'Your cart is empty. Cannot place order.', backgroundColor: Colors.red);
+      if (mounted) setState(() => _isPlacingOrder = false);
+      return;
+    }
+
+    final shippingAddressForOrder = ShippingAddressOrder(
+      name: _defaultAddress!.name,
+      addressLine: _defaultAddress!.addressLine,
+      city: _defaultAddress!.city,
+      state: _defaultAddress!.state,
+      pincode: _defaultAddress!.pincode,
+      phone: _defaultAddress!.phone,
+      landmark: _defaultAddress!.landmark,
+      addressType: _defaultAddress!.addressType,
+    );
+
+    final paymentDetailsForOrder = PaymentDetailsOrder(
+      paymentId: 'COD-${DateTime.now().millisecondsSinceEpoch}',
+      method: "cash_on_delivery",
+      amountPaid: _totalCartValue,
+      currency: "INR",
+      successTime: Timestamp.now(),
+    );
+
+    double calculatedSubtotal = orderItems.fold(0.0, (sum, item) => sum + (item.mrp * item.quantity));
+
+    final pricingSummaryForOrder = PricingSummaryOrder(
+      subtotal: calculatedSubtotal,
+      itemDiscountsTotal: _totalSavings,
+      couponCodeApplied: _appliedCouponCode,
+      couponDiscountAmount: _couponDiscount,
+      deliveryFee: _deliveryFee,
+      packagingFee: _packagingFee,
+      grandTotal: _totalCartValue,
+    );
+
+    final orderToCreate = OrderEntity(
+      userId: userId,
+      orderTimestamp: Timestamp.now(),
+      status: "pending_confirmation",
+      items: orderItems,
+      shippingAddress: shippingAddressForOrder,
+      paymentDetails: paymentDetailsForOrder,
+      pricingSummary: pricingSummaryForOrder,
+    );
+
+    try {
+      final createOrderUsecase = sl<CreateOrderUsecase>();
+      final String createdOrderId = await createOrderUsecase.call(orderToCreate);
+
+      print('COD Order created successfully in Firestore. Order ID: $createdOrderId');
+      Fluttertoast.showToast(
+        msg: 'Order placed successfully! (Cash on Delivery)',
+        toastLength: Toast.LENGTH_LONG,
+        backgroundColor: Colors.green,
+        textColor: Colors.white,
+      );
+
+      if (mounted) {
+        _showOrderSuccessDialog(context, createdOrderId);
+        BlocProvider.of<CartBloc>(context, listen: false).add(const ClearCart());
+        _rtdbProductDetails.clear();
+        _cartProductIds.clear();
+        _cartQuantities.clear();
+        _appliedCouponCode = null;
+        _couponDiscount = 0.0;
+        _recalculateCartTotals();
+        setState(() {
+          _isPlacingOrder = false;
+          _isCashOnDeliverySelected = false;
+        });
+      }
+    } catch (e) {
+      print('Error saving COD order to Firestore: $e');
+      Fluttertoast.showToast(
+        msg: 'Failed to place COD order. Error: ${e.toString()}',
+        backgroundColor: Colors.red,
+        toastLength: Toast.LENGTH_LONG,
+      );
+      if (mounted) {
+        setState(() { _isPlacingOrder = false; });
+      }
+    }
+  }
 }
 
 // Add DashedLinePainter class below the CartPage class
@@ -2020,6 +2167,7 @@ class _AddressSelectionModalState extends State<AddressSelectionModal> with Sing
                   'SAVED ADDRESSES',
                   style: TextStyle(
                     fontSize: 12.sp,
+
                     fontWeight: FontWeight.w600,
                     color: Colors.grey.shade400,
                   ),
