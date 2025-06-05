@@ -63,3 +63,33 @@ android {
 flutter {
     source = "../.."
 }
+
+
+dependencies {
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version" // Or kotlin-stdlib if you've updated Kotlin versions
+
+    // It's STRONGLY recommended to use the Firebase BoM (Bill of Materials)
+    // Replace LATEST_FIREBASE_BOM_VERSION with the actual latest version (e.g., 33.1.1)
+    // You can find the latest version on the Firebase release notes:
+    // https://firebase.google.com/support/release-notes/android
+    // implementation platform('com.google.firebase:firebase-bom:33.14.0') // Example: Use the latest version
+
+    // // Declare the Firebase libraries you use (from your pubspec.yaml) WITHOUT specifying their versions
+    // implementation 'com.google.firebase:firebase-core'          // Corresponds to firebase_core
+    // implementation 'com.google.firebase:firebase-analytics-ktx'    // Corresponds to firebase_analytics
+    // implementation 'com.google.firebase:firebase-auth-ktx'         // If you add firebase_auth Flutter plugin
+    // implementation 'com.google.firebase:firebase-firestore-ktx'    // Corresponds to cloud_firestore
+    // implementation 'com.google.firebase:firebase-storage-ktx'      // Corresponds to firebase_storage
+    // implementation 'com.google.firebase:firebase-database-ktx'     // Corresponds to firebase_database
+    // implementation 'com.google.firebase:firebase-config-ktx'       // Corresponds to firebase_remote_config
+
+    // For Razorpay - check their documentation if they have specific native dependencies
+    // The Flutter plugin 'razorpay_flutter: ^1.4.0' should handle its native dependencies automatically.
+    // However, sometimes conflicts arise, or specific Play Services versions are needed.
+    // The Firebase BoM helps align many Google Play Services versions.
+
+    // If other plugins require specific Google Play Services libraries directly,
+    // they might be listed here, but often the Firebase BoM helps manage these.
+    // For example, if a location plugin required:
+    // implementation 'com.google.android.gms:play-services-location:21.3.0'
+}

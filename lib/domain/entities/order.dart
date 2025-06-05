@@ -1,3 +1,4 @@
+// lib/domain/entities/order.dart
 import 'package:cloud_firestore/cloud_firestore.dart'; // For Timestamp
 
 // Represents a single item within an order
@@ -92,12 +93,17 @@ class ShippingAddressOrder {
 // Payment Details for the order
 class PaymentDetailsOrder {
   final String paymentId; // From payment gateway
-  final String method; // e.g., "razorpay", "upi", "card"
+  final String method; // e.g., "razorpay", "upi", "card", "cash_on_delivery"
   final double amountPaid; // Should match pricingSummary.grandTotal
   final String currency; // e.g., "INR"
   final Timestamp? initiationTime; // When payment process was started by user
   final Timestamp successTime;    // When payment was confirmed successful (can be order creation time)
-  // Optional: gatewayTransactionId, orderIdFromGateway if different from paymentId
+  final String? payerName; // New: Name of the person who paid
+  // final String? payerPhone; // New: Phone of the person who paid
+  // final String? payerEmail; // New: Email of the person who paid (if collected)
+  // final String? razorpayOrderId; // New: Razorpay's internal order ID
+  // final String? razorpaySignature; // New: Razorpay's payment signature
+  // Optional: gatewayTransactionId, bankTransactionId, walletName, cardType, last4Digits etc.
 
   PaymentDetailsOrder({
     required this.paymentId,
@@ -106,6 +112,11 @@ class PaymentDetailsOrder {
     required this.currency,
     this.initiationTime,
     required this.successTime,
+    this.payerName, // New
+    // this.payerPhone, // New
+    // this.payerEmail, // New
+    // this.razorpayOrderId, // New
+    // this.razorpaySignature, // New
   });
 
   Map<String, dynamic> toJson() => {
@@ -115,6 +126,11 @@ class PaymentDetailsOrder {
         'currency': currency,
         'initiationTime': initiationTime,
         'successTime': successTime,
+        'payerName': payerName, // New
+        // 'payerPhone': payerPhone,/ // New
+        // 'payerEmail': payerEmail, // New
+        // 'razorpayOrderId': razorpayOrderId, // New
+        // 'razorpaySignature': razorpaySignature, // New
       };
 
   factory PaymentDetailsOrder.fromJson(Map<String, dynamic> json) {
@@ -125,6 +141,11 @@ class PaymentDetailsOrder {
       currency: json['currency'] as String,
       initiationTime: json['initiationTime'] as Timestamp?,
       successTime: json['successTime'] as Timestamp,
+      payerName: json['payerName'] as String?, // New
+      // payerPhone: json['payerPhone'] as String?, // New
+      // payerEmail: json['payerEmail'] as String?, // New
+      // razorpayOrderId: json['razorpayOrderId'] as String?, // New
+      // razorpaySignature: json['razorpaySignature'] as String?, // New
     );
   }
 }

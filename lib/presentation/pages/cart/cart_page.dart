@@ -53,6 +53,7 @@ final FirebaseDatabase _database = FirebaseDatabase.instance;
       bool _freeDelivery = true;
 
   bool _isPlacingOrder = false; // Add this
+  Timestamp? _razorpayInitiationTime; // New: To store payment initiation time
 
   // COD state variables
   bool _isCashOnDeliverySelected = false;
@@ -164,11 +165,14 @@ Future<bool?> _showClearCartConfirmationDialog() async {
 
 // Modify your openCheckout method or create a new one
 void _openCheckoutAndHandleState({required double amount, required String contact, required String email}) {
+    // Record initiation time right before opening payment gateway
+    _razorpayInitiationTime = Timestamp.now(); // New
+    
     // The amount parameter received here is _totalCartValue
     double razorpayAmount = amount * 100; // Convert to paise
 
     var options = {
-      'key': 'rzp_test_cIZUW0EpmfahD0', // YOUR KEY ID
+      'key': 'rzp_live_OXYP4QuhqgFN97', // YOUR KEY ID
       'amount': razorpayAmount.toInt(),
       'name': 'Profit Grocery',
       'description': 'Payment for order',
@@ -191,6 +195,7 @@ void _openCheckoutAndHandleState({required double amount, required String contac
       if (mounted) {
         setState(() {
           _isPlacingOrder = false; // Reset on immediate error
+          _razorpayInitiationTime = null; // Clear initiation time on error
         });
       }
     }
@@ -273,8 +278,13 @@ void handlePaymentSuccess(PaymentSuccessResponse response) async {
         method: "razorpay",
         amountPaid: _totalCartValue, // Final amount paid by user
         currency: "INR", // Assuming INR
-        // initiationTime: null, // Optional: Set if you track payment start
+        initiationTime: _razorpayInitiationTime, // New: Use stored initiation time
         successTime: Timestamp.now(), // Time of successful payment confirmation
+        payerName: _defaultAddress?.name, // New: From shipping address
+        // payerPhone: _defaultAddress?.phone, // New: From shipping address
+        // payerEmail: null, // New: If you have user's email from profile
+        // razorpayOrderId: response.orderId, // New: Razorpay's internal order ID
+        // razorpaySignature: response.signature, // New: Razorpay's payment signature
     );
 
     // 5. Prepare PricingSummaryOrder
@@ -329,6 +339,7 @@ void handlePaymentSuccess(PaymentSuccessResponse response) async {
           _cartProductIds.clear();
           _cartQuantities.clear();
           _recalculateCartTotals(); // This updates totals and saves to SharedPreferences
+          _razorpayInitiationTime = null; // Clear initiation time after successful order
 
           setState(() {
               _isPlacingOrder = false;
@@ -342,7 +353,10 @@ void handlePaymentSuccess(PaymentSuccessResponse response) async {
           toastLength: Toast.LENGTH_LONG,
       );
       if (mounted) {
-          setState(() { _isPlacingOrder = false; });
+          setState(() {
+            _isPlacingOrder = false;
+            _razorpayInitiationTime = null; // Clear initiation time on error
+          });
       }
     }
 }
@@ -356,6 +370,7 @@ void handlePaymentError(PaymentFailureResponse response) {
     if (mounted) {
       setState(() {
         _isPlacingOrder = false;
+        _razorpayInitiationTime = null; // Clear initiation time on error
       });
     }
 }
@@ -547,7 +562,7 @@ void _recalculateCartTotals() {
 }
 
 // Ensure _saveCartTotals uses the updated _totalCartValue, _totalSavings,
-// and for itemCount, use _cartProductIds.length or sum of _cartQuantities.values
+// and for itemCount, use _cartQuantities.values.fold
 Future<void> _saveCartTotals() async {
     try {
         final prefs = await SharedPreferences.getInstance();
@@ -1178,8 +1193,8 @@ Widget _buildBottomSections() {
                     if (_isCashOnDeliverySelected) {
                       await _handleCODOrder();
                     } else {
-                      String contactNumber = _defaultAddress?.phone ?? '9876543210';
-                      String userEmail = 'test@example.com';
+                      String contactNumber = _defaultAddress?.phone ?? '9560676526';
+                      String userEmail = 'ankushpalrpvv@gmail.com'; // You might fetch this from a UserBloc or user profile
                       _openCheckoutAndHandleState(
                         amount: _totalCartValue,
                         contact: contactNumber,
@@ -1893,6 +1908,10 @@ Widget _buildShowMoreButton(int remainingItems) { // Accept remainingItems
       amountPaid: _totalCartValue,
       currency: "INR",
       successTime: Timestamp.now(),
+      payerName: _defaultAddress?.name, // New: From shipping address
+      // payerPhone: _defaultAddress?.phone, // New: From shipping address
+      // payerEmail: null, // New: If you have user's email from profile
+      // No Razorpay specific fields for COD
     );
 
     double calculatedSubtotal = orderItems.fold(0.0, (sum, item) => sum + (item.mrp * item.quantity));
@@ -2318,4 +2337,3 @@ class _AddressSelectionModalState extends State<AddressSelectionModal> with Sing
     );
   }
 }
-
