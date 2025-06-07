@@ -49,7 +49,9 @@
     "download-all-products-fixed": "node download_all_products_fixed.js",
     "enhance-products": "node enhance_products.js",
     "add-item-colors": "node add_item_background_colors.js",
-    "add-image-paths": "node add_image_paths.js"
+    "add-image-paths": "node add_image_paths.js",
+    "transform-products": "node transform_products.js",
+    "upload-product-details": "node upload_product_details.js"
   },
   "dependencies": {
     "firebase": "^10.7.1",

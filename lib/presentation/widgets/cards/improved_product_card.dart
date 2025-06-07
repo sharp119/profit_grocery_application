@@ -11,15 +11,16 @@ import '../../../data/inventory/similar_products.dart';
 import '../../../data/models/product_model.dart';
 import '../../../utils/product_card_utils.dart';
 import '../../widgets/buttons/add_button.dart';
+import '../../pages/product_details/product_details_page.dart'; // Import the new page
 import 'dart:math' as math;
 import 'package:get_it/get_it.dart';
 
 /**
  * ImprovedProductCard
- * 
+ *
  * A highly optimized product card that can work with any product ID and follows
  * the specified layout structure for consistent display across the app.
- * 
+ *
  * Layout Structure:
  * - Image Section (~60% height) with bookmark-style savings indicator
  * - Product Name (up to 2 lines with ellipsis)
@@ -27,7 +28,7 @@ import 'package:get_it/get_it.dart';
  * - Empty Spacer Row (visual separation)
  * - Price Row (final price + original price with strikethrough)
  * - Add to Cart Button (centered at bottom)
- * 
+ *
  * Key Features:
  * - Works with Product object OR productId string
  * - Fixed width for horizontal scrolling grids
@@ -36,26 +37,24 @@ import 'package:get_it/get_it.dart';
  * - Discount display (₹X off / X% off)
  * - Smart pricing (MRP vs discounted price)
  * - Optimized performance with caching
- * 
+ *
  * Usage Examples:
  * ```dart
  * // With Product object
  * ImprovedProductCard(
- *   product: product,
- *   onTap: () => navigateToDetails(product),
+ * product: product,
+ * onTap: () => someOtherAction(), // onTap is now optional and for secondary actions
  * )
- * 
+ *
  * // With product ID (will auto-resolve)
  * ImprovedProductCard(
- *   productId: "product_123",
- *   onTap: () => navigateToDetails(),
+ * productId: "product_123",
  * )
- * 
+ *
  * // Fixed width for horizontal scrolling
  * ImprovedProductCard(
- *   product: product,
- *   width: 180.w,
- *   onTap: () => navigateToDetails(product),
+ * product: product,
+ * width: 180.w,
  * )
  * ```
  */
@@ -64,25 +63,26 @@ class ImprovedProductCard extends StatefulWidget {
   // Product can be provided directly or by ID
   final Product? product;
   final String? productId;
-  
+
   // Card configuration
   final double? width; // Fixed width for horizontal scrolling
   final double? height; // Optional height override
   final Color? backgroundColor; // Optional background color override
   final bool isLoading; // Explicit loading state
-  
+
   // Pricing configuration
   final double? finalPrice; // Override final price
   final double? originalPrice; // Override original price
   final bool? hasDiscount; // Override discount status
   final String? discountType; // 'percentage' or 'flat'
   final double? discountValue; // Discount amount
-  
+
   // Callbacks
+  // Reverted to VoidCallback as requested, navigation is now internal
   final VoidCallback? onTap;
   final Function(Product, int)? onQuantityChanged;
   final int quantity;
-  
+
   // Display options
   final bool showBrand;
   final bool showWeight;
@@ -146,42 +146,42 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
   // Services
   late final SharedProductService _productService;
   late final SharedCategoryService _categoryService;
-  
+
   // State
   Product? _displayProduct;
   Color? _cardBackgroundColor;
   bool _isLoading = true;
   bool _hasError = false;
   String? _errorMessage;
-  
+
   // Computed properties
   double get _finalPrice => widget.finalPrice ?? _displayProduct?.price ?? 0.0;
   double? get _originalPrice {
     if (widget.originalPrice != null) return widget.originalPrice;
     if (_displayProduct == null) return null;
-    
+
     final discountInfo = _displayProduct!.discountInfo;
     return discountInfo.hasDiscount ? discountInfo.originalPrice : null;
   }
   bool get _hasDiscountInternal {
     if (widget.hasDiscount != null) return widget.hasDiscount!;
     if (_displayProduct == null) return false;
-    
+
     return _displayProduct!.discountInfo.hasDiscount;
   }
   String? get _discountTypeInternal {
     if (widget.discountType != null) return widget.discountType;
     if (_displayProduct == null) return null;
-    
+
     return _displayProduct!.discountInfo.discountType;
   }
   double get _discountValueInternal {
     if (widget.discountValue != null) return widget.discountValue!;
     if (_displayProduct == null) return 0.0;
-    
+
     return _displayProduct!.discountInfo.discountValue;
   }
-  
+
   @override
   void initState() {
     super.initState();
@@ -189,17 +189,17 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
     _categoryService = GetIt.instance<SharedCategoryService>();
     _initializeProduct();
   }
-  
+
   @override
   void didUpdateWidget(ImprovedProductCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     // Reinitialize if product/productId changed
     if (widget.product != oldWidget.product || widget.productId != oldWidget.productId) {
       _initializeProduct();
     }
   }
-  
+
   Future<void> _initializeProduct() async {
     try {
       setState(() {
@@ -207,13 +207,13 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
         _hasError = false;
         _errorMessage = null;
       });
-      
+
       // If this is explicitly a loading card, show loading state without resolution
       if (widget.isLoading) {
         // Just stay in loading state - don't try to resolve anything
         return;
       }
-      
+
       // Resolve product
       Product? product;
       if (widget.product != null) {
@@ -222,20 +222,20 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       } else if (widget.productId != null) {
         LoggingService.logFirestore('IMPROVED_CARD: Resolving product ID ${widget.productId}');
         product = await _productService.getProductById(widget.productId!);
-        
+
         if (product == null) {
           throw Exception('Product not found with ID: ${widget.productId}');
         }
         LoggingService.logFirestore('IMPROVED_CARD: Resolved product ${product.name}');
       }
-      
+
       if (product == null) {
         throw Exception('No product provided');
       }
-      
+
       // Get background color
       Color backgroundColor = widget.backgroundColor ?? await _getBackgroundColor(product);
-      
+
       if (mounted) {
         setState(() {
           _displayProduct = product;
@@ -243,10 +243,10 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
           _isLoading = false;
         });
       }
-      
+
     } catch (e) {
       LoggingService.logError('IMPROVED_CARD', 'Error initializing product: $e');
-      
+
       if (mounted) {
         setState(() {
           _hasError = true;
@@ -256,7 +256,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       }
     }
   }
-  
+
   Future<Color> _getBackgroundColor(Product product) async {
     try {
       // First check if the product has itemBackgroundColor in customProperties
@@ -278,7 +278,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
           }
         }
       }
-      
+
       // Fallback to SimilarProducts color system
       final productModel = _convertToProductModel(product);
       return SimilarProducts.getColorForProduct(productModel) ?? AppTheme.secondaryColor;
@@ -287,7 +287,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       return AppTheme.secondaryColor;
     }
   }
-  
+
   ProductModel _convertToProductModel(Product product) {
     return ProductModel(
       id: product.id,
@@ -306,23 +306,23 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       weight: product.weight,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return _buildLoadingState();
     }
-    
+
     if (_hasError || _displayProduct == null) {
       return _buildErrorState();
     }
-    
-    return _buildProductCard();
+
+    return _buildProductCard(context); // Pass context to _buildProductCard
   }
-  
+
   Widget _buildLoadingState() {
     final cardHeight = widget.height ?? 280.h;
-    
+
     return Container(
       width: widget.width, // Let parent control width if null
       height: cardHeight,
@@ -354,7 +354,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
               ),
             ),
           ),
-          
+
           // Content placeholder
           Expanded(
             child: Padding(
@@ -372,7 +372,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  
+
                   // Brand/weight placeholder
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -395,9 +395,9 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
                       ),
                     ],
                   ),
-                  
+
                   Spacer(),
-                  
+
                   // Price placeholder
                   Container(
                     width: 80.w,
@@ -408,7 +408,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  
+
                   // Button placeholder
                   Container(
                     width: double.infinity,
@@ -426,10 +426,10 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ),
     );
   }
-  
+
   Widget _buildErrorState() {
     final cardHeight = widget.height ?? 280.h;
-    
+
     return Container(
       width: widget.width, // Let parent control width if null
       height: cardHeight,
@@ -478,13 +478,23 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ),
     );
   }
-  
-  Widget _buildProductCard() {
+
+  Widget _buildProductCard(BuildContext context) { // Accept context
     final product = _displayProduct!;
     final backgroundColor = _cardBackgroundColor ?? AppTheme.secondaryColor;
-    
+
     return GestureDetector(
-      onTap: widget.onTap,
+      onTap: () {
+        // Navigate to ProductDetailsPage
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => ProductDetailsPage(productId: product.id),
+          ),
+        );
+        // Call any additional onTap callback if provided
+        widget.onTap?.call();
+      },
       child: Container(
         width: widget.width, // Let GridView or parent control width if widget.width is null
         height: widget.height, // Use widget.height directly, allows null for auto-sizing
@@ -504,7 +514,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
           children: [
             // Image Section
             _buildImageSection(product, backgroundColor, widget.height),
-            
+
             // Content Section
             _buildContentSection(product, widget.height),
           ],
@@ -512,7 +522,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ),
     );
   }
-  
+
    Widget _buildImageSection(Product product, Color backgroundColor, double? explicitHeight) {
     final double imageHeight;
     if (explicitHeight != null) {
@@ -520,7 +530,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
     } else {
       imageHeight = 125.h;
     }
-    
+
     return Stack(
       children: [
         // Product Image
@@ -570,15 +580,15 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
             ),
           ),
         ),
-        
+
         // Savings Indicator
         if (widget.showSavingsIndicator && _hasDiscountInternal && _discountValueInternal > 0)
           _buildSavingsIndicator(),
-        
+
         // Out of Stock Overlay
         if (!product.inStock)
           _buildOutOfStockOverlay(imageHeight),
-        
+
         // Add to Cart Button (Added Here)
         if (widget.enableQuantityControls && product.inStock)
           Positioned(
@@ -592,7 +602,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
                 sourceCardType: ProductCardType.improved,
                 inStock: product.inStock,
                 height: 28.h,
-                onQuantityChanged: widget.onQuantityChanged != null 
+                onQuantityChanged: widget.onQuantityChanged != null
                   ? (qty) => widget.onQuantityChanged!(product, qty)
                   : null,
               ),
@@ -601,7 +611,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ],
     );
   }
- 
+
   Widget _buildSavingsIndicator() {
     return Positioned(
       top: 0,
@@ -634,7 +644,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
             Padding(
               padding: const EdgeInsets.fromLTRB(0, 0, 0, 0),
               child: Text(
-                _discountTypeInternal == 'percentage' 
+                _discountTypeInternal == 'percentage'
                   ? '${_discountValueInternal.toInt()}%'
                   : '₹${_discountValueInternal.toInt()}',
                 style: TextStyle(
@@ -663,7 +673,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ),
     );
   }
-  
+
   Widget _buildOutOfStockOverlay(double imageHeight) {
     return Positioned.fill(
       child: Container(
@@ -694,7 +704,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ),
     );
   }
-  
+
  Widget _buildContentSection(Product product, double? explicitHeight) {
     Widget contentWidget = Padding(
       padding: EdgeInsets.symmetric(horizontal: 8.r, vertical: 6.r),
@@ -747,7 +757,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       return contentWidget;
     }
   }
- 
+
   Widget _buildProductName(Product product) {
     return Text(
       product.name,
@@ -761,7 +771,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       overflow: TextOverflow.ellipsis,
     );
   }
-  
+
   Widget _buildProductBrand(Product product) {
     return Text(
       product.brand ?? '',
@@ -773,7 +783,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       overflow: TextOverflow.ellipsis,
     );
   }
-  
+
   Widget _buildPriceColumn() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -804,7 +814,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
       ],
     );
   }
-  
+
   Widget _buildAddToCartButton(Product product) {
     return SizedBox(
       width: double.infinity,
@@ -814,7 +824,7 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
         sourceCardType: ProductCardType.improved,
         inStock: product.inStock,
         height: 28.h,
-        onQuantityChanged: widget.onQuantityChanged != null 
+        onQuantityChanged: widget.onQuantityChanged != null
           ? (qty) => widget.onQuantityChanged!(product, qty)
           : null,
       ),
