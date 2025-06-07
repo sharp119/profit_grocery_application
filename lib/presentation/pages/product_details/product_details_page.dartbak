@@ -14,8 +14,7 @@ import 'package:profit_grocery_application/presentation/blocs/products/products_
 import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/enhanced_product_card.dart';
 import 'package:profit_grocery_application/presentation/widgets/cards/universal_product_card.dart';
-import 'package:profit_grocery_application/services/cart/cart_sync_service.dart';
-import 'package:profit_grocery_application/services/cart/universal/universal_cart_service.dart';
+
 
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_theme.dart';
@@ -28,7 +27,6 @@ import '../../widgets/buttons/cart_fab.dart';
 import '../../widgets/loaders/shimmer_loader.dart';
 import '../cart/cart_page.dart';
 import '../../widgets/buttons/add_button.dart';
-import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 
 class ProductDetailsPage extends StatefulWidget {
   final String? productId;

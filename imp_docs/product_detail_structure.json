@@ -1,0 +1,47 @@
+{
+  "id": "HZXUyMfOp2PN6B4Wkr41",
+  "hero_section": {
+    
+    "name": "Whole Wheat Burger Buns",
+    "brand": "Health First Bakery",
+    "productType": "Buns & Pavs",
+    "rating": 4.5,
+    "reviewCount": 15,
+    "images": [
+      "https://firebasestorage.googleapis.com/v0/b/profit-grocery.firebasestorage.app/o/products%2Fbakeries_biscuits%2Fbuns_pavs%2FHZXUyMfOp2PN6B4Wkr41%2Fimage.png?alt=media&token=23aaae8b-2085-404a-91e6-c67a68e665be",
+      "https://cdn.example.com/images/burger-buns-secondary.jpg",
+      "https://cdn.example.com/images/burger-buns-packaging.jpg"
+    ]
+  },
+  "highlights_section": {
+    "highlights": {
+      "Pack Size": "6 buns",
+      "Dietary": "Whole Wheat",
+      "Texture": "Soft & Fluffy",
+      "Topping": "Sesame Seeds",
+      "Best For": "Burgers, Sandwiches"
+    }
+  },
+  "description_section": {
+    "description": "**Healthy whole wheat burger buns with sesame seeds on top.**\n\nThese buns are perfect for your homemade burgers, offering a soft texture and a healthy twist. Made with 100% whole wheat flour, they provide a good source of fiber and essential nutrients.\n\n- No artificial preservatives\n- Rich in fiber\n- Delicious and versatile",
+    "instructions": "1. Lightly toast buns before serving for best results.\n2. Store in a cool, dry place away from direct sunlight.\n3. Consume within 3 days of opening or freeze for longer storage.\n\n**Tip:** For extra flavor, brush with butter before toasting."
+  },
+  "seller_info_section": {
+    "sourceOfOrigin": "Local Bakery (India)",
+    "sellerName": "Local Fresh Grocer",
+    "fssai": "22719011000123",
+    "address": "123 Green Lane, Foodie Town, FL 12345",
+    "customerCare": "1800-987-654", 
+    "email": "support@localfreshgrocer.com"
+  },
+  "additional_info": {
+    "category": "bakeries_biscuits",
+    "subCategory": "buns_pavs",
+    "sku": "BNS002",
+    "isFeatured": false,
+    "isActive": true,
+    "tags": ["healthy", "whole wheat", "bakery", "burger buns"],
+    "createdAt": "2025-04-19T19:55:53.881Z",
+    "updatedAt": "2025-05-25T01:41:33.678Z"
+  }
+}
