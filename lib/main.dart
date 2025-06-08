@@ -166,7 +166,7 @@ Future<void> setupDependencyInjection() async {
   await initProductDependencies();
   
   // Firestore service dependencies
-  await initFirestoreServiceDependencies(sl);
+  // await initFirestoreServiceDependencies(sl);
   
   // Determine database preference from Remote Config
   final remoteConfig = FirebaseRemoteConfig.instance;

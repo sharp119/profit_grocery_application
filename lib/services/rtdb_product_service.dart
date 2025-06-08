@@ -1,16 +1,12 @@
-// lib/services/rtdb_product_service.dart
-import 'dart:async';
+import 'dart:async'; // Make sure this is imported
 import 'package:firebase_database/firebase_database.dart';
-import 'package:flutter/material.dart'; // For Color, if parsing color
-import '../domain/entities/product.dart'; // Your Product entity
-// Assuming LoggingService exists as per your rtdb_bestseller_repository.dart
-// If not, use print or your preferred logging solution.
+import 'package:flutter/material.dart';
+import '../domain/entities/product.dart';
 import '../services/logging_service.dart'; // Or your preferred logger
 
 class RTDBProductService {
   final FirebaseDatabase _database = FirebaseDatabase.instance;
 
-  /// Fetches complete product information for a list of product IDs from RTDB.
   Future<List<Product>> getProductsDetails(List<String> productIds) async {
     if (productIds.isEmpty) return [];
     // LoggingService.logInfo('RTDBProductService: Fetching details for ${productIds.length} products: $productIds');
@@ -43,23 +39,41 @@ class RTDBProductService {
     return products;
   }
 
-  /// Parses product data from RTDB structure to Product entity.
-  /// This should be based on the structure of your `dynamic_product_info` node
-  /// and the parsing logic in RTDBBestsellerRepository._parseProductFromRTDB.
+  // New method to provide a real-time stream for a single product
+  Stream<Product?> getProductStream(String productId) {
+    try {
+      return _database.ref('dynamic_product_info/$productId').onValue.map((event) {
+        if (event.snapshot.exists && event.snapshot.value != null) {
+          // Use the existing parser to convert snapshot data to Product object
+          return parseProductFromRTDB(productId, Map<dynamic, dynamic>.from(event.snapshot.value as Map));
+        } else {
+          LoggingService.logFirestore('RTDBProductService: Product stream for $productId - Data not found or null.');
+          return null;
+        }
+      }).handleError((error) {
+        LoggingService.logError('RTDBProductService', 'Error in product stream for $productId: $error');
+        return null; // Return null on error to indicate no product data
+      });
+    } catch (e) {
+      LoggingService.logError('RTDBProductService', 'Failed to set up product stream for $productId: $e');
+      return Stream.value(null); // Return a stream with a single null value on setup failure
+    }
+  }
+
   Product? parseProductFromRTDB(String productId, Map<dynamic, dynamic> data) {
     try {
       final String? name = data['name']?.toString();
       final String? brand = data['brand']?.toString();
       final String? weight = data['weight']?.toString();
       final String? path = data['path']?.toString();
-      final String? imagePath = data['imagePath']?.toString(); // Expecting full Firebase Storage URL
+      final String? imagePath = data['imagePath']?.toString();
       final bool inStock = data['inStock'] as bool? ?? true;
-      final int stockQuantity = data['quantity'] as int? ?? 0; // Renamed from 'quantity' to avoid clash with cart quantity
+      final int stockQuantity = data['quantity'] as int? ?? 0;
 
       final double mrp = _parseDouble(data['mrp']) ?? 0.0;
 
       final Map<dynamic, dynamic>? discountData = data['discount'] as Map<dynamic, dynamic>?;
-      final bool hasDiscountFeatureEnabled = data['hasDiscount'] as bool? ?? false; // Flag from DB if discount *can* be applied
+      final bool hasDiscountFeatureEnabled = data['hasDiscount'] as bool? ?? false;
 
       double finalPrice = mrp;
       String? discountType;
@@ -69,12 +83,12 @@ class RTDBProductService {
       if (hasDiscountFeatureEnabled && discountData != null) {
         discountType = discountData['type']?.toString();
         discountValue = _parseDouble(discountData['value']);
-        final bool isActiveByFlag = discountData['isActive'] as bool? ?? false; // Discount active flag
+        final bool isActiveByFlag = discountData['isActive'] as bool? ?? false;
 
         if (isActiveByFlag && discountType != null && discountValue != null) {
-          final int? startTime = discountData['start'] as int?; // Unix timestamp in seconds
-          final int? endTime = discountData['end'] as int?;   // Unix timestamp in seconds
-          final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000; // Current time in seconds
+          final int? startTime = discountData['start'] as int?;
+          final int? endTime = discountData['end'] as int?;
+          final int currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000;
 
           bool isInTimeRange = true;
           if (startTime != null && endTime != null) {
@@ -93,20 +107,18 @@ class RTDBProductService {
             }
             if (finalPrice < 0) finalPrice = 0.0;
 
-            // A discount is considered applied if finalPrice is less than MRP due to this logic
             isDiscountCurrentlyActiveAndApplied = finalPrice < mrp;
           }
         }
       }
 
       final int? colorValue = data['itemBackgroundColor'] as int?;
-      Color? itemBackgroundColor; // Material Color
+      Color? itemBackgroundColor;
       if (colorValue != null) {
         itemBackgroundColor = Color(colorValue);
       }
 
       if (name == null) {
-        // LoggingService.logWarning('RTDBProductService: Missing name for product $productId. Skipping.');
         print('RTDBProductService: Missing name for product $productId. Skipping.');
         return null;
       }
@@ -114,33 +126,43 @@ class RTDBProductService {
       return Product(
         id: productId,
         name: name,
-        description: '$brand ${weight ?? ''}'.trim(), // Or from a dedicated description field
-        price: finalPrice, // This is the FINAL price after active discount
-        mrp: isDiscountCurrentlyActiveAndApplied ? mrp : null, // Show MRP only if a discount was applied making finalPrice < mrp
+        description: '$brand ${weight ?? ''}'.trim(),
+        price: finalPrice,
+        mrp: isDiscountCurrentlyActiveAndApplied ? mrp : null,
         image: imagePath ?? '',
-        categoryId: path?.split('/').first ?? '', // Example
-        categoryName: path?.split('/').first ?? '', // Example
-        subcategoryId: '', // Example
-        tags: [brand, weight].where((tag) => tag != null && tag.isNotEmpty).cast<String>().toList(),
+        categoryId: data['categoryId']?.toString() ?? data['categoryID']?.toString() ?? '',
+        categoryName: data['categoryName']?.toString() ?? path?.split('/').first ?? '',
+        subcategoryId: data['subcategoryId']?.toString() ?? data['subcategoryID']?.toString() ?? '',
+        tags: (data['tags'] as List<dynamic>?)?.map((tag) => tag.toString()).toList() ?? const [],
         weight: weight,
         brand: brand,
-        inStock: inStock && stockQuantity > 0, // Actual stock status
-        // Use customProperties to store any additional RTDB-specific fields
-        // that don't directly map to Product entity fields but are needed for display logic.
+        inStock: inStock && stockQuantity > 0,
         customProperties: {
           'itemBackgroundColor': itemBackgroundColor,
-          'hasDiscount': isDiscountCurrentlyActiveAndApplied, // True if a discount *is currently making the price lower*
-          'discountType': discountType, // Original discount type
-          'discountValue': discountValue, // Original discount value
-          'stockQuantity': stockQuantity, // Available stock
+          'hasDiscount': isDiscountCurrentlyActiveAndApplied,
+          'discountType': discountType,
+          'discountValue': discountValue,
+          'stockQuantity': stockQuantity,
           'categoryPath': path,
-          'originalImagePath': imagePath, // For debugging if needed
-          'rawMrp': mrp, // Store raw MRP for calculations if needed elsewhere
+          'originalImagePath': imagePath,
+          'rawMrp': mrp,
         },
       );
     } catch (e) {
-      // LoggingService.logError('RTDBProductService', 'Error parsing product $productId: $e');
       print('RTDBProductService ERROR: Failed to parse product $productId - $e');
+      return null;
+    }
+  }
+
+  Future<Product?> getProductById(String productId) async {
+    try {
+      final snapshot = await _database.ref('dynamic_product_info/$productId').get();
+      if (snapshot.exists && snapshot.value != null) {
+        return parseProductFromRTDB(productId, Map<dynamic, dynamic>.from(snapshot.value as Map));
+      }
+      return null;
+    } catch (e) {
+      LoggingService.logError('RTDBProductService', 'Error getting product by ID: $e');
       return null;
     }
   }

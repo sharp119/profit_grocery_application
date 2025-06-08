@@ -485,11 +485,17 @@ class _ImprovedProductCardState extends State<ImprovedProductCard> {
 
     return GestureDetector(
       onTap: () {
-        // Navigate to ProductDetailsPage
+        LoggingService.logFirestore('Navigating to ProductDetailsPage for ${product}');
+        // Navigate to ProductDetailsPage and pass product ID, category ID, and subcategory ID
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => ProductDetailsPage(productId: product.id),
+            builder: (context) => ProductDetailsPage(
+              
+              productId: product.id,
+              categoryId: product.customProperties!['categoryPath'].split('/').first , // Pass category ID
+              subcategoryId: product.customProperties!['categoryPath'].split('/').last, // Pass subcategory ID
+            ),
           ),
         );
         // Call any additional onTap callback if provided

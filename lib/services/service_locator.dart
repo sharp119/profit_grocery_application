@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart'; // Needed for FirebaseFir
 import 'package:get_it/get_it.dart';
 import 'package:profit_grocery_application/data/repositories/bestseller_repository_simple.dart';
 import 'package:profit_grocery_application/services/category/shared_category_service.dart';
+import 'package:profit_grocery_application/services/firestore/firestore_product_service.dart';
 import 'package:profit_grocery_application/services/product/shared_product_service.dart';
 
 // Imports for Order Feature
@@ -10,6 +11,7 @@ import 'package:profit_grocery_application/data/repositories/order_repository_im
 import 'package:profit_grocery_application/domain/repositories/order_repository.dart';
 // Corrected path based on your previous snippets for CreateOrderUsecase
 import 'package:profit_grocery_application/domain/usecases/order/create_order_usecase.dart';
+import 'package:profit_grocery_application/services/rtdb_product_service.dart';
 
 // Define 'sl' (service locator) globally for this file and for export
 final sl = GetIt.instance; // <--- ADD THIS LINE AT THE TOP LEVEL
@@ -47,4 +49,8 @@ void setupServiceLocator() {
   sl.registerLazySingleton<CreateOrderUsecase>( // <--- USE sl HERE
     () => CreateOrderUsecase(sl<OrderRepository>()),
   );
+
+  sl.registerLazySingleton<RTDBProductService>(() => RTDBProductService());
+
+  sl.registerLazySingleton<FirestoreProductService>(() => FirestoreProductService());
 }
