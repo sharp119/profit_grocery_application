@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
 import 'package:profit_grocery_application/domain/entities/product.dart'; // Product entity (for RTDB data)
+import 'package:profit_grocery_application/presentation/widgets/product_details/product_hero_section.dart';
 import 'package:profit_grocery_application/services/firestore/firestore_product_service.dart'; // Firestore service (for raw sections)
 import 'package:profit_grocery_application/services/rtdb_product_service.dart'; // RTDB service (for dynamic Product)
 import 'package:get_it/get_it.dart';
@@ -11,6 +12,11 @@ import 'package:profit_grocery_application/core/constants/app_theme.dart';
 import 'package:profit_grocery_application/presentation/widgets/loaders/shimmer_loader.dart';
 import 'package:profit_grocery_application/services/logging_service.dart';
 import 'package:profit_grocery_application/presentation/widgets/image_loader.dart';
+import 'package:profit_grocery_application/presentation/widgets/product_details/product_description_section.dart'; // New Import
+import 'package:profit_grocery_application/presentation/widgets/product_details/product_highlights_section.dart'; // New Import
+import 'package:profit_grocery_application/presentation/widgets/product_details/product_nutritional_info_section.dart'; // New Import
+import 'package:profit_grocery_application/presentation/widgets/product_details/product_seller_info_section.dart'; // New Import
+import 'package:profit_grocery_application/presentation/widgets/product_details/product_additional_info_section.dart'; // New Import
 
 
 class ProductDetailsPage extends StatefulWidget {
@@ -233,9 +239,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
     // Get itemBackgroundColor from RTDB product custom properties
     final Color? itemBackgroundColorFromRTDB = _dynamicProductDetails?.customProperties?['itemBackgroundColor'] as Color?;
 
-
-  
-
     // Dynamic pricing calculations remain the same, using dynamic data
     final bool showDiscountStrikethrough = (displayMrp != null && displayMrp > displayPrice);
 
@@ -263,410 +266,61 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Product Image Carousel (Hero Section Visual)
-            Stack(
-              children: [
-                Center(
-                  child: Container(
-                    height: 350.h,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(8.r),
-                      // Use itemBackgroundColor from RTDB, fallback to secondaryColor
-                      color: itemBackgroundColorFromRTDB ?? AppTheme.secondaryColor,
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8.r),
-                      child: (productImages.isNotEmpty)
-                          ? PageView.builder(
-                              controller: _pageController,
-                              itemCount: productImages.length,
-                              onPageChanged: (index) {
-                                setState(() {
-                                  _currentPage = index;
-                                });
-                              },
-                              itemBuilder: (context, index) {
-                                return ImageLoader.network(
-                                  productImages[index], // From Firestore images list
-                                  fit: BoxFit.contain,
-                                  errorWidget: Center(
-                                    child: Icon(
-                                      Icons.image_not_supported_outlined,
-                                      color: AppTheme.textSecondaryColor,
-                                      size: 60.r,
-                                    ),
-                                  ),
-                                );
-                              },
-                            )
-                          : Center( // Fallback if no images are found
-                              child: Icon(
-                                Icons.image_not_supported_outlined,
-                                color: AppTheme.textSecondaryColor,
-                                size: 60.r,
-                              ),
-                            ),
-                    ),
-                  ),
-                ),
-                // Discount Badge (on image)
-                if (dynamicHasDiscount && dynamicDiscountValue != null && dynamicDiscountValue > 0)
-                  Positioned(
-                    top: 0,
-                    left: 0,
-                    child: Container(
-                      constraints: BoxConstraints(
-                        minWidth: 20.w,
-                        maxWidth: 60.w, // Adjust max width as needed
-                      ),
-                      padding: EdgeInsets.symmetric(vertical: 8.h, horizontal: 6.w),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.only(
-                          bottomRight: Radius.circular(12.r),
-                          topLeft: Radius.circular(8.r), // Match container's top left
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.3),
-                            blurRadius: 4.r,
-                            offset: Offset(0, 2.h),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            dynamicDiscountType == 'percentage'
-                                ? '${dynamicDiscountValue.toInt()}%'
-                                : '₹${dynamicDiscountValue.toInt()}',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w900,
-                              fontSize: 13.sp,
-                              height: 1.0,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                          SizedBox(height: 4.h),
-                          Text(
-                            'OFF',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 10.sp,
-                              height: 1.0,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                // Page Indicator
-                if (productImages.length > 1)
-                  Positioned(
-                    bottom: 10.h,
-                    left: 0,
-                    right: 0,
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(productImages.length, (index) {
-                        return AnimatedContainer(
-                          duration: const Duration(milliseconds: 150),
-                          margin: EdgeInsets.symmetric(horizontal: 4.w),
-                          height: 8.h,
-                          width: _currentPage == index ? 24.w : 8.w,
-                          decoration: BoxDecoration(
-                            color: _currentPage == index ? AppTheme.accentColor : Colors.grey.shade600,
-                            borderRadius: BorderRadius.circular(4.r),
-                          ),
-                        );
-                      }),
-                    ),
-                  ),
-              ],
+            // Product Image Carousel (Hero Section Visual) and other header info
+            ProductDetailHeroSection(
+              productImages: productImages,
+              pageController: _pageController,
+              currentPage: _currentPage,
+              onImagePageChanged: (index) {
+                setState(() {
+                  _currentPage = index;
+                });
+              },
+              itemBackgroundColor: itemBackgroundColorFromRTDB,
+              dynamicHasDiscount: dynamicHasDiscount,
+              dynamicDiscountValue: dynamicDiscountValue,
+              dynamicDiscountType: dynamicDiscountType,
+              productName: productName,
+              productRating: productRating,
+              productReviewCount: productReviewCount,
+              productBrand: productBrand,
+              productWeight: productWeight,
+              productType: productType,
+              displayPrice: displayPrice,
+              showDiscountStrikethrough: showDiscountStrikethrough,
+              displayMrp: displayMrp,
+              displayInStock: displayInStock,
+              productId: widget.productId,
             ),
-            SizedBox(height: 20.h),
 
-            // Product Name and Rating
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    productName, // From Firestore
-                    style: TextStyle(
-                      fontSize: 24.sp,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimaryColor,
-                    ),
-                  ),
-                ),
-                if (productRating != null && productRating > 0)
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Colors.amber, size: 18.sp),
-                      SizedBox(width: 4.w),
-                      Text(
-                        productRating.toStringAsFixed(1),
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.bold,
-                          color: AppTheme.textPrimaryColor,
-                        ),
-                      ),
-                      if (productReviewCount != null && productReviewCount > 0)
-                        Text(
-                          ' (${productReviewCount} reviews)',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppTheme.textSecondaryColor,
-                          ),
-                        ),
-                    ],
-                  ),
-              ],
+            // Product Description Section
+            ProductDescriptionSection(
+              productDescription: productDescription,
             ),
-            SizedBox(height: 8.h),
 
-            // Brand and Weight/Product Type
-            Row(
-              children: [
-                if (productBrand != null && productBrand.isNotEmpty)
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-                    decoration: BoxDecoration(
-                      color: AppTheme.primaryColor,
-                      borderRadius: BorderRadius.circular(4.r),
-                    ),
-                    child: Text(
-                      productBrand, // From Firestore
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        color: AppTheme.accentColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                if (productBrand != null && productBrand.isNotEmpty && (productWeight != null || productType != null))
-                  SizedBox(width: 8.w),
-                if (productWeight != null && productWeight.isNotEmpty)
-                  Text(
-                    productWeight, // From Firestore
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-                if (productWeight == null && productType != null && productType.isNotEmpty)
-                  Text(
-                    productType, // From Firestore
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppTheme.textSecondaryColor,
-                    ),
-                  ),
-              ],
+            // Product Highlights Section
+            ProductHighlightsSection(
+              highlightsData: highlightsSection,
             ),
-            SizedBox(height: 16.h),
 
-            // Price Section (using dynamic pricing from RTDB) with Add Button
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.baseline,
-              textBaseline: TextBaseline.alphabetic,
-              children: [
-                // Price Display
-                Text(
-                  '${AppConstants.currencySymbol}${displayPrice.toStringAsFixed(0)}', // From RTDB
-                  style: TextStyle(
-                    fontSize: 28.sp,
-                    fontWeight: FontWeight.bold,
-                    color: dynamicHasDiscount ? Colors.green[700] : AppTheme.accentColor,
-                  ),
-                ),
-                if (showDiscountStrikethrough) ...[
-                  SizedBox(width: 10.w),
-                  Text(
-                    '${AppConstants.currencySymbol}${displayMrp!.toStringAsFixed(0)}', // From RTDB
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      color: AppTheme.textSecondaryColor,
-                      decoration: TextDecoration.lineThrough,
-                    ),
-                  ),
-                  SizedBox(width: 10.w),
-                  if (dynamicDiscountValue != null)
-                    Text(
-                      dynamicDiscountType == 'percentage'
-                          ? '${dynamicDiscountValue.toInt()}% OFF'
-                          : '₹${dynamicDiscountValue.toInt()} OFF',
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.green,
-                      ),
-                    ),
-                ],
-                Spacer(), // Pushes AddButton to the right
-                // Add to Cart Button
-                if (displayInStock)
-                  SizedBox(
-                    width: 100.w, // Fixed width for the button
-                    height: 40.h, // Fixed height for the button
-                    child: AddButton(
-                      productId: widget.productId,
-                      sourceCardType: ProductCardType.productDetails,
-                      inStock: displayInStock, // From RTDB
-                    ),
-                  )
-                else
-                  Container(
-                    width: 100.w,
-                    height: 40.h,
-                    padding: EdgeInsets.symmetric(vertical: 8.h),
-                    decoration: BoxDecoration(
-                      color: Colors.red.shade700,
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                    child: Text(
-                      'SOLD OUT', // Changed from 'OUT OF STOCK' for brevity
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
+            // Nutritional Info Section
+            ProductNutritionalInfoSection(
+              nutritionalInfo: nutritionalInfo,
             ),
-            SizedBox(height: 20.h),
 
-            // Product Description
-            if (productDescription.isNotEmpty) ...[
-              Text(
-                'About this item',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
-                ),
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                productDescription, // From Firestore
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: AppTheme.textSecondaryColor,
-                  height: 1.5,
-                ),
-              ),
-              SizedBox(height: 20.h),
-            ],
+            // Seller Information Section
+            ProductSellerInfoSection(
+              sellerInfoData: sellerInfoSection,
+              sellerName: sellerName,
+            ),
 
-            // Highlights Section
-            if (highlightsSection != null && highlightsSection['highlights'] is Map) ...[
-              Text(
-                'Product Highlights',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
-                ),
-              ),
-              SizedBox(height: 10.h),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: (highlightsSection['highlights'] as Map<String, dynamic>).entries.map((entry) {
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 8.h),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(Icons.check_circle, color: Colors.green.shade400, size: 16.sp),
-                        SizedBox(width: 8.w),
-                        Expanded(
-                          child: Text(
-                            '${entry.key}: ${entry.value}',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: AppTheme.textSecondaryColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                }).toList(),
-              ),
-              SizedBox(height: 20.h),
-            ],
-
-            // Nutritional Info (if extracted)
-            if (nutritionalInfo != null && nutritionalInfo.isNotEmpty) ...[
-              Text(
-                'Nutritional Information',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
-                ),
-              ),
-              SizedBox(height: 10.h),
-              Text(
-                nutritionalInfo, // From Firestore
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  color: AppTheme.textSecondaryColor,
-                  height: 1.5,
-                ),
-              ),
-              SizedBox(height: 20.h),
-            ],
-
-            // Seller Information
-            if (sellerInfoSection != null) ...[
-              Text(
-                'Seller Information',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
-                ),
-              ),
-              SizedBox(height: 10.h),
-              _buildInfoRow('Seller Name', sellerName), // From Firestore
-              _buildInfoRow('Source of Origin', sellerInfoSection['sourceOfOrigin'] as String?),
-              _buildInfoRow('FSSAI', sellerInfoSection['fssai'] as String?),
-              _buildInfoRow('Address', sellerInfoSection['address'] as String?),
-              _buildInfoRow('Customer Care', sellerInfoSection['customerCare'] as String?),
-              _buildInfoRow('Email', sellerInfoSection['email'] as String?),
-              _buildInfoRow('Certifications', sellerInfoSection['certifications'] as String?),
-              SizedBox(height: 20.h),
-            ],
-
-            // Additional Info (Category, Subcategory, SKU, Tags etc.)
-            if (additionalInfo != null) ...[
-              Text(
-                'Additional Details',
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.textPrimaryColor,
-                ),
-              ),
-              SizedBox(height: 10.h),
-              _buildInfoRow('Category', additionalInfo['category'] as String?), // From Firestore
-              _buildInfoRow('Subcategory', additionalInfo['subCategory'] as String?), // From Firestore
-              _buildInfoRow('SKU', productSku), // From Firestore
-              _buildInfoRow('Product Type', productType), // From Firestore
-              if (productTags.isNotEmpty)
-                _buildInfoRow('Tags', productTags.join(', ')), // From Firestore
-              SizedBox(height: 20.h),
-            ],
+            // Additional Info Section
+            ProductAdditionalInfoSection(
+              additionalInfoData: additionalInfo,
+              productSku: productSku,
+              productType: productType,
+              productTags: productTags,
+            ),
           ],
         ),
       ),
@@ -794,39 +448,6 @@ class _ProductDetailsPageState extends State<ProductDetailsPage> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // Helper for info rows in seller/additional sections
-  Widget _buildInfoRow(String title, String? value) {
-    if (value == null || value.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: EdgeInsets.only(bottom: 4.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 120.w, // Align titles
-            child: Text(
-              '$title:',
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: AppTheme.textPrimaryColor,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppTheme.textSecondaryColor,
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
