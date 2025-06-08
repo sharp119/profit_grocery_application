@@ -26,4 +26,14 @@ class OrderRepositoryImpl implements OrderRepository {
       rethrow;
     }
   }
+
+  @override
+  Future<List<OrderEntity>> getOrders(String userId, {int limit = 5}) async {
+    try {
+      return await remoteDataSource.getOrdersFromFirestore(userId, limit);
+    } catch (e) {
+      print('OrderRepositoryImpl Error - getOrders: $e');
+      rethrow;
+    }
+  }
 }

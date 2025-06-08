@@ -5,6 +5,6 @@ abstract class OrderRepository {
   /// Creates a new order and returns the unique order ID.
   Future<String> createOrder(OrderEntity order);
 
-  // Future<List<OrderEntity>> getOrders(String userId); // For fetching orders later
+  Future<List<OrderEntity>> getOrders(String userId, {int limit = 5}); // For fetching orders later
   // Future<OrderEntity?> getOrderDetails(String userId, String orderId); // For fetching a specific order later
 }

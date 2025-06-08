@@ -4,6 +4,7 @@ import 'package:profit_grocery_application/domain/entities/order.dart';
 
 abstract class OrderRemoteDataSource {
   Future<String> createOrderInFirestore(OrderEntity order);
+  Future<List<OrderEntity>> getOrdersFromFirestore(String userId, int limit);
 }
 
 class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
@@ -39,6 +40,26 @@ class OrderRemoteDataSourceImpl implements OrderRemoteDataSource {
       print('Firestore Error - createOrderInFirestore: $e');
       // Re-throw as a custom exception if you have an error handling framework
       throw Exception('Could not create order in Firestore: $e');
+    }
+  }
+
+  @override
+  Future<List<OrderEntity>> getOrdersFromFirestore(String userId, int limit) async {
+    try {
+      final querySnapshot = await _firestore
+          .collection('orders')
+          .doc(userId)
+          .collection('user_orders')
+          .orderBy('orderTimestamp', descending: true) // Assuming 'orderTimestamp' exists
+          .limit(limit)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => OrderEntity.fromSnapshot(doc))
+          .toList();
+    } catch (e) {
+      print('Firestore Error - getOrdersFromFirestore: $e');
+      throw Exception('Could not fetch orders from Firestore: $e');
     }
   }
 }
