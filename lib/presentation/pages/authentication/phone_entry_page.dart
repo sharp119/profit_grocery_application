@@ -200,7 +200,7 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppTheme.backgroundColor,
+      backgroundColor: const Color.fromARGB(255, 0, 0, 0),
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           LoggingService.logFirestore('PhoneEntryPage listener - AuthState: ${state.status}');
@@ -238,69 +238,52 @@ class _PhoneEntryPageState extends State<PhoneEntryPage> {
                   children: [
                     SizedBox(height: 40.h),
                     
+                    // Text(
+                    //   'Welcome to',
+                    //   style: TextStyle(
+                    //     color: Colors.white,
+                    //     fontSize: 24.sp,
+                    //     fontWeight: FontWeight.w500,
+                    //   ),
+                    // ),
                     // App logo/branding
+                   
                     Center(
-                      child: Container(
-                        width: 120.w,
-                        height: 120.w,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppTheme.primaryColor,
-                          border: Border.all(
-                            color: AppTheme.accentColor,
-                            width: 2.w,
+                      child: Stack(
+                        children: [
+                          Image.asset(
+                            'assets/icon/play_store_512.png', // <<< YOUR LOGO PATH HERE
+                            width: 350.w,
+                            height: 350.w,
+                            fit: BoxFit.contain,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppTheme.accentColor.withOpacity(0.3),
-                              blurRadius: 10,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: Center(
-                          child: Text(
-                            'PG',
-                            style: TextStyle(
-                              color: AppTheme.accentColor,
-                              fontSize: 48.sp,
-                              fontWeight: FontWeight.bold,
+                          Positioned(
+                            bottom: 0,
+                            left: 0,
+                            right: 0,
+                            child: Container(
+                              padding: EdgeInsets.symmetric(vertical: 65.h),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0),
+                                    Colors.black.withOpacity(0.7),
+                                  ],
+                                ),
+                              ),
+                              child: Text(
+                                AppConstants.appTagline,
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 16.sp,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
                             ),
                           ),
-                        ),
-                      ),
-                    ),
-                    
-                    SizedBox(height: 40.h),
-                    
-                    // Heading
-                    Text(
-                      'Welcome to',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    
-                    SizedBox(height: 8.h),
-                    
-                    Text(
-                      AppConstants.appName,
-                      style: TextStyle(
-                        color: AppTheme.accentColor,
-                        fontSize: 32.sp,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    
-                    SizedBox(height: 8.h),
-                    
-                    Text(
-                      AppConstants.appTagline,
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16.sp,
+                        ],
                       ),
                     ),
                     
