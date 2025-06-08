@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_bloc/flutter_bloc.dart'; // Ensure this is present
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get_it/get_it.dart';
 import '../../../main.dart'; // For GetIt singleton (sl)
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Still needed for _loadUserData
 
 import '../../../core/constants/app_theme.dart';
-import '../../../domain/entities/user.dart';
+import '../../../domain/entities/user.dart'; // Assuming User entity is correctly imported
 import '../../../services/logging_service.dart';
 import '../../blocs/user/user_bloc.dart';
 import '../../blocs/user/user_event.dart';
@@ -15,6 +15,11 @@ import '../../blocs/user/user_state.dart';
 import '../../widgets/base_layout.dart';
 import '../../widgets/profile/profile_summary_card.dart';
 import 'developer_menu_page.dart';
+
+// NEW IMPORTS FOR THEMEBLOC
+import 'package:profit_grocery_application/presentation/blocs/theme/theme_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/theme/theme_event.dart';
+import 'package:profit_grocery_application/presentation/blocs/theme/theme_state.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({Key? key}) : super(key: key);
@@ -46,38 +51,18 @@ class _ProfilePageContent extends StatefulWidget {
 }
 
 class _ProfilePageContentState extends State<_ProfilePageContent> {
-  bool _isDarkMode = true; // Default to dark mode
+  // REMOVE: bool _isDarkMode = true; // This state is now managed by ThemeBloc
 
   @override
   void initState() {
     super.initState();
     // Load user data when page is initialized
     _loadUserData();
-    _loadThemePreference();
+    // REMOVE: _loadThemePreference(); // Theme is loaded by ThemeBloc in main.dart
   }
 
-  Future<void> _loadThemePreference() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      setState(() {
-        _isDarkMode = prefs.getBool(AppConstants.isDarkModeKey) ?? true;
-      });
-    } catch (e) {
-      LoggingService.logError('ProfilePage', 'Error loading theme preference: $e');
-    }
-  }
-
-  Future<void> _saveThemePreference(bool isDarkMode) async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(AppConstants.isDarkModeKey, isDarkMode);
-      setState(() {
-        _isDarkMode = isDarkMode;
-      });
-    } catch (e) {
-      LoggingService.logError('ProfilePage', 'Error saving theme preference: $e');
-    }
-  }
+  // REMOVE: Future<void> _loadThemePreference() async { ... }
+  // REMOVE: Future<void> _saveThemePreference(bool isDarkMode) async { ... }
 
   Future<void> _loadUserData() async {
     // Get the current state of UserBloc
@@ -183,8 +168,8 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppTheme.accentColor.withOpacity(0.7),
-                  AppTheme.accentColor,
+                  Theme.of(context).colorScheme.secondary.withOpacity(0.7), // Use accent from theme
+                  Theme.of(context).colorScheme.secondary, // Use accent from theme
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -193,7 +178,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             ),
             child: Icon(
               Icons.person_off_outlined,
-              color: AppTheme.primaryColor,
+              color: Theme.of(context).colorScheme.primary, // Use primary from theme
               size: 40.sp,
             ),
           ),
@@ -202,7 +187,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           Text(
             'Profile Not Found',
             style: TextStyle(
-              color: AppTheme.accentColor,
+              color: Theme.of(context).colorScheme.secondary, // Use accent from theme
               fontSize: 24.sp,
               fontWeight: FontWeight.bold,
             ),
@@ -213,7 +198,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             'We couldn\'t find your profile information. Please try reloading or complete your profile setup.',
             textAlign: TextAlign.center,
             style: TextStyle(
-              color: AppTheme.textSecondaryColor,
+              color: Theme.of(context).textTheme.bodySmall?.color, // Use secondary text from theme
               fontSize: 16.sp,
             ),
           ),
@@ -226,8 +211,8 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             child: ElevatedButton(
               onPressed: _loadUserData,
               style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentColor,
-                foregroundColor: AppTheme.primaryColor,
+                backgroundColor: Theme.of(context).colorScheme.secondary, // Use accent from theme
+                foregroundColor: Theme.of(context).colorScheme.primary, // Use primary from theme
                 elevation: 3,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.r),
@@ -252,7 +237,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             child: Text(
               'Set Up Your Profile',
               style: TextStyle(
-                color: AppTheme.accentColor,
+                color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w500,
                 decoration: TextDecoration.underline,
@@ -272,20 +257,20 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            AppTheme.primaryColor,
-            AppTheme.secondaryColor.withOpacity(0.8),
+            Theme.of(context).colorScheme.primary, // Use primary from theme
+            Theme.of(context).colorScheme.surface.withOpacity(0.8), // Use surface from theme
           ],
         ),
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.2), // Use onSurface for shadow
             blurRadius: 10,
             offset: const Offset(0, 5),
           ),
         ],
         border: Border.all(
-          color: AppTheme.accentColor.withOpacity(0.3),
+          color: Theme.of(context).colorScheme.secondary.withOpacity(0.3), // Use accent from theme
           width: 1.5,
         ),
       ),
@@ -295,20 +280,20 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // User avatar with gold border
+              // User avatar with accent border
               Container(
                 width: 80.w,
                 height: 80.w,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: AppTheme.primaryColor,
+                  color: Theme.of(context).colorScheme.primary, // Use primary from theme
                   border: Border.all(
-                    color: AppTheme.accentColor,
+                    color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                     width: 3,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: AppTheme.accentColor.withOpacity(0.3),
+                      color: Theme.of(context).colorScheme.secondary.withOpacity(0.3), // Use accent from theme
                       blurRadius: 8,
                       spreadRadius: 1,
                       offset: const Offset(0, 2),
@@ -321,7 +306,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                         ? user.name![0].toUpperCase()
                         : user.phoneNumber[0],
                     style: TextStyle(
-                      color: AppTheme.accentColor,
+                      color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                       fontSize: 36.sp,
                       fontWeight: FontWeight.bold,
                     ),
@@ -339,7 +324,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                     Text(
                       user.name ?? 'User',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onPrimary, // Use onPrimary from theme
                         fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 0.5,
@@ -352,14 +337,14 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                       children: [
                         Icon(
                           Icons.phone_android,
-                          color: AppTheme.accentColor,
+                          color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                           size: 16.sp,
                         ),
                         SizedBox(width: 8.w),
                         Text(
                           user.phoneNumber,
                           style: TextStyle(
-                            color: Colors.white70,
+                            color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), // Use onPrimary from theme
                             fontSize: 16.sp,
                           ),
                         ),
@@ -373,7 +358,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                         children: [
                           Icon(
                             Icons.email_outlined,
-                            color: AppTheme.accentColor,
+                            color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                             size: 16.sp,
                           ),
                           SizedBox(width: 8.w),
@@ -381,7 +366,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                             child: Text(
                               user.email!,
                               style: TextStyle(
-                                color: Colors.white70,
+                                color: Theme.of(context).colorScheme.onPrimary.withOpacity(0.7), // Use onPrimary from theme
                                 fontSize: 16.sp,
                               ),
                               overflow: TextOverflow.ellipsis,
@@ -400,7 +385,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           SizedBox(height: 24.h),
           OutlinedButton.icon(
             onPressed: () => _navigateToEditProfile(context, user),
-            icon: const Icon(Icons.edit, color: AppTheme.accentColor, size: 18),
+            icon: Icon(Icons.edit, color: Theme.of(context).colorScheme.secondary, size: 18), // Use accent from theme
             label: Text(
               'Edit Profile', 
               style: TextStyle(
@@ -410,11 +395,11 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             ),
             style: OutlinedButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
-              side: const BorderSide(color: AppTheme.accentColor, width: 1.5),
+              side: BorderSide(color: Theme.of(context).colorScheme.secondary, width: 1.5), // Use accent from theme
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(24.r),
               ),
-              foregroundColor: AppTheme.accentColor,
+              foregroundColor: Theme.of(context).colorScheme.secondary, // Use accent from theme
             ),
           ),
         ],
@@ -432,7 +417,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           child: Text(
             'My Account',
             style: TextStyle(
-              color: AppTheme.accentColor,
+              color: Theme.of(context).colorScheme.secondary, // Use accent from theme
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -473,7 +458,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           child: Text(
             'App Preferences',
             style: TextStyle(
-              color: AppTheme.accentColor,
+              color: Theme.of(context).colorScheme.secondary, // Use accent from theme
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -481,7 +466,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           ),
         ),
         
-        // Theme toggle card
+        // Theme toggle card - MODIFIED TO USE THEMEBLOC
         _buildThemeToggleCard(),
         
         // Notification preferences
@@ -498,7 +483,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           child: Text(
             'Support',
             style: TextStyle(
-              color: AppTheme.accentColor,
+              color: Theme.of(context).colorScheme.secondary, // Use accent from theme
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
               letterSpacing: 0.5,
@@ -557,20 +542,20 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
   }) {
     return Card(
       margin: EdgeInsets.only(bottom: 12.h),
-      color: AppTheme.secondaryColor,
+      color: Theme.of(context).cardTheme.color, // Use theme color for adaptability
       elevation: 2,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.r),
         side: BorderSide(
-          color: AppTheme.accentColor.withOpacity(0.2),
+          color: Theme.of(context).colorScheme.secondary.withOpacity(0.2), // Use accent from theme
           width: 1,
         ),
       ),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12.r),
-        splashColor: AppTheme.accentColor.withOpacity(0.1),
-        highlightColor: AppTheme.accentColor.withOpacity(0.05),
+        splashColor: Theme.of(context).colorScheme.secondary.withOpacity(0.1), // Use accent from theme
+        highlightColor: Theme.of(context).colorScheme.secondary.withOpacity(0.05), // Use accent from theme
         child: Padding(
           padding: EdgeInsets.all(16.w),
           child: Row(
@@ -578,12 +563,12 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
               Container(
                 padding: EdgeInsets.all(10.w),
                 decoration: BoxDecoration(
-                  color: AppTheme.accentColor.withOpacity(0.1),
+                  color: Theme.of(context).colorScheme.secondary.withOpacity(0.1), // Use accent from theme
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   icon,
-                  color: AppTheme.accentColor,
+                  color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                   size: 24.sp,
                 ),
               ),
@@ -595,7 +580,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                     Text(
                       title,
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Theme.of(context).colorScheme.onSurface, // Use onSurface from theme
                         fontSize: 16.sp,
                         fontWeight: FontWeight.w600,
                       ),
@@ -604,7 +589,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: Colors.white60,
+                        color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), // Use onSurface from theme
                         fontSize: 14.sp,
                       ),
                     ),
@@ -615,13 +600,13 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                   decoration: BoxDecoration(
-                    color: AppTheme.accentColor,
+                    color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Text(
                     indicatorCount.toString(),
                     style: TextStyle(
-                      color: AppTheme.primaryColor,
+                      color: Theme.of(context).colorScheme.primary, // Use primary from theme
                       fontSize: 14.sp,
                       fontWeight: FontWeight.bold,
                     ),
@@ -630,7 +615,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
               else
                 Icon(
                   Icons.arrow_forward_ios,
-                  color: AppTheme.accentColor,
+                  color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                   size: 16.sp,
                 ),
             ],
@@ -640,75 +625,84 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
     );
   }
 
+  // MODIFIED _buildThemeToggleCard() to use ThemeBloc
   Widget _buildThemeToggleCard() {
-    return Card(
-      margin: EdgeInsets.only(bottom: 12.h),
-      color: AppTheme.secondaryColor,
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12.r),
-        side: BorderSide(
-          color: AppTheme.accentColor.withOpacity(0.2),
-          width: 1,
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(16.w),
-        child: Row(
-          children: [
-            Container(
-              padding: EdgeInsets.all(10.w),
-              decoration: BoxDecoration(
-                color: AppTheme.accentColor.withOpacity(0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                _isDarkMode ? Icons.dark_mode_outlined : Icons.light_mode_outlined,
-                color: AppTheme.accentColor,
-                size: 24.sp,
-              ),
+    return BlocBuilder<ThemeBloc, ThemeState>(
+      builder: (context, themeState) {
+        final bool isLightMode = themeState.themeMode == ThemeMode.light;
+        return Card(
+          margin: EdgeInsets.only(bottom: 12.h),
+          color: Theme.of(context).cardTheme.color, // Use theme color for adaptability
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12.r),
+            side: BorderSide(
+              color: Theme.of(context).colorScheme.secondary.withOpacity(0.2), // Use accent color from theme
+              width: 1,
             ),
-            SizedBox(width: 16.w),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Dark Mode',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w600,
-                    ),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(16.w),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.secondary.withOpacity(0.1),
+                    shape: BoxShape.circle,
                   ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    _isDarkMode ? 'On' : 'Off',
-                    style: TextStyle(
-                      color: Colors.white60,
-                      fontSize: 14.sp,
-                    ),
+                  child: Icon(
+                    isLightMode ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+                    color: Theme.of(context).colorScheme.secondary, // Use accent color from theme
+                    size: 24.sp,
                   ),
-                ],
-              ),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Light Mode', // Label text for the toggle
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface, // Use onSurface from theme
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        isLightMode ? 'On' : 'Off',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6), // Use onSurface from theme
+                          fontSize: 14.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Switch(
+                  value: isLightMode, // Value based on ThemeBloc state
+                  onChanged: (value) {
+                    // Dispatch ToggleTheme event when the switch changes
+                    context.read<ThemeBloc>().add(ToggleTheme(value));
+                  },
+                  activeColor: Theme.of(context).colorScheme.secondary, // Accent color for active state
+                  inactiveTrackColor: Theme.of(context).colorScheme.onSurface.withOpacity(0.3), // Track color for inactive
+                  thumbColor: MaterialStateProperty.resolveWith<Color>(
+                    (Set<MaterialState> states) {
+                      if (states.contains(MaterialState.selected)) {
+                        return Theme.of(context).colorScheme.primary; // Primary color for selected thumb
+                      }
+                      return Theme.of(context).colorScheme.onSurface; // Default thumb color
+                    },
+                  ),
+                ),
+              ],
             ),
-            Switch(
-              value: _isDarkMode,
-              onChanged: (value) => _saveThemePreference(value),
-              activeColor: AppTheme.accentColor,
-              inactiveTrackColor: Colors.grey.withOpacity(0.5),
-              thumbColor: MaterialStateProperty.resolveWith<Color>(
-                (Set<MaterialState> states) {
-                  if (states.contains(MaterialState.selected)) {
-                    return AppTheme.primaryColor;
-                  }
-                  return Colors.white;
-                },
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
@@ -717,19 +711,19 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(color: AppTheme.errorColor),
+        border: Border.all(color: Theme.of(context).colorScheme.error), // Use error from theme
       ),
       child: TextButton.icon(
         onPressed: () => _confirmLogout(context),
         icon: Icon(
           Icons.logout,
-          color: AppTheme.errorColor,
+          color: Theme.of(context).colorScheme.error, // Use error from theme
           size: 24.sp,
         ),
         label: Text(
           'Logout',
           style: TextStyle(
-            color: AppTheme.errorColor,
+            color: Theme.of(context).colorScheme.error, // Use error from theme
             fontSize: 16.sp,
             fontWeight: FontWeight.bold,
           ),
@@ -786,9 +780,9 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
           height: 40.w,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: AppTheme.primaryColor,
+            color: Theme.of(context).colorScheme.primary, // Use primary from theme
             border: Border.all(
-              color: AppTheme.accentColor,
+              color: Theme.of(context).colorScheme.secondary, // Use accent from theme
               width: 2,
             ),
           ),
@@ -796,7 +790,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
             child: Text(
               'PG',
               style: TextStyle(
-                color: AppTheme.accentColor,
+                color: Theme.of(context).colorScheme.secondary, // Use accent from theme
                 fontWeight: FontWeight.bold,
                 fontSize: 18.sp,
               ),
@@ -839,7 +833,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
               _logout(context);
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.errorColor,
+              backgroundColor: Theme.of(context).colorScheme.error, // Use error from theme
             ),
             child: const Text('Logout'),
           ),
@@ -854,7 +848,7 @@ class _ProfilePageContentState extends State<_ProfilePageContent> {
     
     // Navigate to login page and clear navigation stack
     Navigator.of(context).pushNamedAndRemoveUntil(
-      '/auth/phone',
+      AppConstants.loginRoute, // Using AppConstants.loginRoute
       (route) => false,
     );
   }

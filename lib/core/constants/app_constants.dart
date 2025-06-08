@@ -129,5 +129,9 @@ class AppConstants {
   static const double horizontalCardSpacing = 12.0; // Spacing between cards
   static const int horizontalGridPageSize = 12; // Items per page for pagination
   
+
+  static const String themeModeKey = 'theme_mode'; // Add this line
+
+
   AppConstants._(); // Private constructor to prevent instantiation
 }

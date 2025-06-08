@@ -1,3 +1,4 @@
+// lib/main.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -29,7 +30,7 @@ import 'services/cart_provider.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/constants/app_theme.dart';
-import 'core/routing/app_router.dart';
+import 'core/routing/app_router.dart'; // Ensure this import is correct
 import 'services/otp_service.dart';
 import 'services/session_manager.dart';
 import 'services/session_manager_firestore.dart';
@@ -52,6 +53,12 @@ import 'presentation/blocs/products/products_bloc.dart';
 import 'presentation/pages/authentication/splash_screen.dart';
 import 'presentation/blocs/cart/cart_bloc.dart';
 import 'presentation/blocs/cart/cart_event.dart';
+
+// NEW IMPORTS FOR THEME
+import 'package:profit_grocery_application/presentation/blocs/theme/theme_bloc.dart';
+import 'package:profit_grocery_application/presentation/blocs/theme/theme_event.dart';
+import 'package:profit_grocery_application/presentation/blocs/theme/theme_state.dart';
+
 
 // GetIt instance for dependency injection
 final GetIt sl = GetIt.instance;
@@ -272,7 +279,10 @@ Future<void> setupDependencyInjection() async {
     () => UserBloc(userRepository: sl<UserRepository>()),
   );
   
-  
+  // REGISTER THEMEBLOC
+  sl.registerFactory(
+    () => ThemeBloc(sharedPreferences: sl<SharedPreferences>()),
+  );
 
   sl.registerFactory(
     () => NavigationBloc(),
@@ -314,6 +324,10 @@ class MyApp extends StatelessWidget {
             return userBloc;
           },
         ),
+        // ADD THEMEBLOC HERE
+        BlocProvider<ThemeBloc>(
+          create: (context) => sl<ThemeBloc>()..add(const LoadTheme()), // Load initial theme
+        ),
         
         BlocProvider<NavigationBloc>(
           create: (context) => sl<NavigationBloc>(),
@@ -342,20 +356,23 @@ class MyApp extends StatelessWidget {
         builder: (_, child) {
           // Get FirebaseAnalytics instance
           final analytics = GetIt.instance<FirebaseAnalytics>();
-          return Builder(
-            builder: (context) {
-              return MaterialApp(
+          return BlocBuilder<ThemeBloc, ThemeState>( // Use BlocBuilder to react to ThemeState changes
+            builder: (context, themeState) {
+              return MaterialApp( // Changed from MaterialApp.router to MaterialApp
                 title: AppConstants.appName,
                 debugShowCheckedModeBanner: false,
-                theme: AppTheme.darkTheme,
-                home: const SplashScreen(),
-                onGenerateRoute: AppRouter.generateRoute,
-                initialRoute: AppConstants.splashRoute,
-                navigatorObservers: [
+                theme: AppTheme.lightTheme, // Your defined light theme
+                darkTheme: AppTheme.darkTheme, // Your defined dark theme
+                themeMode: themeState.themeMode, // Theme mode controlled by ThemeBloc state
+                // Remove routerConfig as you are using onGenerateRoute
+                home: const SplashScreen(), // Re-add home for initial route
+                onGenerateRoute: AppRouter.generateRoute, // Re-add onGenerateRoute
+                initialRoute: AppConstants.splashRoute, // Re-add initialRoute
+                navigatorObservers: [ // This is now valid for MaterialApp
                   FirebaseAnalyticsObserver(analytics: analytics),
                 ],
               );
-            }
+            },
           );
         },
       ),
