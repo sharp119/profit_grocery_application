@@ -10,6 +10,10 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
 import 'package:profit_grocery_application/presentation/pages/orders/order_details_page.dart';
 import 'package:profit_grocery_application/presentation/widgets/image_loader.dart';
+import 'package:profit_grocery_application/presentation/pages/orders/actions/cancel_order_action.dart';
+import 'package:profit_grocery_application/presentation/pages/orders/actions/order_again_action.dart';
+import 'package:profit_grocery_application/presentation/widgets/grids/horizontal_bestseller_grid.dart';
+import 'package:profit_grocery_application/presentation/pages/orders/orders_bestsellers_section.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({Key? key}) : super(key: key);
@@ -120,263 +124,300 @@ class _OrdersPageState extends State<OrdersPage> with SingleTickerProviderStateM
               ),
             );
           } else {
-            return Column(
+            return ListView(
+              padding: EdgeInsets.all(16.r),
               children: [
-                Expanded(
-                  child: ListView.builder(
-                    padding: EdgeInsets.all(16.r),
-                    itemCount: state.orders.length + 1, // +1 for load more/message
-                    itemBuilder: (context, index) {
-                      if (index < state.orders.length) {
-                        final order = state.orders[index];
-                        final status = order.status.toLowerCase();
-                        IconData icon;
-                        Color iconColor;
-                        String actionLabel;
-                        bool isFinal = false;
-
-                        switch (status) {
-                          case 'pending':
-                            icon = Icons.hourglass_empty;
-                            iconColor = Colors.orange;
-                            actionLabel = 'Cancel Order';
-                            break;
-                          case 'confirmed':
-                            icon = Icons.task_alt;
-                            iconColor = Colors.blueAccent;
-                            actionLabel = 'Cancel Order';
-                            break;
-                          case 'shipped':
-                            icon = Icons.local_shipping;
-                            iconColor = Colors.deepPurple;
-                            actionLabel = 'Cancel Order';
-                            break;
-                          case 'out for delivery':
-                            icon = Icons.delivery_dining;
-                            iconColor = Colors.teal;
-                            actionLabel = 'Cancel Order';
-                            break;
-                          case 'delivered':
-                            icon = Icons.check_circle;
-                            iconColor = Colors.green;
-                            actionLabel = 'Order Again';
-                            isFinal = true;
-                            break;
-                          case 'cancelled':
-                            icon = Icons.cancel;
-                            iconColor = Colors.red;
-                            actionLabel = 'Order Again';
-                            isFinal = true;
-                            break;
-                          case 'failed':
-                            icon = Icons.warning;
-                            iconColor = Colors.redAccent;
-                            actionLabel = 'Order Again';
-                            isFinal = true;
-                            break;
-                          default:
-                            icon = Icons.help_outline;
-                            iconColor = Colors.grey;
-                            actionLabel = 'View Details';
-                            break;
-                        }
-
-                        return GestureDetector(
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OrderDetailsPage(orderId: order.id!),
-                              ),
-                            );
-                          },
-                          child: Container(
-                            margin: EdgeInsets.only(bottom: 12.h),
-                            padding: EdgeInsets.all(16.r),
-                            decoration: BoxDecoration(
-                              color: AppTheme.secondaryColor,
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Product images row (now above status row, smaller size)
-                                if (order.items.isNotEmpty)
-                                  Padding(
-                                    padding: EdgeInsets.only(bottom: 8.h),
-                                    child: Row(
-                                      children: [
-                                        for (int i = 0; i < (order.items.length > 5 ? 4 : order.items.length); i++)
-                                          Padding(
-                                            padding: EdgeInsets.only(right: 4.w),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(6.r),
-                                              child: ImageLoader.network(
-                                                order.items[i].image,
-                                                fit: BoxFit.contain,
-                                                width: 36.w,
-                                                height: 36.h,
-                                                errorWidget: Center(
-                                                  child: Icon(
-                                                    Icons.image_not_supported_outlined,
-                                                    color: AppTheme.textSecondaryColor,
-                                                    size: 14.sp,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        if (order.items.length > 5)
-                                          Padding(
-                                            padding: EdgeInsets.only(right: 4.w),
-                                            child: ClipRRect(
-                                              borderRadius: BorderRadius.circular(6.r),
-                                              child: Container(
-                                                width: 36.w,
-                                                height: 36.h,
-                                                color: Colors.grey.shade300,
-                                                alignment: Alignment.center,
-                                                child: Text(
-                                                  "+${order.items.length - 4}",
-                                                  style: TextStyle(
-                                                    color: Colors.black,
-                                                    fontWeight: FontWeight.bold,
-                                                    fontSize: 13.sp,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                // Row 1: Status text + icon beside
-                                Row(
-                                  children: [
-                                    Text(
-                                      'Order (${order.status[0].toUpperCase()}${order.status.substring(1)})',
-                                      style: TextStyle(
-                                        fontSize: 16.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: AppTheme.textPrimaryColor,
-                                      ),
-                                    ),
-                                    SizedBox(width: 8.w),
-                                    Icon(icon, color: iconColor, size: 20.r),
-                                  ],
-                                ),
-
-                                SizedBox(height: 8.h),
-
-                                // Row 2: Time & Price
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                  children: [
-                                    Text(
-                                      'Placed: ${order.orderTimestamp.toDate().toLocal().toString().split(".")[0]}',
-                                      style: TextStyle(fontSize: 13.sp, color: AppTheme.textSecondaryColor),
-                                    ),
-                                    Row(
-                                      children: [
-                                        Text(
-                                          '₹${order.pricingSummary.grandTotal.toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontSize: 14.sp,
-                                            fontWeight: FontWeight.bold,
-                                            color: AppTheme.textPrimaryColor,
-                                          ),
-                                        ),
-                                        Icon(Icons.arrow_forward_ios, size: 14.r, color: AppTheme.textSecondaryColor),
-                                      ],
-                                    ),
-                                  ],
-                                ),
-
-                                SizedBox(height: 12.h),
-                                Divider(color: AppTheme.textSecondaryColor.withOpacity(0.3)),
-                                SizedBox(height: 12.h),
-
-                                // Row 3: Centered Action
-                                Center(
-                                  child: Center(
-                                    child: Text(
-                                      isFinal ? 'Order Again' : 'Cancel Order',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.bold,
-                                        color: isFinal ? AppTheme.accentColor : Colors.redAccent,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                              ],
-                            ),
-                          ),
-                        );
-                      } else {
-                        // After last order card
-                        if (state.orders.length >= _ordersLimit && !_noMoreOrders) {
-                          return Center(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: 12.h, bottom: 24.h),
-                              child: GestureDetector(
-                                onTap: _isLoadingMore ? null : () async {
-                                  setState(() { _isLoadingMore = true; });
-                                  int prevCount = state.orders.length;
-                                  _ordersLimit += 5;
-                                  await Future.delayed(Duration(milliseconds: 300));
-                                  _fetchOrders();
-                                  setState(() {
-                                    _isLoadingMore = false;
-                                    // If no new orders were fetched, set flag
-                                    if (context.read<OrdersBloc>().state.orders.length == prevCount) {
-                                      _noMoreOrders = true;
-                                    }
-                                  });
-                                },
-                                child: _isLoadingMore
-                                    ? SizedBox(
-                                        width: 20.w,
-                                        height: 20.w,
-                                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
-                                      )
-                                    : Text(
-                                        '+ Load More',
-                                        style: TextStyle(
-                                          color: AppTheme.accentColor,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15.sp,
-                                        ),
-                                      ),
-                              ),
-                            ),
-                          );
-                        } else if (_noMoreOrders) {
-                          return Center(
-                            child: Padding(
-                              padding: EdgeInsets.only(top: 12.h, bottom: 24.h),
-                              child: Text(
-                                'No more orders to load.',
-                                style: TextStyle(
-                                  color: AppTheme.textSecondaryColor,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 14.sp,
-                                ),
-                              ),
-                            ),
-                          );
-                        } else {
-                          return SizedBox.shrink();
-                        }
-                      }
+                if (state.orders.isNotEmpty)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsPage(orderId: state.orders[0].id!),
+                        ),
+                      );
                     },
+                    child: _buildOrderCard(state.orders[0]),
+                  ),
+                if (state.orders.isNotEmpty) SizedBox(height: 24.h),
+                // Bestsellers section (persistent, not rebuilt)
+                const OrdersBestsellersSection(key: ValueKey('orders_bestsellers_section')),
+                SizedBox(height: 24.h),
+                // Remaining order cards
+                ...List.generate(
+                  state.orders.length > 1 ? state.orders.length - 1 : 0,
+                  (i) => GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => OrderDetailsPage(orderId: state.orders[i + 1].id!),
+                        ),
+                      );
+                    },
+                    child: _buildOrderCard(state.orders[i + 1]),
                   ),
                 ),
+                // Load more/message
+                _buildLoadMoreOrMessage(state),
               ],
             );
           }
         },
       ),
     );
+  }
+
+  Widget _buildOrderCard(order) {
+    final status = order.status.toLowerCase();
+    IconData icon;
+    Color iconColor;
+    String actionLabel;
+    bool isFinal = false;
+
+    switch (status) {
+      case 'pending':
+        icon = Icons.hourglass_empty;
+        iconColor = Colors.orange;
+        actionLabel = 'Cancel Order';
+        break;
+      case 'confirmed':
+        icon = Icons.task_alt;
+        iconColor = Colors.blueAccent;
+        actionLabel = 'Cancel Order';
+        break;
+      case 'shipped':
+        icon = Icons.local_shipping;
+        iconColor = Colors.deepPurple;
+        actionLabel = 'Cancel Order';
+        break;
+      case 'out for delivery':
+        icon = Icons.delivery_dining;
+        iconColor = Colors.teal;
+        actionLabel = 'Cancel Order';
+        break;
+      case 'delivered':
+        icon = Icons.check_circle;
+        iconColor = Colors.green;
+        actionLabel = 'Order Again';
+        isFinal = true;
+        break;
+      case 'cancelled':
+        icon = Icons.cancel;
+        iconColor = Colors.red;
+        actionLabel = 'Order Again';
+        isFinal = true;
+        break;
+      case 'failed':
+        icon = Icons.warning;
+        iconColor = Colors.redAccent;
+        actionLabel = 'Order Again';
+        isFinal = true;
+        break;
+      default:
+        icon = Icons.help_outline;
+        iconColor = Colors.grey;
+        actionLabel = 'View Details';
+        break;
+    }
+
+    Widget orderCard = Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.fromLTRB(16, 16, 16, 2),
+      decoration: BoxDecoration(
+        color: AppTheme.secondaryColor,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Product images row (now above status row, smaller size)
+          if (order.items.isNotEmpty)
+            Padding(
+              padding: EdgeInsets.only(bottom: 8.h),
+              child: Row(
+                children: [
+                  for (int i = 0; i < (order.items.length > 5 ? 4 : order.items.length); i++)
+                    Padding(
+                      padding: EdgeInsets.only(right: 4.w),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6.r),
+                        child: ImageLoader.network(
+                          order.items[i].image,
+                          fit: BoxFit.contain,
+                          width: 36.w,
+                          height: 36.h,
+                          errorWidget: Center(
+                            child: Icon(
+                              Icons.image_not_supported_outlined,
+                              color: AppTheme.textSecondaryColor,
+                              size: 14.sp,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (order.items.length > 5)
+                    Padding(
+                      padding: EdgeInsets.only(right: 4.w),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(6.r),
+                        child: Container(
+                          width: 36.w,
+                          height: 36.h,
+                          color: Colors.grey.shade300,
+                          alignment: Alignment.center,
+                          child: Text(
+                            "+${order.items.length - 4}",
+                            style: TextStyle(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13.sp,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+
+          SizedBox(height: 16.h),
+          // Row 1: Status text + icon beside
+          Row(
+            children: [
+              Text(
+                'Order (${order.status[0].toUpperCase()}${order.status.substring(1)})',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.textPrimaryColor,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Icon(icon, color: iconColor, size: 20.r),
+            ],
+          ),
+
+          SizedBox(height: 8.h),
+
+          // Row 2: Time & Price
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Placed: ${order.orderTimestamp.toDate().toLocal().toString().split(".")[0]}',
+                style: TextStyle(fontSize: 13.sp, color: AppTheme.textSecondaryColor),
+              ),
+              Row(
+                children: [
+                  Text(
+                    '₹${order.pricingSummary.grandTotal.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.textPrimaryColor,
+                    ),
+                  ),
+                  Icon(Icons.arrow_forward_ios, size: 14.r, color: AppTheme.textSecondaryColor),
+                ],
+              ),
+            ],
+          ),
+
+          SizedBox(height: 12.h),
+          Divider(color: AppTheme.textSecondaryColor.withOpacity(0.3)),
+          // SizedBox(height: 12.h),
+
+          // Row 3: Centered Action (make the whole area clickable, with always-visible border)
+          GestureDetector(
+            onTap: isFinal
+                ? () => handleOrderAgain(order.id!)
+                : () => handleCancelOrder(order.id!),
+            child: Container(
+              width: double.infinity,
+              margin: EdgeInsets.symmetric(vertical: 1.h),
+              padding: EdgeInsets.symmetric(vertical: 12.h),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: Colors.transparent,
+                  width: 1.5,
+                ),
+                borderRadius: BorderRadius.circular(8.r),
+                color: Colors.transparent,
+              ),
+              child: Center(
+                child: Text(
+                  isFinal ? 'Order Again' : 'Cancel Order',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.bold,
+                    color: isFinal ? AppTheme.accentColor : Colors.redAccent,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    return orderCard;
+  }
+
+  Widget _buildLoadMoreOrMessage(state) {
+    if (state.orders.length >= _ordersLimit && !_noMoreOrders) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 12.h, bottom: 24.h),
+          child: GestureDetector(
+            onTap: _isLoadingMore ? null : () async {
+              setState(() { _isLoadingMore = true; });
+              int prevCount = state.orders.length;
+              _ordersLimit += 5;
+              await Future.delayed(Duration(milliseconds: 300));
+              _fetchOrders();
+              setState(() {
+                _isLoadingMore = false;
+                // If no new orders were fetched, set flag
+                if (context.read<OrdersBloc>().state.orders.length == prevCount) {
+                  _noMoreOrders = true;
+                }
+              });
+            },
+            child: _isLoadingMore
+                ? SizedBox(
+                    width: 20.w,
+                    height: 20.w,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                  )
+                : Text(
+                    '+ Load More',
+                    style: TextStyle(
+                      color: AppTheme.accentColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15.sp,
+                    ),
+                  ),
+          ),
+        ),
+      );
+    } else if (_noMoreOrders) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.only(top: 12.h, bottom: 24.h),
+          child: Text(
+            'No more orders to load.',
+            style: TextStyle(
+              color: AppTheme.textSecondaryColor,
+              fontWeight: FontWeight.w500,
+              fontSize: 14.sp,
+            ),
+          ),
+        ),
+      );
+    } else {
+      return SizedBox.shrink();
+    }
   }
 }
