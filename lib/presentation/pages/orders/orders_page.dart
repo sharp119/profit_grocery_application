@@ -9,6 +9,7 @@ import 'package:profit_grocery_application/domain/entities/order.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:profit_grocery_application/core/constants/app_constants.dart';
 import 'package:profit_grocery_application/presentation/pages/orders/order_details_page.dart';
+import 'package:profit_grocery_application/presentation/widgets/image_loader.dart';
 
 class OrdersPage extends StatefulWidget {
   const OrdersPage({Key? key}) : super(key: key);
@@ -180,6 +181,56 @@ switch (status) {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        // Product images row (now above status row, smaller size)
+                        if (order.items.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 8.h),
+                            child: Row(
+                              children: [
+                                for (int i = 0; i < (order.items.length > 5 ? 4 : order.items.length); i++)
+                                  Padding(
+                                    padding: EdgeInsets.only(right: 4.w),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      child: ImageLoader.network(
+                                        order.items[i].image,
+                                        fit: BoxFit.contain,
+                                        width: 36.w,
+                                        height: 36.h,
+                                        errorWidget: Center(
+                                          child: Icon(
+                                            Icons.image_not_supported_outlined,
+                                            color: AppTheme.textSecondaryColor,
+                                            size: 14.sp,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                if (order.items.length > 5)
+                                  Padding(
+                                    padding: EdgeInsets.only(right: 4.w),
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(6.r),
+                                      child: Container(
+                                        width: 36.w,
+                                        height: 36.h,
+                                        color: Colors.grey.shade300,
+                                        alignment: Alignment.center,
+                                        child: Text(
+                                          "+${order.items.length - 4}",
+                                          style: TextStyle(
+                                            color: Colors.black,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13.sp,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
                         // Row 1: Status text + icon beside
                         Row(
                           children: [
