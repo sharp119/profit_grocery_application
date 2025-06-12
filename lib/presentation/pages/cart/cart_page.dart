@@ -60,7 +60,7 @@ final FirebaseDatabase _database = FirebaseDatabase.instance;
   bool _isCashOnDeliverySelected = false;
   String? _appliedCouponCode; // For coupon integration (if not already present)
   double _couponDiscount = 0.0; // For coupon integration (if not already present)
-  double _deliveryFee = 0.0; // For delivery fee (if not already present)
+  double _deliveryFee = 30.0; // Changed to 30.0 as requested
   double _packagingFee = 0.0; // For packaging fee (if not already present)
 
   bool _showAllItems = false;
@@ -72,8 +72,9 @@ final FirebaseDatabase _database = FirebaseDatabase.instance;
   // Address and total payment information
   Address? _defaultAddress;
   bool _addressLoading = true;
-  double _totalCartValue = 0;
+  double _totalCartValue = 0; // Item total after product-level discounts
   double _totalSavings = 0;
+  double _grandTotal = 0; // New: Grand total including all fees
 
   // Add this variable to track if all products are loaded
 
@@ -551,10 +552,21 @@ void _recalculateCartTotals() {
     }
   }
 
+  // Calculate small cart fee
+  double currentSmallCartFee = (newTotalValue < 99) ? 35.0 : 0.0;
+
+  // Calculate grand total
+  double newGrandTotal = newTotalValue + currentSmallCartFee + _deliveryFee; // _deliveryFee is 0.0 by default
+
   if (mounted) { // Check if widget is still in tree
       setState(() {
         _totalCartValue = newTotalValue;
         _totalSavings = newTotalSavings;
+        // Update relevant state variables in PricingSummaryOrder and PaymentDetailsOrder
+        _deliveryFee = _deliveryFee; // This line is fine, just ensures the state variable is considered
+        // _packagingFee = currentPackagingFee; // If you have packaging fee
+        // _couponDiscount = currentCouponDiscount; // If you have cart-level coupon logic
+        _grandTotal = newGrandTotal;
       });
   }
   _saveCartTotals(); // Save to SharedPreferences
@@ -566,10 +578,12 @@ Future<void> _saveCartTotals() async {
     try {
         final prefs = await SharedPreferences.getInstance();
         final cartTotalsData = { // Corrected key name
-            'subtotal': _totalCartValue, // Or calculate subtotal before any cart-level discounts if applicable
+            'subtotal': _totalCartValue, // Item total after product-level discounts
             'discount': _totalSavings, // This represents item-level savings
-            'total': _totalCartValue,
+            'total': _grandTotal, // Use grand total here
             'itemCount': _cartQuantities.values.fold(0, (sum, q) => sum + q), // Total quantity of all items
+            'deliveryFee': _deliveryFee, // Include delivery fee
+            'smallCartFee': (_totalCartValue < 99) ? 35.0 : 0.0, // Include small cart fee here for persistence
             // 'uniqueItemCount': _cartProductIds.length, // If you need this separately
         };
         await prefs.setString('cart_totals', jsonEncode(cartTotalsData));
@@ -1046,7 +1060,7 @@ SizedBox(height: 10.h),
                             ],
                           ),
                         ),
-                        // To Pay section
+                        // To Pay section (main cart display)
                         ],
                       // Cart items list
                       if (hasDisplayableProductDetails) // Check if there are details to build the list
@@ -1167,13 +1181,19 @@ SizedBox(height: 10.h),
                                       if (_totalSavings > 0)
                                         Text('₹${(_totalCartValue + _totalSavings).toInt()}', style: TextStyle(fontSize: 12.sp, decoration: TextDecoration.lineThrough, color: AppTheme.textSecondaryColor)),
                                       if (_totalSavings > 0) SizedBox(width: 6.w),
-                                      Text('₹${_totalCartValue.toInt()}', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: AppTheme.accentColor)),
+                                      // Display _grandTotal here
+                                      Text('₹${_grandTotal.toInt()}', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: AppTheme.accentColor)),
                                     ],
                                   ),
                                   if (_totalSavings > 0)
                                     Text('SAVING ₹${_totalSavings.toInt()}', style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w500, color: AppTheme.accentColor)),
                                 ],
                               ),
+                              SizedBox(width: 8.w), // Add spacing for arrow
+                              GestureDetector(
+                                onTap: _showBillSummaryModal,
+                                child: Icon(Icons.arrow_forward_ios, color: AppTheme.textSecondaryColor, size: 18.sp),
+                              ), // Arrow icon
                             ],
                           ),
                         ),
@@ -1329,7 +1349,7 @@ Widget _buildBottomSections() {
                               String contactNumber = _defaultAddress?.phone ?? '9560676526';
                               String userEmail = 'ankushpalrpvv@gmail.com';
                               _openCheckoutAndHandleState(
-                                amount: _totalCartValue,
+                                amount: _grandTotal, // Use grandTotal here
                                 contact: contactNumber,
                                 email: userEmail,
                               );
@@ -1354,7 +1374,7 @@ Widget _buildBottomSections() {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
                                   Text(
-                                    '₹${_totalCartValue.toInt()}',
+                                    '₹${_grandTotal.toInt()}',
                                     style: TextStyle(
                                       fontSize: 18.sp,
                                       fontWeight: FontWeight.bold,
@@ -2147,6 +2167,133 @@ Widget _buildShowMoreButton(int remainingItems) { // Accept remainingItems
         setState(() { _isPlacingOrder = false; });
       }
     }
+  }
+
+  // Add the _showBillSummaryModal method here
+  void _showBillSummaryModal() {
+    showModalBottomSheet(context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: BoxDecoration(
+          color: AppTheme.primaryColor, // Or secondaryColor, based on image
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(16.r),
+            topRight: Radius.circular(16.r),
+          ),
+        ),
+        padding: EdgeInsets.symmetric(horizontal: 20.r, vertical: 20.h),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Bill Summary Header
+            Row(
+              children: [
+                Icon(Icons.receipt_long_outlined, color: AppTheme.textPrimaryColor, size: 24.sp),
+                SizedBox(width: 10.w),
+                Text('Bill Summary', style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: AppTheme.textPrimaryColor)),
+                Spacer(),
+                IconButton(
+                  icon: Icon(Icons.close, color: AppTheme.textSecondaryColor, size: 24.sp),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            SizedBox(height: 20.h),
+
+            // Item Total & GST
+            _buildSummaryRow('Item Total', '₹${(_totalCartValue + _totalSavings).toInt()}', '₹${_totalCartValue.toInt()}'),
+            SizedBox(height: 8.h),
+
+            // Remove Discount Message (if any, as in example 'Extra Discount of ₹16 applied!')
+            // Padding(
+            //   padding: EdgeInsets.symmetric(vertical: 4.h),
+            //   child: Text('Extra Discount of ₹16 applied!', style: TextStyle(fontSize: 12.sp, color: Colors.green.shade400)),
+            // ),
+            // SizedBox(height: 8.h),
+
+            Divider(color: AppTheme.secondaryColor, thickness: 1),
+            SizedBox(height: 8.h),
+
+            // Small Cart Fee (Conditional)
+            Builder(builder: (context) {
+              final double smallCartFee = (_totalCartValue < 99) ? 35.0 : 0.0;
+              return _buildSummaryRow(
+                'Small Cart Fee',
+                '', // No strikethrough, as per current logic
+                '₹${smallCartFee.toInt()}',
+                subtitle: '₹0 Small Cart Fee on orders above ₹99',
+              );
+            }),
+            SizedBox(height: 8.h),
+
+            // Delivery Fee
+            _buildSummaryRow('Delivery Fee', '', '₹${_deliveryFee.toInt()}'), // Use _deliveryFee from state
+            SizedBox(height: 8.h),
+
+            // Remove Zepto Membership
+            // _buildSummaryRow('Zepto Membership', '₹1', '₹199'), // Assuming 199 crossed out
+            // SizedBox(height: 8.h),
+
+            Divider(color: AppTheme.secondaryColor, thickness: 1),
+            SizedBox(height: 16.h),
+
+            // To Pay (Final)
+            _buildSummaryRow('To Pay', '₹${(_totalCartValue + _totalSavings + ((_totalCartValue < 99) ? 35.0 : 0.0) + _deliveryFee).toInt()}', '₹${_grandTotal.toInt()}', isFinal: true, subtitle: 'Incl. all taxes and charges', totalSavings: _totalSavings),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Helper method to build summary rows for the modal
+  Widget _buildSummaryRow(String label, String originalValue, String currentValue, {String? subtitle, bool isFinal = false, double totalSavings = 0.0}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 4.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label, style: TextStyle(fontSize: isFinal ? 16.sp : 14.sp, fontWeight: isFinal ? FontWeight.bold : FontWeight.normal, color: AppTheme.textPrimaryColor)),
+              if (subtitle != null)
+                Text(subtitle, style: TextStyle(fontSize: 10.sp, color: AppTheme.textSecondaryColor)),
+            ],
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Row(
+                children: [
+                  if (originalValue.isNotEmpty) // Only show strikethrough if originalValue is provided
+                    Text(originalValue, style: TextStyle(fontSize: 12.sp, decoration: TextDecoration.lineThrough, color: AppTheme.textSecondaryColor)),
+                  if (originalValue.isNotEmpty) SizedBox(width: 6.w),
+                  Text(currentValue, style: TextStyle(fontSize: isFinal ? 18.sp : 14.sp, fontWeight: isFinal ? FontWeight.bold : FontWeight.normal, color: isFinal ? AppTheme.accentColor : AppTheme.textPrimaryColor)),
+                ],
+              ),
+              if (isFinal && totalSavings > 0)
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 6.r, vertical: 2.r),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade900.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(2.r),
+                  ),
+                  child: Text(
+                    'SAVING ₹${totalSavings.toInt()}',
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.green.shade400,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 }
 
