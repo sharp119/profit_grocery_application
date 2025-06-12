@@ -13,7 +13,7 @@ import 'package:profit_grocery_application/presentation/pages/cart/cart_page.dar
 import 'package:profit_grocery_application/presentation/pages/home/home_page.dart';
 import 'package:profit_grocery_application/presentation/pages/orders/orders_page.dart';
 import 'package:profit_grocery_application/presentation/pages/profile/profile_page.dart';
-import 'package:profit_grocery_application/presentation/pages/category_products/category_products_page.dart';
+import 'package:profit_grocery_application/presentation/pages/categories/categories_page.dart';
 
 class MainNavigation extends StatelessWidget {
   const MainNavigation({Key? key}) : super(key: key);
@@ -51,7 +51,7 @@ class _MainNavigationContentState extends State<_MainNavigationContent> {
     // Initialize tab bodies - will be maintained across tab switches
     _tabBodies = [
       const HomePage(),
-      const CategoryProductsPage(), // Categories page with TwoPanelView
+      const CategoriesPage(), // New Categories page
       OrdersPage(),
       // CartPage(),
       const ProfilePage(),
