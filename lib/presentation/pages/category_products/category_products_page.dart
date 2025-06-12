@@ -65,7 +65,7 @@ class CategoryProductsPage extends StatelessWidget {
               SnackBar(
                 content: Text('✅ $cartMessage'),
                 backgroundColor: Colors.green,
-                duration: const Duration(seconds: 650),
+                duration: const Duration(milliseconds: 650),
               ),
             );
           }

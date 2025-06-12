@@ -17,6 +17,7 @@ import '../../widgets/loaders/shimmer_loader.dart';
 import '../../widgets/image_loader.dart';
 import '../../widgets/buttons/add_button.dart';
 import '../../../domain/entities/user.dart';
+import '../coupon/coupon_page.dart'; // Added import for CouponPage
 
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../blocs/user/user_bloc.dart';
@@ -98,7 +99,6 @@ int _totalItemsInCartProvider = 0; // Keep or derive from _cartProductIds.length
 // bool _showRemovedMessage = true; // Logic for this will change
 // bool _productsRemoved = false; // Logic for this will change
 
-
   @override
   void initState() {
     super.initState();
@@ -124,7 +124,6 @@ void dispose() {
       _razorpay.clear();
 
 }
-
 
 Future<bool?> _showClearCartConfirmationDialog() async {
     return showDialog<bool>(
@@ -763,6 +762,7 @@ void _onCartProviderChanged() {
             _defaultAddress = address;
           });
           _cacheDefaultAddress(address);
+          // _updateOrderingForFromAddress(); // Removed, no longer needed
           Navigator.pop(context);
         },
       ),
@@ -1012,13 +1012,42 @@ Widget build(BuildContext context) {
                     ],
                   ),
                 ),
-
+SizedBox(height: 10.h),
               // This Expanded widget will contain the scrollable list of cart items AND the bestseller section
               Expanded(
                 child: SingleChildScrollView( // Makes the content scrollable if it overflows
                   child: Column(
                     children: [
-                      
+                      if (hasDisplayableProductDetails) ...[
+                        // Coupon section
+                        Container(
+                          margin: EdgeInsets.only(left: 20.r, right: 20.r, top: 0, bottom: 8.h),
+                          padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 14.w),
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondaryColor,
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.percent, color: AppTheme.accentColor, size: 22.sp),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Text(
+                                  'You have unlocked 5 new coupons',
+                                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryColor),
+                                ),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(context, MaterialPageRoute(builder: (context) => const CouponPage()));
+                                },
+                                child: Text('Explore Now', style: TextStyle(color: AppTheme.accentColor, fontWeight: FontWeight.w600, fontSize: 13.sp)),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // To Pay section
+                        ],
                       // Cart items list
                       if (hasDisplayableProductDetails) // Check if there are details to build the list
                         ListView.separated(
@@ -1103,7 +1132,56 @@ Widget build(BuildContext context) {
                           ),
                         ),
                       // END OF HORIZONTAL BESTSELLER SECTION
+
+                      // In the main scrollable content, after the HorizontalBestsellerSection:
+                      // ... existing code ...
+                      // After the HorizontalBestsellerSection
+                      if (hasDisplayableProductDetails) ...[
+                        // Coupon section
+                        // To Pay section
+                        Container(
+                          margin: EdgeInsets.only(left: 20.r, right: 20.r, bottom: 8.h),
+                          padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 14.w),
+                          decoration: BoxDecoration(
+                            color: AppTheme.secondaryColor,
+                            borderRadius: BorderRadius.circular(8.r),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(Icons.receipt_long_outlined, color: AppTheme.accentColor, size: 22.sp),
+                              SizedBox(width: 10.w),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('To Pay', style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600, color: AppTheme.textPrimaryColor)),
+                                    Text('Incl. all taxes and charges', style: TextStyle(fontSize: 11.sp, color: AppTheme.textSecondaryColor)),
+                                  ],
+                                ),
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Row(
+                                    children: [
+                                      if (_totalSavings > 0)
+                                        Text('₹${(_totalCartValue + _totalSavings).toInt()}', style: TextStyle(fontSize: 12.sp, decoration: TextDecoration.lineThrough, color: AppTheme.textSecondaryColor)),
+                                      if (_totalSavings > 0) SizedBox(width: 6.w),
+                                      Text('₹${_totalCartValue.toInt()}', style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.bold, color: AppTheme.accentColor)),
+                                    ],
+                                  ),
+                                  if (_totalSavings > 0)
+                                    Text('SAVING ₹${_totalSavings.toInt()}', style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w500, color: AppTheme.accentColor)),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      // ... existing code ...
+                    SizedBox(height: 80.h),
                     ],
+                    
                   ),
                 ),
               ), // End of Expanded -> SingleChildScrollView
@@ -1124,105 +1202,201 @@ Widget _buildBottomSections() {
   return Container(
     color: Colors.black,
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // ... (Delivering to section - _buildDeliveryAddressSection()) ...
+        // Sleek address row
         Container(
-          margin: EdgeInsets.only(left: 20.r, right: 20.r, bottom: 1.h, top: 10.h),
+          margin: EdgeInsets.only(bottom: 8.h),
+          padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 14.w),
           decoration: BoxDecoration(
             color: Color(0xFF1A1A1A),
-            borderRadius: BorderRadius.circular(4.r),
+            // borderRadius: BorderRadius.circular(8.r),
           ),
-          child: _buildDeliveryAddressSection(),
-        ),
-
-        // ... (To Pay section - _buildPaymentSummarySection()) ...
-         Container(
-            margin: EdgeInsets.only(left: 20.r, right: 20.r, bottom: 10.h),
-            decoration: BoxDecoration(
-              color: Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(4.r),
-            ),
-            child: _buildPaymentSummarySection(),
-          ),
-
-        // COD Checkbox
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 20.r),
-            child: CheckboxListTile(
-              title: Text("Cash on Delivery", style: TextStyle(color: Colors.white)),
-              value: _isCashOnDeliverySelected,
-              onChanged: (bool? newValue) {
-                if (mounted) {
-                  setState(() {
-                    _isCashOnDeliverySelected = newValue ?? false;
-                  });
-                }
-              },
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-              activeColor: AppTheme.accentColor,
-              checkColor: Colors.black,
-            ),
-          ),
-          SizedBox(height: 8.h),
-
-        // Click to Pay button
-        Container(
-          margin: EdgeInsets.fromLTRB(20.r, 5.h, 20.r, 30.h),
-          width: double.infinity,
-          height: 50.h,
-          child: ElevatedButton(
-            onPressed: _isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder
-                ? null
-                : () async {
-                    if (_defaultAddress == null) {
-                      Fluttertoast.showToast(msg: "Please select a delivery address first.");
-                      _showAddressSelection();
-                      return;
-                    }
-                    if (_totalCartValue <= 0 && !_isCashOnDeliverySelected) {
-                      Fluttertoast.showToast(msg: "Your cart is empty or total is invalid.");
-                      return;
-                    }
-                    await _saveAddressToPrefs();
-                    if (mounted) {
-                      setState(() {
-                        _isPlacingOrder = true;
-                      });
-                    }
-                    if (_isCashOnDeliverySelected) {
-                      await _handleCODOrder();
-                    } else {
-                      String contactNumber = _defaultAddress?.phone ?? '9560676526';
-                      String userEmail = 'ankushpalrpvv@gmail.com'; // You might fetch this from a UserBloc or user profile
-                      _openCheckoutAndHandleState(
-                        amount: _totalCartValue,
-                        contact: contactNumber,
-                        email: userEmail,
-                      );
-                    }
-                  },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: (_isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder)
-                ? Colors.grey.shade700
-                : Color(0xFFFFC107),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
+          child: Row(
+            children: [
+              Icon(Icons.location_on_outlined, color: Color(0xFFFFC107), size: 22.sp),
+              SizedBox(width: 10.w),
+              Expanded(
+                child: _addressLoading
+                  ? ShimmerLoader(child: Container(height: 10.h, width: 120.w, color: Colors.white,))
+                  : (_defaultAddress != null)
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Delivering to ${_defaultAddress?.addressType.capitalize() ?? ''}',
+                            style: TextStyle(fontSize: 13.sp, fontWeight: FontWeight.w600, color: Colors.white),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            '${_defaultAddress!.addressLine.split(',').first}, ${_defaultAddress!.city}',
+                            style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade400, overflow: TextOverflow.ellipsis),
+                            maxLines: 1,
+                          ),
+                        ],
+                      )
+                    : Text('No address found. Add an address to proceed.', style: TextStyle(fontSize: 11.sp, color: Colors.grey.shade400)),
               ),
-            ),
-            child: _isPlacingOrder
-                ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                : Text(
-                    'Place Order',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: (_cartProductIds.isEmpty) ? Colors.grey.shade400 : Colors.black,
+              SizedBox(width: 10.w),
+              GestureDetector(
+                onTap: _showAddressSelection,
+                child: Text('Change', style: TextStyle(color: Color(0xFFFFC107), fontWeight: FontWeight.w600, fontSize: 13.sp)),
+              ),
+            ],
+          ),
+        ),
+        // Bottom bar: Place Order (left), Pay Using (right)
+        Container(
+          margin: EdgeInsets.fromLTRB(20.r, 0, 20.r, 24.h),
+          width: double.infinity,
+          height: 56.h,
+          child: Row(
+            children: [
+              Expanded(
+                flex: 1,
+                child: GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _isCashOnDeliverySelected = !_isCashOnDeliverySelected;
+                    });
+                  },
+                  child: Container(
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                      borderRadius: BorderRadius.all(Radius.circular(8.r)),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 6.h),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Row 1: Two icons
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.credit_card,
+                              color: !_isCashOnDeliverySelected ? Color(0xFFFFC107) : Colors.grey.shade600,
+                              size: 20.sp),
+                            SizedBox(width: 8.w),
+                            Icon(Icons.money,
+                              color: _isCashOnDeliverySelected ? Colors.green : Colors.grey.shade600,
+                              size: 20.sp),
+                          ],
+                        ),
+                        SizedBox(height: 4.h),
+                        // Row 2: Selected mode text
+                        Text(
+                          _isCashOnDeliverySelected ? 'Cash on Delivery' : 'Online',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.sp,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                ),
+              ),
+              Expanded(
+                flex: 2,
+                child: Container(
+                  height: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder
+                        ? null
+                        : () async {
+                            if (_defaultAddress == null) {
+                              Fluttertoast.showToast(msg: "Please select a delivery address first.");
+                              _showAddressSelection();
+                              return;
+                            }
+                            if (_totalCartValue <= 0 && !_isCashOnDeliverySelected) {
+                              Fluttertoast.showToast(msg: "Your cart is empty or total is invalid.");
+                              return;
+                            }
+                            await _saveAddressToPrefs();
+                            if (mounted) {
+                              setState(() {
+                                _isPlacingOrder = true;
+                              });
+                            }
+                            if (_isCashOnDeliverySelected) {
+                              await _handleCODOrder();
+                            } else {
+                              String contactNumber = _defaultAddress?.phone ?? '9560676526';
+                              String userEmail = 'ankushpalrpvv@gmail.com';
+                              _openCheckoutAndHandleState(
+                                amount: _totalCartValue,
+                                contact: contactNumber,
+                                email: userEmail,
+                              );
+                            }
+                          },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: (_isProductDataLoading || _cartProductIds.isEmpty || _isPlacingOrder)
+                        ? Colors.grey.shade700
+                        : Colors.green.shade700, // Green as in screenshot
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.all(Radius.circular(8.r)),
+                      ),
+                    ),
+                    child: _isPlacingOrder
+                        ? SizedBox(width: 20.w, height: 20.h, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              // Left column: total value and TOTAL text
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '₹${_totalCartValue.toInt()}',
+                                    style: TextStyle(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    'TOTAL',
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.white.withOpacity(0.8),
+                                      letterSpacing: 1.2,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              // Right column: Place Order and arrow
+                              Row(
+                                children: [
+                                  Text(
+                                    'PLACE ORDER',
+                                    style: TextStyle(
+                                      fontSize: 15.sp,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                      letterSpacing: 1.1,
+                                    ),
+                                  ),
+                                  SizedBox(width: 6.w),
+                                  Icon(Icons.arrow_forward_sharp, color: Colors.white, size: 18.sp),
+                                ],
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(height: 20),
       ],
     ),
   );
