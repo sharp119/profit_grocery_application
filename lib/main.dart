@@ -54,7 +54,7 @@ import 'presentation/blocs/cart/cart_bloc.dart';
 import 'presentation/blocs/cart/cart_event.dart';
 import 'presentation/blocs/home/home_bloc.dart'; // Import for home_bloc
 import 'presentation/blocs/categories/categories_bloc.dart'; // Import for categories_bloc
-import 'presentation/blocs/checkout/checkout_bloc.dart'; // Import for checkout_bloc
+// import 'presentation/blocs/checkout/checkout_bloc.dart'; // Import for checkout_bloc
 import 'presentation/blocs/coupon/coupon_bloc.dart'; // Import for coupon_bloc
 import 'presentation/blocs/orders/orders_bloc.dart'; // <--- NEW: Import OrdersBloc here
 
@@ -333,9 +333,9 @@ class MyApp extends StatelessWidget {
         BlocProvider<CategoriesBloc>( // Ensure CategoriesBloc is provided if used
           create: (context) => sl<CategoriesBloc>(),
         ),
-        BlocProvider<CheckoutBloc>( // Ensure CheckoutBloc is provided if used
-          create: (context) => sl<CheckoutBloc>(),
-        ),
+        // BlocProvider<CheckoutBloc>( // Ensure CheckoutBloc is provided if used
+        //   create: (context) => sl<CheckoutBloc>(),
+        // ),
         BlocProvider<CouponBloc>( // Ensure CouponBloc is provided if used
           create: (context) => sl<CouponBloc>(),
         ),

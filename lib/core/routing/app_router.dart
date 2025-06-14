@@ -8,8 +8,7 @@ import '../../presentation/pages/authentication/otp_verification_page.dart';
 import '../../presentation/pages/authentication/phone_entry_page.dart';
 import '../../presentation/pages/authentication/splash_screen.dart';
 import '../../presentation/pages/authentication/user_registration_page.dart';
-import '../../presentation/pages/checkout/checkout_page.dart';
-import '../../presentation/pages/checkout/address_selection_page.dart';
+
 import '../../presentation/pages/home/home_page.dart';
 import '../../presentation/pages/orders/orders_page.dart';
 import '../../presentation/pages/orders/order_details_page.dart'; // NEW: Import OrderDetailsPage
@@ -24,7 +23,6 @@ import '../../presentation/pages/profile/developer_menu_page.dart';
 import '../../presentation/pages/test/image_test_page.dart';
 import '../../presentation/pages/test/product_card_test_page.dart';
 import '../../presentation/pages/category_products/category_products_page.dart';
-import '../../presentation/pages/dev/firestore_sync_page.dart';
 import '../../presentation/pages/home/bestseller_example.dart';
 
 import '../../presentation/blocs/orders/orders_bloc.dart'; // NEW: Import OrdersBloc
@@ -99,17 +97,17 @@ class AppRouter {
           ),
         );
 
-      case AppConstants.checkoutRoute:
-        return MaterialPageRoute(builder: (_) => const CheckoutPage());
+      // case AppConstants.checkoutRoute:
+      //   return MaterialPageRoute(builder: (_) => const CheckoutPage());
 
-      case AppConstants.addressSelectionRoute:
-        final args = settings.arguments as Map<String, dynamic>;
-        return MaterialPageRoute(
-          builder: (_) => AddressSelectionPage(
-            onAddressSelected: args['onAddressSelected'],
-            initialAddress: args['initialAddress'],
-          ),
-        );
+      // case AppConstants.addressSelectionRoute:
+      //   final args = settings.arguments as Map<String, dynamic>;
+      //   return MaterialPageRoute(
+      //     builder: (_) => AddressSelectionPage(
+      //       onAddressSelected: args['onAddressSelected'],
+      //       initialAddress: args['initialAddress'],
+      //     ),
+      //   );
 
       // Order routes
       case AppConstants.ordersRoute:
@@ -154,9 +152,7 @@ class AppRouter {
       case AppConstants.productCardTestRoute:
         return MaterialPageRoute(builder: (_) => const ProductCardTestPage());
 
-      case AppConstants.firestoreSyncRoute:
-        return MaterialPageRoute(builder: (_) => const FirestoreSyncPage());
-
+     
       // case AppConstants.bestsellerExampleRoute: // Keep uncommented if used, otherwise comment
       //   return MaterialPageRoute(builder: (_) => const BestsellerExamplePage());
 

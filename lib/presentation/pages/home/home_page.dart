@@ -1094,7 +1094,7 @@ class _HomePageContentState extends State<_HomePageContent> {
       builder: (context, state) {
         // Use the cart item count from the state
         final cartItemCount = state.cartItemCount;
-        final cartPreviewImage = state.cartPreviewImage;
+        // final cartPreviewImage = state.cartPreviewImage;
         final totalAmount = state.cartTotalAmount;
 
         return Scaffold(

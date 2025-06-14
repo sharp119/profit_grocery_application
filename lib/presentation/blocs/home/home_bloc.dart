@@ -8,18 +8,23 @@ import '../../../core/constants/app_theme.dart';
 import '../../../data/inventory/bestseller_products.dart';
 import '../../../data/inventory/product_inventory.dart';
 import '../../../data/inventory/similar_products.dart';
-import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import 'home_event.dart';
 import 'home_state.dart';
 import '../../../data/repositories/category_repository.dart';
+import '../../../data/repositories/storage_repository.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   final CategoryRepository _categoryRepository;
+  final StorageRepository _storageRepository;
 
-  HomeBloc({CategoryRepository? categoryRepository}) 
+  HomeBloc({
+    CategoryRepository? categoryRepository,
+    StorageRepository? storageRepository,
+  }) 
       : _categoryRepository = categoryRepository ?? CategoryRepository(),
+        _storageRepository = storageRepository ?? StorageRepository(),
         super(const HomeState()) {
     on<LoadHomeData>(_onLoadHomeData);
     on<RefreshHomeData>(_onRefreshHomeData);
@@ -40,7 +45,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       
       // Use category groups for tabs instead of hardcoded values
       final tabs = categoryGroups.map((group) => group.title).toList();
-      final banners = _getMockBanners();
+      final banners = await _storageRepository.listImageUrls('promotional_banners');
       
       // Simulate network delay
       await Future.delayed(const Duration(seconds: 1));
@@ -114,21 +119,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     CartLogger.info('HOME_BLOC', 'Cart quantities: $updatedCartQuantities');
     
     // Choose the first product in cart for preview, or null if cart empty
-    String? cartPreviewImage;
-    if (updatedCartQuantities.isNotEmpty) {
-      final previewProductId = updatedCartQuantities.keys.first;
-      // In a real app, we'd look up the product image from repository
-      cartPreviewImage = '${AppConstants.assetsProductsPath}1.png';
-      CartLogger.info('HOME_BLOC', 'Cart preview image set to: $cartPreviewImage');
-    } else {
-      CartLogger.info('HOME_BLOC', 'No cart preview image (cart is empty)');
-    }
+    // String? cartPreviewImage;
+    // if (updatedCartQuantities.isNotEmpty) {
+    //   final previewProductId = updatedCartQuantities.keys.first;
+    //   // In a real app, we'd look up the product image from repository
+    //   cartPreviewImage = '${AppConstants.assetsProductsPath}1.png';
+    //   CartLogger.info('HOME_BLOC', 'Cart preview image set to: $cartPreviewImage');
+    // } else {
+    //   CartLogger.info('HOME_BLOC', 'No cart preview image (cart is empty)');
+    // }
     
     emit(state.copyWith(
       cartQuantities: updatedCartQuantities,
       cartItemCount: cartItemCount,
       cartTotalAmount: cartTotalAmount,
-      cartPreviewImage: cartPreviewImage,
+      // cartPreviewImage: null,
     ));
     
     CartLogger.success('HOME_BLOC', 'Cart state updated successfully');
@@ -146,7 +151,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       cartQuantities: event.cartQuantities,
       cartItemCount: event.cartItemCount,
       cartTotalAmount: event.cartTotalAmount,
-      cartPreviewImage: event.cartPreviewImage,
+      // cartPreviewImage: event.cartPreviewImage,
     ));
     
     CartLogger.success('HOME_BLOC', 'Cart data updated from CartBloc sync');
@@ -168,11 +173,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   // Mock data methods
   List<String> _getMockBanners() {
     return [
-      '${AppConstants.assetsImagesPath}gift.jpg',
-      '${AppConstants.assetsCimgsPath}1.jpg',
-      '${AppConstants.assetsCimgsPath}2.jpg',
-      '${AppConstants.assetsCimgsPath}3.jpg',
-      '${AppConstants.assetsCimgsPath}4.jpg',
+      // Removed static banner paths, now fetched from Firebase Storage
     ];
   }
 }

@@ -2,7 +2,7 @@ name: profit_grocery_application
 description: "A mobile e-commerce application for online grocery shopping with coupon-based offers."
 publish_to: 'none'
 
-version: 1.0.0+4
+version: 1.0.0+5
 
 environment:
   sdk: ^3.6.0
@@ -53,11 +53,6 @@ flutter:
   uses-material-design: true
   
   assets:
-    - assets/images/
-    - assets/images/categories/
-    - assets/categories/
-    - assets/subcategories/
-    - assets/products/
     - assets/cimgs/
     - assets/icon/res/mipmap-xxxhdpi/ic_launcher.png
     - assets/icon/res/mipmap-xxxhdpi/ic_launcher_background.png

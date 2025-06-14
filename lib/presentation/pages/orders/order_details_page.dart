@@ -155,14 +155,19 @@ class _OrderDetailsPageState extends State<OrderDetailsPage> {
                   order.status[0].toUpperCase() + order.status.substring(1),
                   style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold, color: iconColor),
                 ),
-                const Spacer(),
-                Text(
+                // const Spacer(),
+                // Text(
+                //   '#${order.id ?? ''}',
+                //   style: TextStyle(fontSize: 13.sp, color: AppTheme.textSecondaryColor),
+                // ),
+              ],
+            ),
+
+            SizedBox(height: 8.h),
+            Text(
                   '#${order.id ?? ''}',
                   style: TextStyle(fontSize: 13.sp, color: AppTheme.textSecondaryColor),
                 ),
-              ],
-            ),
-            SizedBox(height: 8.h),
             Text(
               'Placed: ${order.orderTimestamp.toDate().toLocal().toString().split(".")[0]}',
               style: TextStyle(fontSize: 13.sp, color: AppTheme.textSecondaryColor),

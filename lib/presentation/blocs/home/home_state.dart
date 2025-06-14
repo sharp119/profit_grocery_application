@@ -1,7 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
-import '../../../data/models/category_group_model.dart';
 import '../../../domain/entities/category.dart';
 import '../../../domain/entities/product.dart';
 import '../../../data/models/firestore/category_group_firestore_model.dart';
@@ -25,7 +24,6 @@ class HomeState extends Equatable {
   final Map<String, Color> subcategoryColors;
   final int cartItemCount;
   final double cartTotalAmount;
-  final String? cartPreviewImage;
   final String? errorMessage;
   final List<String> tabs;
   final int selectedTabIndex;
@@ -43,7 +41,6 @@ class HomeState extends Equatable {
     this.subcategoryColors = const {},
     this.cartItemCount = 0,
     this.cartTotalAmount = 0.0,
-    this.cartPreviewImage,
     this.errorMessage,
     this.tabs = const ['All', 'Electronics', 'Beauty', 'Kids', 'Gifting'],
     this.selectedTabIndex = 0,
@@ -62,7 +59,6 @@ class HomeState extends Equatable {
     Map<String, Color>? subcategoryColors,
     int? cartItemCount,
     double? cartTotalAmount,
-    String? cartPreviewImage,
     String? errorMessage,
     List<String>? tabs,
     int? selectedTabIndex,
@@ -80,7 +76,6 @@ class HomeState extends Equatable {
       subcategoryColors: subcategoryColors ?? this.subcategoryColors,
       cartItemCount: cartItemCount ?? this.cartItemCount,
       cartTotalAmount: cartTotalAmount ?? this.cartTotalAmount,
-      cartPreviewImage: cartPreviewImage ?? this.cartPreviewImage,
       errorMessage: errorMessage ?? this.errorMessage,
       tabs: tabs ?? this.tabs,
       selectedTabIndex: selectedTabIndex ?? this.selectedTabIndex,
@@ -101,7 +96,6 @@ class HomeState extends Equatable {
     subcategoryColors,
     cartItemCount,
     cartTotalAmount,
-    cartPreviewImage,
     errorMessage,
     tabs,
     selectedTabIndex,

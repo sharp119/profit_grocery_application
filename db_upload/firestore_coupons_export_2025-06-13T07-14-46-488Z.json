@@ -1,0 +1,202 @@
+{
+  "metadata": {
+    "exportDate": "2025-06-13T07:14:46.488Z",
+    "totalCoupons": 9,
+    "exportDurationMs": 3246,
+    "firebaseProject": "profit-grocery"
+  },
+  "coupons": [
+    {
+      "id": "1",
+      "code": "WELCOME25",
+      "minPurchase": 500,
+      "applicableProductIds": null,
+      "maxDiscount": null,
+      "type": "percentage",
+      "isActive": true,
+      "freeProductId": null,
+      "startDate": 1744845682717,
+      "conditions": null,
+      "usageCount": 0,
+      "applicableCategories": null,
+      "description": "Get 25% off on your first order with a minimum purchase of ₹500",
+      "usageLimit": null,
+      "endDate": 1747437682717,
+      "value": 25
+    },
+    {
+      "id": "2",
+      "endDate": 1750029682717,
+      "usageCount": 0,
+      "description": "Beat the heat with 20% discount on all summer products",
+      "startDate": 1744845682717,
+      "freeProductId": null,
+      "usageLimit": null,
+      "type": "percentage",
+      "applicableCategories": [
+        "summer",
+        "beverages",
+        "icecream"
+      ],
+      "value": 20,
+      "applicableProductIds": null,
+      "code": "SUMMER20",
+      "minPurchase": 300,
+      "isActive": true,
+      "maxDiscount": null,
+      "conditions": null
+    },
+    {
+      "id": "3",
+      "freeProductId": null,
+      "minPurchase": 1000,
+      "endDate": 1746141682717,
+      "description": "Enjoy a flat ₹100 discount on your purchase of ₹1000 or more",
+      "maxDiscount": null,
+      "applicableProductIds": null,
+      "type": "fixed_amount",
+      "startDate": 1744845682717,
+      "applicableCategories": null,
+      "value": 100,
+      "conditions": null,
+      "code": "FLAT100",
+      "usageCount": 0,
+      "isActive": true,
+      "usageLimit": null
+    },
+    {
+      "id": "4",
+      "freeProductId": null,
+      "code": "SAVE50",
+      "minPurchase": 500,
+      "applicableCategories": [
+        "household",
+        "cleaning"
+      ],
+      "conditions": null,
+      "usageCount": 0,
+      "maxDiscount": null,
+      "applicableProductIds": null,
+      "description": "Get ₹50 off on all household items with minimum purchase of ₹500",
+      "value": 50,
+      "isActive": true,
+      "endDate": 1748733682717,
+      "usageLimit": null,
+      "startDate": 1744845682717,
+      "type": "fixed_amount"
+    },
+    {
+      "id": "5",
+      "usageLimit": null,
+      "type": "free_delivery",
+      "code": "FREEDEL",
+      "applicableCategories": null,
+      "conditions": null,
+      "minPurchase": null,
+      "applicableProductIds": null,
+      "isActive": true,
+      "maxDiscount": null,
+      "value": 0,
+      "endDate": 1745450482717,
+      "freeProductId": null,
+      "usageCount": 0,
+      "description": "Enjoy free delivery with no minimum order value required",
+      "startDate": 1744845682717
+    },
+    {
+      "id": "6",
+      "value": 0,
+      "endDate": 1747437682717,
+      "usageCount": 0,
+      "applicableProductIds": null,
+      "description": "Get a free hand sanitizer (50ml) with any purchase above ₹300",
+      "type": "free_product",
+      "freeProductId": "prod_sanitizer_01",
+      "maxDiscount": null,
+      "isActive": true,
+      "usageLimit": null,
+      "code": "FREEGIFT",
+      "minPurchase": 300,
+      "startDate": 1744845682717,
+      "applicableCategories": null,
+      "conditions": null
+    },
+    {
+      "id": "7",
+      "applicableCategories": [
+        "beverages",
+        "drinks",
+        "juices"
+      ],
+      "maxDiscount": null,
+      "startDate": 1744845682717,
+      "usageCount": 0,
+      "freeProductId": null,
+      "isActive": true,
+      "minPurchase": null,
+      "description": "Purchase any 2 beverages and get the third one free (lowest price will be free)",
+      "conditions": {
+        "sameProduct": false,
+        "getQuantity": 1,
+        "categoryId": "beverages",
+        "sameCategory": true,
+        "buyQuantity": 2
+      },
+      "type": "conditional",
+      "endDate": 1746141682717,
+      "usageLimit": null,
+      "applicableProductIds": null,
+      "code": "BUY2GET1",
+      "value": 0
+    },
+    {
+      "id": "8",
+      "isActive": true,
+      "usageCount": 0,
+      "type": "conditional",
+      "maxDiscount": null,
+      "minPurchase": null,
+      "endDate": 1747437682717,
+      "code": "COMBO50",
+      "conditions": {
+        "requiredProducts": [
+          "prod_rice_01",
+          "prod_dal_01"
+        ],
+        "requiredQuantities": [
+          1,
+          1
+        ]
+      },
+      "applicableCategories": null,
+      "value": 50,
+      "description": "Add 1kg rice and 1kg dal to your cart and get ₹50 off instantly",
+      "startDate": 1744845682717,
+      "usageLimit": null,
+      "freeProductId": null,
+      "applicableProductIds": null
+    },
+    {
+      "id": "9",
+      "endDate": 1746573682717,
+      "conditions": {
+        "triggerProductId": "prod_butter_category",
+        "discountProductId": "prod_bread_category",
+        "triggerQuantity": 1
+      },
+      "freeProductId": null,
+      "startDate": 1744845682717,
+      "value": 20,
+      "isActive": true,
+      "type": "conditional",
+      "code": "FRESH20",
+      "usageCount": 0,
+      "maxDiscount": null,
+      "description": "Add any butter to your cart and get ₹20 off on your bread purchase",
+      "minPurchase": null,
+      "applicableProductIds": null,
+      "usageLimit": null,
+      "applicableCategories": null
+    }
+  ]
+}

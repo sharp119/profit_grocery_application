@@ -1,0 +1,56 @@
+{
+  "project_info": {
+    "project_number": "288158977074",
+    "firebase_url": "https://profit-grocery-default-rtdb.firebaseio.com",
+    "project_id": "profit-grocery",
+    "storage_bucket": "profit-grocery.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:288158977074:android:67ded57f7cc5fbb7a0402b",
+        "android_client_info": {
+          "package_name": "com.profitgrocery.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "288158977074-ec27itjersdhd3lp30j5csafu7lukbi6.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.profitgrocery.app",
+            "certificate_hash": "08d60c107156c180e831067d3d68c05399e55270"
+          }
+        },
+        {
+          "client_id": "288158977074-uf1rs656ho7jvhdjirhf60jk3rhr0n7k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.profitgrocery.app",
+            "certificate_hash": "eb5a947db2427d80e1ecf1891dd797d83bd7e7f7"
+          }
+        },
+        {
+          "client_id": "288158977074-hmds5jf4b4orlhccokrr0ieruk8ms3o1.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBFRv33apVHcqSOJh0gtJSjgB5tgmpiRjk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "288158977074-hmds5jf4b4orlhccokrr0ieruk8ms3o1.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

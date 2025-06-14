@@ -86,11 +86,11 @@ class AppConstants {
   static const String adminCustomersRoute = '/admin/customers';
   
   // Asset Paths
-  static const String assetsImagesPath = 'assets/images/';
-  static const String assetsCategoriesPath = 'assets/categories/';
-  static const String assetsSubcategoriesPath = 'assets/subcategories/';
-  static const String assetsProductsPath = 'assets/products/';
-  static const String assetsCimgsPath = 'assets/cimgs/';
+  // static const String assetsImagesPath = 'assets/images/';
+  // static const String assetsCategoriesPath = 'assets/categories/';
+  // static const String assetsSubcategoriesPath = 'assets/subcategories/';
+  // static const String assetsProductsPath = 'assets/products/';
+  // static const String assetsCimgsPath = 'assets/cimgs/';
   
   // Error Messages
   static const String networkErrorMessage = 'Please check your internet connection and try again.';

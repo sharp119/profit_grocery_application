@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../../core/constants/app_theme.dart';
 
@@ -96,9 +97,17 @@ class _PromotionalBannerState extends State<PromotionalBanner> {
                         children: [
                           // Banner image
                           Positioned.fill(
-                            child: Image.asset(
-                              widget.images[index],
+                            child: CachedNetworkImage(
+                              imageUrl: widget.images[index],
                               fit: widget.imageFit,
+                              placeholder: (context, url) => Center(
+                                child: CircularProgressIndicator(
+                                  color: AppTheme.accentColor,
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => const Center(
+                                child: Icon(Icons.error),
+                              ),
                             ),
                           ),
                           
